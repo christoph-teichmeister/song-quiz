@@ -82,7 +82,7 @@ function entry() {
   return { key: 'entry', body: `<div class=hdr><span></span><button class=score-pill style="border:0;color:inherit;cursor:pointer" onclick="openSheet('account')">${user ? '👤 ' + esc((user.displayName || user.email || 'Account').split(' ')[0]) : 'Sign in'}</button></div><h1>🎵 Song Quiz</h1><p class=hint style="text-align:left">Team up, buzz in, guess the song.</p>
     <div class=stack><input class=input id=name placeholder="Your name" maxlength=20 value="${esc(nameV)}" oninput="setName(this.value)" autocomplete=nickname>
     ${pub.session ? `<input class=input id=code placeholder="Game code" inputmode=numeric value="${esc(codeV || pub.code || '')}" oninput="setCode(this.value)"><button class=btn onclick="joinGame()">Join game</button>`
-      : `<button class=btn onclick="create()">Create a new game</button>`}</div><p class=admin-link><a href="#" onclick="openSheet(\'rules\');return false">How to play</a> · <a href="/admin">admin</a></p>`, sticky: '' };
+      : `<button class=btn onclick="create()">Create a new game</button>`}</div><p class=admin-link><a href="#" onclick="openSheet(\'rules\');return false">How to play</a></p>`, sticky: '' };
 }
 
 const ruleCards = (list) => `<div class=rules>${list.map((x) => `<div class=rule><i>${x.icon}</i><div><b>${x.title}</b><p>${x.text}</p></div></div>`).join('')}</div>`;
@@ -190,7 +190,8 @@ function game() {
     body += user ? `<p class=hint>✓ Your stats are saved to your account.</p>` : `<div class=card><b>Liked it?</b><p style="margin:.4em 0 .8em;color:var(--mute)">Install the app and create a free account: host your own games at home, send the TV link to friends and keep your stats.</p><div class=stack>${standalone ? '' : '<button class="btn ghost" onclick="installApp()">Install the app</button>'}<button class=btn onclick="openSheet(\'account\')">Create a free account</button></div>${installHint ? `<p class=hint>${esc(installHint)}</p>` : ''}</div>`;
     if (S.host) sticky = `<button class=btn onclick="act({type:'again'})">Play again</button>`;
   } else body = hdr;
-  return { key, body, sticky };
+  const tvWarn = pub.tvHidden && S.host && ph !== 'end' ? '<div class=judge-banner style="border-color:var(--bad);background:#ff6b6b1a">📺 <b>The TV tab is in the background.</b> Bring it to the front, otherwise the game can freeze.</div>' : '';
+  return { key, body: tvWarn + body, sticky };
 }
 render();
 if ('serviceWorker' in navigator && !sim) navigator.serviceWorker.register('/sw.js').catch(() => {});

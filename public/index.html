@@ -123,7 +123,7 @@ function publish() {
   try { publish2(); } catch (e) { console.error('SQ publish', e.stack || e.message); }
 }
 function publish2() {
-  put('public', { session: !!session, code: session?.code ?? null, summary: session ? { phase: session.phase, idx: session.idx, total: session.songs.length, list: session.settings.list, mode: session.settings.mode, scores: { A: session.teams.A.score, B: session.teams.B.score }, players: Object.values(session.players).map((p) => ({ name: p.name, team: p.team })) } : null, catalog: catalog.map((c) => ({ ...c, count: lists[c.id].length })) });
+  put('public', { tvHidden: document.hidden, session: !!session, code: session?.code ?? null, summary: session ? { phase: session.phase, idx: session.idx, total: session.songs.length, list: session.settings.list, mode: session.settings.mode, scores: { A: session.teams.A.score, B: session.teams.B.score }, players: Object.values(session.players).map((p) => ({ name: p.name, team: p.team })) } : null, catalog: catalog.map((c) => ({ ...c, count: lists[c.id].length })) });
   if (!session && Object.keys(last).some((k) => k.startsWith('views/'))) { // game ended: wipe all views
     for (const k of Object.keys(last)) if (k.startsWith('views/')) delete last[k];
     D.remove(rr('views'));
@@ -136,10 +136,16 @@ function publish2() {
   render(); audio();
 }
 
-setInterval(() => {
+const heartbeat = () => {
   if (session && tick(session, now()) === 'reset') session = null;
   publish();
-}, 500);
+};
+// A Web Worker keeps ticking at full speed when the tab is in the background (page timers get throttled to once a minute there)
+try {
+  const w = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 500)'], { type: 'text/javascript' })));
+  w.onmessage = heartbeat;
+} catch { setInterval(heartbeat, 500); }
+document.addEventListener('visibilitychange', () => { heartbeat(); }); // catch up and tell the phones whether the TV tab is hidden
 
 window.keepAlive = () => { if (session) { session.lastActivity = now(); session.promptUntil = 0; publish(); } };
 
