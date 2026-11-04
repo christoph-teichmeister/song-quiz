@@ -8,11 +8,15 @@ import QRCode from 'qrcode';
 import { createSession, join, act, tick, view } from './game.js';
 
 const PORT = process.env.PORT || 3000;
-const lanIp = Object.values(os.networkInterfaces()).flat().find((i) => i.family === 'IPv4' && !i.internal)?.address || 'localhost';
-const BASE = process.env.PUBLIC_URL || `http://${lanIp}:${PORT}`;
-function ssid() { // ponytail: nmcli only (Linux/NetworkManager); empty string elsewhere
-  try { return execFileSync('nmcli', ['-t', '-f', 'active,ssid', 'dev', 'wifi'], { encoding: 'utf8', timeout: 2000 }).split('\n').find((l) => l.startsWith('yes:'))?.slice(4) || ''; } catch { return ''; }
+const ips = () => Object.values(os.networkInterfaces()).flat().filter((i) => i.family === 'IPv4' && !i.internal).map((i) => i.address);
+// hotspot (NetworkManager shared mode, 10.42.0.x) wins over any other address, so phones always get the reachable one
+const base = () => process.env.PUBLIC_URL || `http://${ips().find((a) => a.startsWith('10.42.0.')) || ips()[0] || 'localhost'}:${PORT}`;
+const BASE = base();
+const nm = (...a) => execFileSync('nmcli', a, { encoding: 'utf8', timeout: 2000 }).trim();
+function wifiConn() { // active Wi-Fi connection (client or hotspot); ponytail: nmcli only, empty elsewhere
+  try { return nm('-t', '-f', 'NAME,TYPE', 'con', 'show', '--active').split('\n').map((l) => l.split(':')).find((p) => p[1] === '802-11-wireless')?.[0] || ''; } catch { return ''; }
 }
+function ssid() { const c = wifiConn(); try { return c ? nm('-g', '802-11-wireless.ssid', 'con', 'show', c) : ''; } catch { return ''; } }
 const lists = Object.fromEntries(fs.readdirSync('songs').filter((f) => f.endsWith('.json'))
   .map((f) => [path.basename(f, '.json'), JSON.parse(fs.readFileSync(path.join('songs', f), 'utf8'))]));
 
@@ -25,8 +29,8 @@ const server = http.createServer(async (req, res) => {
     // from the laptop itself: loopback or one of its own addresses (the TV page is often opened via the LAN IP)
     const own = new Set(Object.values(os.networkInterfaces()).flat().flatMap((i) => [i.address, `::ffff:${i.address}`]));
     if (!own.has(req.socket.remoteAddress)) return res.writeHead(403).end();
-    const name = ssid(); let pw = '';
-    try { pw = execFileSync('nmcli', ['-s', '-g', '802-11-wireless-security.psk', 'connection', 'show', name], { encoding: 'utf8', timeout: 2000 }).trim(); } catch {}
+    const conn = wifiConn(), name = ssid(); let pw = '';
+    try { pw = nm('-s', '-g', '802-11-wireless-security.psk', 'con', 'show', conn); } catch {}
     const esc = (x) => x.replace(/([\\;,:"])/g, '\\$1');
     if (!name) return res.writeHead(404).end();
     res.setHeader('content-type', 'image/svg+xml'); res.setHeader('cache-control', 'no-store');
@@ -34,9 +38,9 @@ const server = http.createServer(async (req, res) => {
   }
   if (url.pathname === '/qr') {
     res.setHeader('content-type', 'image/svg+xml');
-    return res.end(await QRCode.toString(url.searchParams.get('u') || BASE, { type: 'svg', margin: 1 }));
+    return res.end(await QRCode.toString(url.searchParams.get('u') || base(), { type: 'svg', margin: 1 }));
   }
-  if (url.pathname === '/info') return res.setHeader('content-type', 'application/json'), res.end(JSON.stringify({ base: BASE, ssid: ssid(), lists: Object.fromEntries(Object.entries(lists).map(([k, v]) => [k, v.length])) }));
+  if (url.pathname === '/info') return res.setHeader('content-type', 'application/json'), res.end(JSON.stringify({ base: base(), ssid: ssid(), lists: Object.fromEntries(Object.entries(lists).map(([k, v]) => [k, v.length])) }));
   const file = { '/': 'tv.html', '/play': 'play.html' }[url.pathname] || url.pathname.slice(1);
   const full = path.join('public', file);
   if (!full.startsWith('public' + path.sep) || !fs.existsSync(full)) return res.writeHead(404).end();

@@ -54,3 +54,7 @@ Charts now, 80s, 90s, 2000s, Christmas, movie/TV themes, intro-only, speed (play
 
 - Which channel for the channel category (send later).
 - Review of the seeded playlists.
+
+## Own Wi-Fi (venue Wi-Fi blocks client-to-client traffic)
+
+`./hotspot.sh start` creates a hotspot `SongQuiz` on the laptop (NetworkManager), then `npm start`. The server then advertises `10.42.0.1`, and the TV's **W** key shows a QR code that joins the hotspot. `./hotspot.sh stop` rejoins the normal Wi-Fi. The Wi-Fi radio is busy hosting, so the laptop needs internet over a cable or USB tether for YouTube.
