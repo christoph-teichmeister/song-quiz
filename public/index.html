@@ -2,6 +2,7 @@
 <link rel=stylesheet href=style.css>
 <div id=yt></div><div id=cover style="display:none"><div class=bars><i></i><i style="animation-delay:.2s"></i><i style="animation-delay:.4s"></i><i style="animation-delay:.1s"></i><i style="animation-delay:.3s"></i></div><h1 id=cover-t></h1></div>
 <div class=tv id=main></div>
+<div id=snd>🔊 Click once anywhere to enable sound</div>
 <div id=prompt onclick="keepAlive()">Still there? Resetting in <b id=pc></b> s — tap anywhere to keep playing</div>
 <script src="https://www.youtube.com/iframe_api"></script>
 <script type=module>
@@ -13,7 +14,7 @@ import { qrSvg } from './qr.js';
 const $ = (id) => document.getElementById(id);
 let session = null, S = null, lists = {}, errs = {}, last = {}, yt = null, ytReady = false, unlocked = false, lastIdx = -1;
 const now = () => Date.now();
-window.onYouTubeIframeAPIReady = () => { yt = new YT.Player('yt', { width: 320, height: 200, playerVars: { playsinline: 1, controls: 0 }, events: { onReady: () => { ytReady = true; audio(); } } }); };
+window.onYouTubeIframeAPIReady = () => { yt = new YT.Player('yt', { width: 320, height: 200, playerVars: { playsinline: 1, controls: 0 }, events: { onReady: () => { ytReady = true; audio(); }, onError: (e) => { $('cover-t').textContent = `Video unavailable (YouTube error ${e.data})`; console.error('SQ yt error', e.data); } } }); };
 
 if (new URLSearchParams(location.search).has('new')) localStorage.sqState = ''; // /?new starts clean
 try { const saved = JSON.parse(localStorage.sqState || 'null'); if (saved) session = saved; } catch {} // resume after a TV reload
@@ -76,8 +77,9 @@ setInterval(() => {
   publish();
 }, 500);
 
+addEventListener('click', () => { if (!unlocked) window.unlock(); }); addEventListener('keydown', () => { if (!unlocked) window.unlock(); });
 window.keepAlive = () => { if (session) { session.lastActivity = now(); session.promptUntil = 0; publish(); } };
-window.unlock = () => { unlocked = true; render(); if (ytReady) { yt.mute(); yt.playVideo(); yt.pauseVideo(); yt.unMute(); } };
+window.unlock = () => { unlocked = true; $('snd').style.display = 'none'; render(); if (ytReady) { yt.mute(); yt.playVideo(); yt.pauseVideo(); yt.unMute(); } };
 
 const q = (url) => `<div class=qrsvg>${qrSvg(url)}</div>`;
 const base = location.origin;
@@ -105,7 +107,7 @@ function render() {
   else if (ph === 'verify') { $('cover-t').innerHTML = `<span class=${S.buzz.team}>Team ${S.buzz.team}</span> buzzed!`; }
   else if (ph === 'reveal') h = `<h1>${S.answer.title}</h1><h2>${S.answer.artist}</h2>${S.lastResult ? `<p>Team ${S.lastResult.team}: +${S.lastResult.pts}</p>` : ''}${sc}`;
   else if (ph === 'end') { const w = S.teams.A.score === S.teams.B.score ? 'Draw!' : 'Team ' + (S.teams.A.score > S.teams.B.score ? 'A' : 'B') + ' wins!'; h = `<h1>${w}</h1>${sc}`; }
-  $('main').innerHTML = (unlocked ? '' : '<button onclick="unlock()">🔊 Enable sound (click once)</button>') + h;
+  $('main').innerHTML = h;
 }
 
 function audio() {

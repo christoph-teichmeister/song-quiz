@@ -36,3 +36,4 @@ body:has(.idle){background:radial-gradient(ellipse at 30% 40%,#2d1b4e,#12121c 70
 #wifiqr .qrcard{width:min(40vh,60vw);animation:none}.key{opacity:.5;font-size:max(1.3vw,14px)!important}kbd{background:#2e2e48;padding:.1em .5em;border-radius:.3em}
 #wq{width:100%;aspect-ratio:1;display:block}
 .qrsvg svg{width:100%;height:auto;display:block}
+#snd{position:fixed;top:1vh;left:50%;transform:translateX(-50%);z-index:30;background:#e0457b;padding:.6em 1.4em;border-radius:2em;font-size:max(1.6vw,16px);animation:glow 2s infinite}
