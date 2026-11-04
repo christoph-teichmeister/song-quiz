@@ -18,6 +18,16 @@
     "host": {
       ".read": true,
       ".write": true
+    },
+    "admin": {
+      "key": {
+        ".read": false,
+        ".write": true
+      },
+      "epoch": {
+        ".read": true,
+        ".write": "newData.parent().child('key').val() === '__ADMIN_KEY__'"
+      }
     }
   }
 }

@@ -1,0 +1,45 @@
+<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Song Quiz Admin</title>
+<link rel=icon type="image/svg+xml" href=/favicon.svg><meta name=robots content=noindex>
+<link rel=stylesheet href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Figtree:wght@400;600&display=swap">
+<link rel=stylesheet href=style.css>
+<div class=app id=main>Loading…</div>
+<script type=module>
+import { D, r } from './db.js';
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let pub = null, host = null, key = localStorage.sqAdminKey || '', confirming = false, msg = '', hostSeen = { ts: null, at: 0 };
+D.onValue(r('public'), (s) => { pub = s.val(); render(); });
+D.onValue(r('host'), (s) => { host = s.val(); if (host && host.ts !== hostSeen.ts) hostSeen = { ts: host.ts, at: Date.now() }; render(); });
+setInterval(render, 1000);
+window.setKey = (v) => { key = v.trim(); localStorage.sqAdminKey = key; };
+window.ask = () => { confirming = true; render(); };
+window.cancel = () => { confirming = false; render(); };
+window.kill = async () => { // key + epoch go in one atomic update; the rules compare the key, the TV reacts to the epoch
+  confirming = false;
+  try {
+    await D.update(r(''), { 'admin/key': key, 'admin/epoch': Date.now() });
+    msg = 'Session killed. The TV and all phones are reset.';
+  } catch (e) { msg = 'Refused: wrong admin key.'; }
+  D.remove(r('admin/key')).catch(() => {});
+  render();
+};
+let lastHtml = '';
+function render() {
+  if (document.activeElement?.id === 'keyin') return; // do not rebuild the page while the key is typed
+  const alive = hostSeen.at && Date.now() - hostSeen.at < 4000;
+  const s = pub?.summary, run = pub?.session;
+  const html = `<h1>Admin</h1>
+  <div class=card><div class=label>TV host</div><b style="color:var(${alive ? '--ok' : '--bad'})">${alive ? 'Online' : 'No TV page running'}</b></div>
+  <div class=label>Sessions (one room, one game at a time)</div>
+  ${run && s ? `<div class=card><div class=answer>Game ${esc(pub.code)}<small>${esc(s.phase)}${s.total ? ` · song ${s.idx + 1} of ${s.total}` : ''}${s.list ? ` · ${esc(s.list)} · ${esc(s.mode)}` : ''}</small></div>
+    <p>Score <b class=A>A ${s.scores.A}</b> : <b class=B>${s.scores.B} B</b></p>
+    <div class=chips>${s.players.map((p) => `<span class=chip>${esc(p.name)}${p.team ? ' · ' + p.team : ''}</span>`).join('')}</div></div>`
+    : '<div class=card><p class=hint style="margin:0">No session running.</p></div>'}
+  <div class=label>Admin key</div><input class=input id=keyin type=password placeholder="Admin key" value="${esc(key)}" oninput="setKey(this.value)" autocomplete=off>
+  ${confirming ? `<div class=stack><p class=err>Kill the session for everyone?</p><button class=btn onclick="kill()">Yes, kill it</button><button class="btn ghost" onclick="cancel()">Cancel</button></div>`
+    : `<button class=btn onclick="ask()" ${run ? '' : 'disabled'}>Kill session</button>`}
+  ${msg ? `<p class=hint>${esc(msg)}</p>` : ''}`;
+  if (html !== lastHtml) { lastHtml = html; $('main').innerHTML = html; }
+}
+render();
+</script>

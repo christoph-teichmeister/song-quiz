@@ -13,6 +13,7 @@
 import { createSession, join, act, tick, view } from './game.js';
 import { D, r } from './db.js';
 import { qrSvg } from './qr.js';
+const REPO = 'https://github.com/christoph-teichmeister/song-quiz';
 
 // The TV page is the game server: it owns the state, phones only send actions and show their own view.
 const $ = (id) => document.getElementById(id);
@@ -40,6 +41,15 @@ if (seen) {
 const beat = () => D.set(r('host'), { id: myId, ts: Date.now() });
 beat(); setInterval(beat, 1000);
 D.onValue(r('host'), (sn) => { if (sn.val() && sn.val().id !== myId) location.reload(); }); // someone took over: show the notice
+let epoch0; // admin kill: /admin/epoch changes only through the admin page (rules check the key)
+D.onValue(r('admin/epoch'), (sn) => {
+  const v = sn.val() ?? 0;
+  if (epoch0 === undefined) { epoch0 = v; return; }
+  if (v === epoch0) return;
+  epoch0 = v; session = null; localStorage.sqState = ''; errs = {};
+  D.remove(r('views')); D.remove(r('actions')); for (const k of Object.keys(last)) if (k.startsWith('views/')) delete last[k];
+  publish();
+});
 
 const catalog = await (await fetch('songs/index.json')).json(); // [{id, name, emoji}], in display order
 for (const c of catalog) lists[c.id] = await (await fetch(`songs/${c.id}.json`)).json();
@@ -71,7 +81,7 @@ function publish() {
   try { publish2(); } catch (e) { console.error('SQ publish', e.stack || e.message); }
 }
 function publish2() {
-  put('public', { session: !!session, code: session?.code ?? null, catalog: catalog.map((c) => ({ ...c, count: lists[c.id].length })) });
+  put('public', { session: !!session, code: session?.code ?? null, summary: session ? { phase: session.phase, idx: session.idx, total: session.songs.length, list: session.settings.list, mode: session.settings.mode, scores: { A: session.teams.A.score, B: session.teams.B.score }, players: Object.values(session.players).map((p) => ({ name: p.name, team: p.team })) } : null, catalog: catalog.map((c) => ({ ...c, count: lists[c.id].length })) });
   if (!session && Object.keys(last).some((k) => k.startsWith('views/'))) { // game ended: wipe all views
     for (const k of Object.keys(last)) if (k.startsWith('views/')) delete last[k];
     D.remove(r('views'));
@@ -105,7 +115,8 @@ function render() {
     $('main').innerHTML = `<div class=idle><div class=notes>${'♪♫♬♩♪♫'.split('').map((n, i) => `<em style="left:${5 + i * 17}%;animation-delay:${i * 1.1}s">${n}</em>`).join('')}</div>
   <div class=hero><div class=rings><i></i><i></i><i></i><span>🎵</span></div><h1>Song Quiz</h1>
   <ol class=steps><li><b>1</b><span>Scan the QR code with your phone</span></li><li><b>2</b><span>Create a game or join one</span></li><li><b>3</b><span>Pick a team and play</span></li></ol></div>
-  <div class=scan><div class=qrcard>${q(base + '/play')}</div><p>📱 Scan to play</p></div></div>`;
+  <div class=scan><div class=qrcard>${q(base + '/play')}</div><p>📱 Scan to play</p></div>
+  <a class=repo href="${REPO}" target=_blank><div class=qrsvg>${qrSvg(REPO)}</div><span>GitHub</span></a></div>`;
     return;
   }
   $('main').dataset.k = '';
