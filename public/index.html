@@ -109,9 +109,9 @@ function render() {
   const ph = S.phase; let h = '';
   if (ph === 'lobby') h = `<h1>Join with code <b>${S.code}</b></h1><div class=qrcard style="width:min(30vw,380px);margin:auto">${q(base + '/play?code=' + S.code)}</div>${sc}<p>Host picks the list and starts.</p>`;
   else if (ph === 'pickfront') h = `<h1>Song ${S.idx + 1}/${S.total}: pick your front-person</h1>${sc}<p>🎤 Front-persons tap Ready on their phone.</p>`;
-  else if (ph === 'countdown') h = `<div class=big>${Math.max(1, Math.ceil((S.until - now()) / 1000))}</div>`;
+  else if (ph === 'countdown') h = `<div class=big>${Math.max(1, Math.ceil((S.until - now()) / 1000))}</div>${S.judgeName ? `<p>🎧 Judge this song: ${S.judgeName}</p>` : ''}`;
   else if (ph === 'playing') { $('cover-t').textContent = `Song ${S.idx + 1}/${S.total}${S.locked.length ? ' — ' + S.locked.join(',') + ' locked' : ''}`; }
-  else if (ph === 'verify') { $('cover-t').innerHTML = `<span class=${S.buzz.team}>Team ${S.buzz.team}</span> buzzed!`; }
+  else if (ph === 'verify') { $('cover-t').innerHTML = `<span class=${S.buzz.team}>Team ${S.buzz.team}</span> buzzed!${S.judgeName ? `<br><small>🎧 ${S.judgeName} judges</small>` : ''}`; }
   else if (ph === 'reveal') h = `<h1>${S.answer.title}</h1><h2>${S.answer.artist}</h2>${S.lastResult ? `<p>Team ${S.lastResult.team}: +${S.lastResult.pts}</p>` : ''}${sc}`;
   else if (ph === 'end') { const w = S.teams.A.score === S.teams.B.score ? 'Draw!' : 'Team ' + (S.teams.A.score > S.teams.B.score ? 'A' : 'B') + ' wins!'; h = `<h1>${w}</h1>${sc}`; }
   $('main').innerHTML = h;

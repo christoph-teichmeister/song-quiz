@@ -16,22 +16,40 @@ function setup() {
   return { s, h, b, now };
 }
 
-test('wrong answer locks team, other team can buzz, then reveal', () => {
+test('no spare player: opponent judges and both teams are locked after a wrong answer', () => {
   const { s, h, b, now } = setup();
+  assert.equal(s.judge, null);
   act(s, h, { type: 'buzz' }, now);
-  assert.equal(s.phase, 'verify');
   assert.equal(view(s, h, now).answer, undefined);        // buzzer must not see the answer
   assert.ok(view(s, b, now).answer);                       // verifier does
-  assert.equal(act(s, h, { type: 'verify', title: true }, now), 'opponent only');
+  assert.equal(act(s, h, { type: 'verify', title: true }, now), 'judge only');
   act(s, b, { type: 'verify', title: false, artist: false }, now);
-  assert.equal(s.phase, 'playing');
-  assert.equal(act(s, h, { type: 'buzz' }, now), 'cannot buzz'); // locked
-  act(s, b, { type: 'buzz' }, now);
-  act(s, h, { type: 'verify', title: true, artist: true }, now);
-  assert.equal(s.phase, 'reveal');
-  assert.equal(s.teams.B.score, 2);
+  assert.equal(s.phase, 'reveal');                         // the verifier saw the answer, so the song is over
   tick(s, now + T.reveal);
   assert.equal(s.phase, 'end');
+});
+
+test('with a judge: wrong answer locks only the buzzer, other team may buzz, judge decides', () => {
+  let now = 0;
+  const s = createSession('hanna', now);
+  const h = s.hostId, b = join(s, 'ben', now).id, j1 = join(s, 'jo', now).id, j2 = join(s, 'jay', now).id;
+  for (const [id, t] of [[h, 'A'], [j1, 'A'], [b, 'B'], [j2, 'B']]) act(s, id, { type: 'team', team: t }, now);
+  act(s, h, { type: 'start', list: 'x', songs, length: 1 }, now);
+  act(s, h, { type: 'front', id: h }, now); act(s, b, { type: 'front', id: b }, now);
+  act(s, h, { type: 'ready' }, now); act(s, b, { type: 'ready' }, now);
+  assert.ok([j1, j2].includes(s.judge));                   // never a front-person
+  now += T.countdown; tick(s, now);
+  act(s, h, { type: 'buzz' }, now);
+  assert.equal(act(s, b, { type: 'verify', title: true }, now), 'judge only');
+  assert.equal(view(s, b, now).answer, undefined);
+  assert.ok(view(s, s.judge, now).answer);
+  act(s, s.judge, { type: 'verify', title: false, artist: false }, now);
+  assert.equal(s.phase, 'playing');
+  assert.equal(act(s, h, { type: 'buzz' }, now), 'cannot buzz');
+  act(s, b, { type: 'buzz' }, now);
+  act(s, s.judge, { type: 'verify', title: true, artist: true }, now);
+  assert.equal(s.phase, 'reveal');
+  assert.equal(s.teams.B.score, 2);
 });
 
 test('idle: prompt after 3 min, reset 15 s later, activity cancels', () => {

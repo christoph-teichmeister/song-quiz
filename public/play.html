@@ -29,7 +29,8 @@ function render() {
   if (!live() || !S.me) { $('main').innerHTML = entry(); return; }
   const e = S.err ? `<p style="color:#f66">${S.err}</p>` : '';
   const me = S.me, t = me.team, ph = S.phase, tm = (x) => S.players.filter((p) => p.team === x);
-  let h = `<p>${me.name} · ${t ? `<b class=${t}>Team ${t}</b>` : 'no team'} · A ${S.teams.A.score} : ${S.teams.B.score} B</p>`;
+  const judgeNote = S.judge === me.id && ['countdown', 'playing'].includes(ph) ? '<p>🎧 You are the judge this song. Listen, don\'t tell anyone.</p>' : '';
+  let h = judgeNote + `<p>${me.name} · ${t ? `<b class=${t}>Team ${t}</b>` : 'no team'} · A ${S.teams.A.score} : ${S.teams.B.score} B</p>`;
   if (ph === 'lobby') {
     h += `<div class=row><button class=alt onclick="act({type:'team',team:'A'})">Join A (${tm('A').length})</button><button class=alt onclick="act({type:'team',team:'B'})">Join B (${tm('B').length})</button></div><p>Code: <b>${S.code}</b></p>`;
     if (S.host) h += `<select id=list>${Object.entries(pub.lists || {}).map(([k, n]) => `<option value="${k}">${k} (${n})</option>`).join('')}</select>
@@ -44,9 +45,9 @@ function render() {
     const front = S.teams[t]?.front === me.id, lk = (S.locked || []).includes(t);
     h += front ? `<button id=buzz ${lk ? 'disabled' : ''} onclick="act({type:'buzz'})">${lk ? 'LOCKED' : 'BUZZ!'}</button>` : `<p>${lk ? 'Your team is locked.' : 'Listening… your front-person buzzes.'}</p>`;
   } else if (ph === 'verify') {
-    if (t && t !== S.buzz.team) h += `<h2>Team ${S.buzz.team} buzzed. Is it right?</h2><p><b>${S.answer.title}</b><br>${S.answer.artist}</p>
+    if (S.judge ? me.id === S.judge : t && t !== S.buzz.team) h += `<h2>You are the judge: Team ${S.buzz.team} buzzed. Is it right?</h2><p><b>${S.answer.title}</b><br>${S.answer.artist}</p>
       <label><input type=checkbox id=ct style="width:2em;height:2em"> Title correct</label><br><label><input type=checkbox id=ca style="width:2em;height:2em"> Artist correct</label><br><button onclick="act({type:'verify',title:$('ct').checked,artist:$('ca').checked})">Confirm</button>`;
-    else h += `<h2>Team ${S.buzz.team} buzzed — say your answer out loud!</h2>`;
+    else h += `<h2>Team ${S.buzz.team} buzzed — ${S.judgeName ? S.judgeName + ' judges' : 'say your answer out loud'}!</h2>`;
   } else if (ph === 'reveal') h += `<h2>${S.answer.title}</h2><p>${S.answer.artist}</p>`;
   else if (ph === 'end') h += `<h2>Game over</h2>` + (S.host ? `<button onclick="act({type:'again'})">Play again</button>` : '');
   $('main').innerHTML = h + e;

@@ -62,7 +62,7 @@ export function act(s, pid, a, now) {
     case 'ready': {
       if (s.phase !== 'pickfront' || !p.team || s.teams[p.team].front !== pid) return 'front only';
       s.teams[p.team].ready = true;
-      if (s.teams.A.ready && s.teams.B.ready) { s.phase = 'countdown'; s.until = now + T.countdown; }
+      if (s.teams.A.ready && s.teams.B.ready) { s.phase = 'countdown'; s.until = now + T.countdown; s.judge = pickJudge(s); }
       return null;
     }
     case 'buzz': {
@@ -71,18 +71,19 @@ export function act(s, pid, a, now) {
       s.phase = 'verify';
       return null;
     }
-    case 'verify': { // only the opposing team may verify
-      if (s.phase !== 'verify' || p.team !== other(s.buzz.team)) return 'opponent only';
+    case 'verify': { // the judge sees the answer; without a spare player the opposing team judges and is locked out afterwards
+      if (s.phase !== 'verify') return 'not now';
+      if (s.judge ? pid !== s.judge : p.team !== other(s.buzz.team)) return 'judge only';
       const pts = (a.title ? 1 : 0) + (a.artist ? 1 : 0);
       const fast = s.settings.mode === 'speed' && s.buzz.at < T.speedMs;
       s.teams[s.buzz.team].score += pts + (fast ? pts : 0);
       s.lastResult = { team: s.buzz.team, title: !!a.title, artist: !!a.artist, pts: pts + (fast ? pts : 0) };
       if (a.title && a.artist) return reveal(s, now);
-      s.locked.push(s.buzz.team);
+      for (const t of s.judge ? [s.buzz.team] : ['A', 'B']) if (!s.locked.includes(t)) s.locked.push(t);
       s.buzz = null;
       if (s.locked.length === 2) return reveal(s, now);
       s.phase = 'playing';
-      s.startedAt = now - 0; // resume; speed bonus only counts for the first answer anyway
+      s.startedAt = now; // resume
       return null;
     }
     case 'again':
@@ -94,13 +95,20 @@ export function act(s, pid, a, now) {
   return 'unknown action';
 }
 
+// A random player who is not a front-person judges this song (sees the answer), so neither team learns it by verifying.
+function pickJudge(s) {
+  const fronts = [s.teams.A.front, s.teams.B.front];
+  const c = Object.values(s.players).filter((p) => p.team && !fronts.includes(p.id));
+  return c.length ? c[Math.floor(Math.random() * c.length)].id : null;
+}
+
 function pickFront(s) {
   for (const t of ['A', 'B']) {
     const m = members(s, t);
     s.teams[t].front = m[s.teams[t].rot++ % m.length].id; // default rotation, teammates may override
     s.teams[t].ready = false;
   }
-  s.locked = []; s.buzz = null; s.lastResult = null;
+  s.locked = []; s.buzz = null; s.lastResult = null; s.judge = null;
   s.phase = 'pickfront';
   return null;
 }
@@ -127,10 +135,11 @@ export function tick(s, now) {
 export function view(s, pid, now) {
   const song = s.songs[s.idx];
   const me = s.players[pid];
-  const showAnswer = s.phase === 'reveal' || s.phase === 'end' || (s.phase === 'verify' && me?.team === other(s.buzz.team));
+  const showAnswer = s.phase === 'reveal' || s.phase === 'end' || (s.phase === 'verify' && (s.judge ? pid === s.judge : me?.team === other(s.buzz.team)));
   return {
     code: s.code, phase: s.phase, host: pid === s.hostId, me: me && { id: me.id, team: me.team, name: me.name },
     players: Object.values(s.players).map((p) => ({ id: p.id, name: p.name, team: p.team })),
+    judge: s.judge, judgeName: s.judge ? s.players[s.judge]?.name : null,
     teams: s.teams, settings: s.settings, idx: s.idx, total: s.songs.length, locked: s.locked, buzz: s.buzz,
     lastResult: s.lastResult, until: s.until, promptUntil: s.promptUntil,
     videoId: pid === 'tv' ? song?.id : undefined,
