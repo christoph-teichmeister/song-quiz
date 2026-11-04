@@ -17,6 +17,21 @@ window.onYouTubeIframeAPIReady = () => { yt = new YT.Player('yt', { width: 320, 
 
 try { const saved = JSON.parse(localStorage.sqState || 'null'); if (saved) session = saved; } catch {} // resume after a TV reload
 
+// Only one TV page may host: a second one would run its own game on the same database.
+const myId = Math.random().toString(36).slice(2);
+const seen = (await D.get(r('host'))).val();
+if (seen) {
+  await new Promise((ok) => setTimeout(ok, 2500)); // a live host rewrites its heartbeat every second
+  const again = (await D.get(r('host'))).val();
+  if (again && again.ts !== seen.ts) {
+    document.body.innerHTML = '<div class=tv><h1>Another TV page is already running</h1><p>Close the other one, then reload this page.</p></div>';
+    throw new Error('second TV page');
+  }
+}
+const beat = () => D.set(r('host'), { id: myId, ts: Date.now() });
+beat(); setInterval(beat, 1000);
+D.onValue(r('host'), (sn) => { if (sn.val() && sn.val().id !== myId) location.reload(); }); // someone took over: show the notice
+
 for (const n of await (await fetch('songs/index.json')).json()) lists[n] = await (await fetch(`songs/${n}.json`)).json();
 await D.remove(r('actions')); // stale phone actions from before this page load
 

@@ -1,7 +1,22 @@
 {
   "rules": {
-    "public": { ".read": true, ".write": true },
-    "views": { "$pid": { ".read": true, ".write": true } },
-    "actions": { ".read": true, ".write": true }
+    "public": {
+      ".read": true,
+      ".write": true
+    },
+    "views": {
+      "$pid": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "actions": {
+      ".read": true,
+      ".write": true
+    },
+    "host": {
+      ".read": true,
+      ".write": true
+    }
   }
 }
