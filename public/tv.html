@@ -10,15 +10,16 @@ const ws=new WebSocket(`ws://${location.host}`);ws.onopen=()=>ws.send(JSON.strin
 ws.onmessage=e=>{const m=JSON.parse(e.data);if('state'in m){S=m.state;if(S)off=Date.now()-S.now;render();audio()}};
 function onYouTubeIframeAPIReady(){yt=new YT.Player('yt',{width:320,height:200,playerVars:{playsinline:1,controls:0},events:{onReady:()=>ytReady=true}})}
 const q=(url)=>`<img src="/qr?u=${encodeURIComponent(url)}" style="width:min(30vw,380px);background:#fff;border-radius:1em">`;
-let base=location.origin;fetch('/info').then(r=>r.json()).then(i=>base=i.base);
+let base=location.origin,ssid='';const info=()=>fetch('/info').then(r=>r.json()).then(i=>{base=i.base;ssid=i.ssid});info();setInterval(info,30000);
+const wifi=()=>`<p class=wifi>📶 Everyone must be on the same Wi-Fi${ssid?`: <b>${ssid}</b>`:''}</p>`;
 function names(t){return S.players.filter(p=>p.team===t).map(p=>p.name+(S.teams[t].front===p.id&&S.phase!=='lobby'?' 🎤':'')).join(', ')||'–'}
 function render(){
   const prompt=S&&S.promptUntil;$('prompt').style.display=prompt?'flex':'none';if(prompt)$('pc').textContent=Math.max(0,Math.ceil((S.promptUntil-(Date.now()-off))/1000));
   const cover=S&&['playing','verify','countdown'].includes(S.phase);$('cover').style.display=cover?'flex':'none';
-  if(!S){$('main').innerHTML=`<h1>🎵 Song Quiz</h1><p>Scan to start a game</p>${q(base+'/play')}`;return}
+  if(!S){$('main').innerHTML=`<div class=idle><div class=rings><i></i><i></i><i></i><span>🎵</span></div><h1>Song Quiz</h1><p>Scan to start a game</p>${q(base+'/play')}${wifi()}<div class=notes>${'♪♫♬♩'.split('').map((n,i)=>`<em style="left:${10+i*22}%;animation-delay:${i*1.3}s">${n}</em>`).join('')}</div></div>`;return}
   const sc=`<div class=row><div class=card><div class=A>Team A</div><div class=score>${S.teams.A.score}</div>${names('A')}</div><div class=card><div class=B>Team B</div><div class=score>${S.teams.B.score}</div>${names('B')}</div></div>`;
   const ph=S.phase;let h='';
-  if(ph==='lobby')h=`<h1>Join with code <b>${S.code}</b></h1>${q(base+'/play?code='+S.code)}${sc}<p>Host picks the list and starts.</p>`;
+  if(ph==='lobby')h=`<h1>Join with code <b>${S.code}</b></h1>${q(base+'/play?code='+S.code)}${sc}<p>Host picks the list and starts.</p>${wifi()}`;
   else if(ph==='pickfront')h=`<h1>Song ${S.idx+1}/${S.total}: pick your front-person</h1>${sc}<p>🎤 Front-persons tap Ready on their phone.</p>`;
   else if(ph==='countdown')h=`<div class=big>${Math.max(1,Math.ceil((S.until-(Date.now()-off))/1000))}</div>`;
   else if(ph==='playing'){h='';$('cover-t').textContent=`Song ${S.idx+1}/${S.total}${S.locked.length?' — '+S.locked.join(',')+' locked':''}`}

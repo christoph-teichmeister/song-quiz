@@ -1,6 +1,7 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import os from 'node:os';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { WebSocketServer } from 'ws';
 import QRCode from 'qrcode';
@@ -9,6 +10,9 @@ import { createSession, join, act, tick, view } from './game.js';
 const PORT = process.env.PORT || 3000;
 const lanIp = Object.values(os.networkInterfaces()).flat().find((i) => i.family === 'IPv4' && !i.internal)?.address || 'localhost';
 const BASE = process.env.PUBLIC_URL || `http://${lanIp}:${PORT}`;
+function ssid() { // ponytail: nmcli only (Linux/NetworkManager); empty string elsewhere
+  try { return execFileSync('nmcli', ['-t', '-f', 'active,ssid', 'dev', 'wifi'], { encoding: 'utf8', timeout: 2000 }).split('\n').find((l) => l.startsWith('yes:'))?.slice(4) || ''; } catch { return ''; }
+}
 const lists = Object.fromEntries(fs.readdirSync('songs').filter((f) => f.endsWith('.json'))
   .map((f) => [path.basename(f, '.json'), JSON.parse(fs.readFileSync(path.join('songs', f), 'utf8'))]));
 
@@ -21,7 +25,7 @@ const server = http.createServer(async (req, res) => {
     res.setHeader('content-type', 'image/svg+xml');
     return res.end(await QRCode.toString(url.searchParams.get('u') || BASE, { type: 'svg', margin: 1 }));
   }
-  if (url.pathname === '/info') return res.setHeader('content-type', 'application/json'), res.end(JSON.stringify({ base: BASE, lists: Object.fromEntries(Object.entries(lists).map(([k, v]) => [k, v.length])) }));
+  if (url.pathname === '/info') return res.setHeader('content-type', 'application/json'), res.end(JSON.stringify({ base: BASE, ssid: ssid(), lists: Object.fromEntries(Object.entries(lists).map(([k, v]) => [k, v.length])) }));
   const file = { '/': 'tv.html', '/play': 'play.html' }[url.pathname] || url.pathname.slice(1);
   const full = path.join('public', file);
   if (!full.startsWith('public' + path.sep) || !fs.existsSync(full)) return res.writeHead(404).end();
