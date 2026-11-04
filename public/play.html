@@ -88,8 +88,8 @@ function game() {
   } else if (ph === 'playing') {
     key = 'playing' + S.idx;
     body = `${hdr}${judgeBanner}` + (front
-      ? `<button class=buzz id=buzz ${lk ? 'disabled' : ''} onclick="buzzNow(this)">${lk ? 'LOCKED' : 'BUZZ'}</button>`
-      : `<h2 style="text-align:center;margin-top:6vh">${lk ? 'Your team is locked' : 'Listening…'}</h2><p class=hint>${lk ? 'The other team gets a try.' : 'Your front-person buzzes.'}</p>`);
+      ? `<div class=center><button class=buzz id=buzz ${lk ? 'disabled' : ''} onclick="buzzNow(this)">${lk ? 'LOCKED' : 'BUZZ'}</button></div>`
+      : `<div class=center><h2>${lk ? 'Your team is locked' : 'Listening…'}</h2><p class=hint>${lk ? 'The other team gets a try.' : 'Your front-person buzzes.'}</p></div>`);
   } else if (ph === 'verify') {
     const vk = S.idx + ':' + S.buzz.at; if (vk !== lastVerify) { lastVerify = vk; jt = ja = false; }
     if (isJudge || (!S.judge && t && t !== S.buzz.team)) {
