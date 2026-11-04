@@ -4,8 +4,8 @@ export const T = { countdown: 3000, reveal: 6000, idle: 180000, prompt: 15000, i
 const other = (t) => (t === 'A' ? 'B' : 'A');
 const uid = () => Math.random().toString(36).slice(2, 10);
 
-export function createSession(hostName, now) {
-  const host = player(hostName);
+export function createSession(hostName, now, hostId) {
+  const host = player(hostName, hostId);
   return {
     code: String(Math.floor(1000 + Math.random() * 9000)),
     hostId: host.id,
@@ -18,12 +18,12 @@ export function createSession(hostName, now) {
   };
 }
 
-function player(name) {
-  return { id: uid(), token: uid() + uid(), name: String(name).slice(0, 20) || 'Player', team: null, connected: true };
+function player(name, id) {
+  return { id: id || uid(), name: String(name).slice(0, 20) || 'Player', team: null, connected: true };
 }
 
-export function join(s, name, now) {
-  const p = player(name);
+export function join(s, name, now, id) {
+  const p = player(name, id);
   s.players[p.id] = p;
   touch(s, now);
   return p;
@@ -132,7 +132,7 @@ export function view(s, pid, now) {
     code: s.code, phase: s.phase, host: pid === s.hostId, me: me && { id: me.id, team: me.team, name: me.name },
     players: Object.values(s.players).map((p) => ({ id: p.id, name: p.name, team: p.team })),
     teams: s.teams, settings: s.settings, idx: s.idx, total: s.songs.length, locked: s.locked, buzz: s.buzz,
-    lastResult: s.lastResult, until: s.until, promptUntil: s.promptUntil, now,
+    lastResult: s.lastResult, until: s.until, promptUntil: s.promptUntil,
     videoId: pid === 'tv' ? song?.id : undefined,
     answer: showAnswer && song ? { title: song.title, artist: song.artist } : undefined,
   };

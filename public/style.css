@@ -35,3 +35,4 @@ body:has(.idle){background:radial-gradient(ellipse at 30% 40%,#2d1b4e,#12121c 70
 #wifiqr{position:fixed;inset:0;background:#000e;z-index:20;display:none;align-items:center;justify-content:center;flex-direction:column;font-size:max(2vw,18px);text-align:center}
 #wifiqr .qrcard{width:min(40vh,60vw);animation:none}.key{opacity:.5;font-size:max(1.3vw,14px)!important}kbd{background:#2e2e48;padding:.1em .5em;border-radius:.3em}
 #wq{width:100%;aspect-ratio:1;display:block}
+.qrsvg svg{width:100%;height:auto;display:block}

@@ -1,26 +1,6 @@
 {
   "name": "song-quiz",
-  "version": "1.0.0",
-  "description": "Song guessing game for the Christmas party. Web app, runs on a laptop at the venue, phones join via QR code.",
-  "main": "index.js",
-  "scripts": {
-    "test": "node --test",
-    "start": "node server.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/christoph-teichmeister/song-quiz.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "private": true,
   "type": "module",
-  "bugs": {
-    "url": "https://github.com/christoph-teichmeister/song-quiz/issues"
-  },
-  "homepage": "https://github.com/christoph-teichmeister/song-quiz#readme",
-  "dependencies": {
-    "qrcode": "^1.5.4",
-    "ws": "^8.22.1"
-  }
+  "scripts": { "test": "node --test", "deploy": "firebase deploy" }
 }

@@ -1,0 +1,100 @@
+<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Song Quiz TV</title>
+<link rel=stylesheet href=style.css>
+<div id=yt></div><div id=cover style="display:none"><div class=bars><i></i><i style="animation-delay:.2s"></i><i style="animation-delay:.4s"></i><i style="animation-delay:.1s"></i><i style="animation-delay:.3s"></i></div><h1 id=cover-t></h1></div>
+<div class=tv id=main></div>
+<div id=prompt onclick="keepAlive()">Still there? Resetting in <b id=pc></b> s — tap anywhere to keep playing</div>
+<script src="https://www.youtube.com/iframe_api"></script>
+<script type=module>
+import { createSession, join, act, tick, view } from './game.js';
+import { D, r } from './db.js';
+import { qrSvg } from './qr.js';
+
+// The TV page is the game server: it owns the state, phones only send actions and show their own view.
+const $ = (id) => document.getElementById(id);
+let session = null, S = null, lists = {}, errs = {}, last = {}, yt = null, ytReady = false, unlocked = false, lastIdx = -1;
+const now = () => Date.now();
+
+try { const saved = JSON.parse(localStorage.sqState || 'null'); if (saved) session = saved; } catch {} // resume after a TV reload
+
+for (const n of await (await fetch('songs/index.json')).json()) lists[n] = await (await fetch(`songs/${n}.json`)).json();
+await D.remove(r('actions')); // stale phone actions from before this page load
+
+D.onChildAdded(r('actions'), (snap) => { D.remove(snap.ref); handle(snap.val()); });
+
+function handle(m) {
+  if (!m?.pid) return;
+  if (m.create && !session) session = createSession(m.create, now(), m.pid);
+  else if (m.join && session && m.join.code === session.code && !session.players[m.pid]) join(session, m.join.name, now(), m.pid);
+  else if (m.act && session?.players[m.pid]) {
+    const a = m.act;
+    if (a.type === 'start') a.songs = lists[a.list]; // never trust the phone's song list
+    const err = act(session, m.pid, a, now());
+    if (err) { errs[m.pid] = err; setTimeout(() => { delete errs[m.pid]; publish(); }, 2500); }
+  }
+  publish();
+}
+
+function put(path, val) { // write only what changed
+  const j = JSON.stringify(val ?? null);
+  if (last[path] === j) return;
+  last[path] = j;
+  D.set(r(path), val ?? null);
+}
+function publish() {
+  const names = Object.keys(lists);
+  put('public', { session: !!session, code: session?.code ?? null, lists: Object.fromEntries(names.map((n) => [n, lists[n].length])) });
+  const ids = new Set(Object.keys(session?.players ?? {}));
+  for (const k of Object.keys(last)) if (k.startsWith('views/') && !ids.has(k.slice(6))) put(k, null);
+  for (const id of ids) put(`views/${id}`, { ...view(session, id), err: errs[id] ?? null });
+  localStorage.sqState = session ? JSON.stringify(session) : '';
+  S = session ? view(session, 'tv') : null;
+  render(); audio();
+}
+
+setInterval(() => {
+  if (session && tick(session, now()) === 'reset') session = null;
+  publish();
+}, 500);
+
+window.keepAlive = () => { if (session) { session.lastActivity = now(); session.promptUntil = 0; publish(); } };
+window.unlock = () => { unlocked = true; render(); if (ytReady) { yt.mute(); yt.playVideo(); yt.pauseVideo(); yt.unMute(); } };
+window.onYouTubeIframeAPIReady = () => { yt = new YT.Player('yt', { width: 320, height: 200, playerVars: { playsinline: 1, controls: 0 }, events: { onReady: () => { ytReady = true; audio(); } } }); };
+
+const q = (url) => `<div class=qrsvg>${qrSvg(url)}</div>`;
+const base = location.origin;
+function names(t) { return S.players.filter((p) => p.team === t).map((p) => p.name + (S.teams[t].front === p.id && S.phase !== 'lobby' ? ' 🎤' : '')).join(', ') || '–'; }
+
+function render() {
+  const prompt = S && S.promptUntil; $('prompt').style.display = prompt ? 'flex' : 'none';
+  if (prompt) $('pc').textContent = Math.max(0, Math.ceil((S.promptUntil - now()) / 1000));
+  const cover = S && ['playing', 'verify', 'countdown'].includes(S.phase); $('cover').style.display = cover ? 'flex' : 'none';
+  if (!S) { // idle: stays up, nothing to do until someone scans
+    const key = 'idle'; if ($('main').dataset.k === key) return; $('main').dataset.k = key;
+    $('main').innerHTML = `<div class=idle><div class=notes>${'♪♫♬♩♪♫'.split('').map((n, i) => `<em style="left:${5 + i * 17}%;animation-delay:${i * 1.1}s">${n}</em>`).join('')}</div>
+  <div class=hero><div class=rings><i></i><i></i><i></i><span>🎵</span></div><h1>Song Quiz</h1>
+  <ol class=steps><li><b>1</b><span>Scan the QR code with your phone</span></li><li><b>2</b><span>Create a game or join one</span></li><li><b>3</b><span>Pick a team and play</span></li></ol></div>
+  <div class=scan><div class=qrcard>${q(base + '/play')}</div><p>📱 Scan to play</p></div></div>`;
+    return;
+  }
+  $('main').dataset.k = '';
+  const sc = `<div class=row><div class=card><div class=A>Team A</div><div class=score>${S.teams.A.score}</div>${names('A')}</div><div class=card><div class=B>Team B</div><div class=score>${S.teams.B.score}</div>${names('B')}</div></div>`;
+  const ph = S.phase; let h = '';
+  if (ph === 'lobby') h = `<h1>Join with code <b>${S.code}</b></h1><div class=qrcard style="width:min(30vw,380px);margin:auto">${q(base + '/play?code=' + S.code)}</div>${sc}<p>Host picks the list and starts.</p>`;
+  else if (ph === 'pickfront') h = `<h1>Song ${S.idx + 1}/${S.total}: pick your front-person</h1>${sc}<p>🎤 Front-persons tap Ready on their phone.</p>`;
+  else if (ph === 'countdown') h = `<div class=big>${Math.max(1, Math.ceil((S.until - now()) / 1000))}</div>`;
+  else if (ph === 'playing') { $('cover-t').textContent = `Song ${S.idx + 1}/${S.total}${S.locked.length ? ' — ' + S.locked.join(',') + ' locked' : ''}`; }
+  else if (ph === 'verify') { $('cover-t').innerHTML = `<span class=${S.buzz.team}>Team ${S.buzz.team}</span> buzzed!`; }
+  else if (ph === 'reveal') h = `<h1>${S.answer.title}</h1><h2>${S.answer.artist}</h2>${S.lastResult ? `<p>Team ${S.lastResult.team}: +${S.lastResult.pts}</p>` : ''}${sc}`;
+  else if (ph === 'end') { const w = S.teams.A.score === S.teams.B.score ? 'Draw!' : 'Team ' + (S.teams.A.score > S.teams.B.score ? 'A' : 'B') + ' wins!'; h = `<h1>${w}</h1>${sc}`; }
+  $('main').innerHTML = (unlocked ? '' : '<button onclick="unlock()">🔊 Enable sound (click once)</button>') + h;
+}
+
+function audio() {
+  if (!ytReady || !S) { if (ytReady) { yt.stopVideo(); lastIdx = -1; } return; }
+  const p = S.phase;
+  if (p === 'playing') { if (S.idx !== lastIdx || !yt.getVideoData?.().video_id) { lastIdx = S.idx; yt.loadVideoById(S.videoId); } else yt.playVideo(); }
+  else if (p === 'verify' || (p === 'reveal' && S.settings.mode === 'intro')) yt.pauseVideo();
+  else if (p === 'lobby' || p === 'end' || p === 'pickfront') { yt.stopVideo(); lastIdx = -1; }
+}
+publish();
+</script>

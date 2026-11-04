@@ -1,8 +1,8 @@
 # song-quiz
 
-Song guessing game for the Christmas party. Web app, runs on a laptop at the venue, phones join via QR code.
+Song guessing game for the Christmas party. Web app, phones join via QR code, hosted on Firebase.
 
-> Status: first playable. Run `npm i && npm start`, TV: `http://<laptop-ip>:3000/`, phones scan the QR. Tests: `npm test`.
+> Status: rebuilt on Firebase (hosting + realtime database). Tests: `npm test`. Not deployed until a Firebase project is configured.
 
 ## Flow
 
@@ -26,10 +26,13 @@ Charts now, 80s, 90s, 2000s, Christmas, movie/TV themes, intro-only, speed (play
 
 ## Architecture
 
-- Node.js server, `ws` WebSockets, in-memory state, no database.
-- Static vanilla JS pages: `/tv` (main screen), `/play` (phone).
-- Audio: YouTube IFrame Player API on the TV page (pause/resume/seek). One-time click on the TV to allow autoplay.
-- Runs on the host laptop; QR encodes the laptop's LAN IP. Laptop needs internet (YouTube).
+- Firebase (Spark, free): Hosting serves static pages, Realtime Database carries the messages. No server of our own.
+- The **TV page is the game server**: it runs `game.js`, owns the state and the idle timer. Phones push actions to `/actions`; the TV applies them and writes each player's own view to `/views/<playerId>` (so only the verifier gets the answer) plus `/public`.
+- Pages: `/` (TV), `/play` (phones). Audio: YouTube IFrame Player API on the TV page (one-time click for autoplay).
+- TV state is mirrored in the TV browser's localStorage, so a page reload resumes the game.
+- Trade-off: DB rules are open (party game). Anyone who knows the DB URL could write; delete the project afterwards.
+- Songs: `public/songs/<list>.json`, listed in `public/songs/index.json`.
+- Setup/deploy: `firebase login`, project + web app + Realtime Database, config in `public/firebase-config.js`, `npm run deploy`.
 
 ## Song source: YouTube
 
@@ -54,7 +57,3 @@ Charts now, 80s, 90s, 2000s, Christmas, movie/TV themes, intro-only, speed (play
 
 - Which channel for the channel category (send later).
 - Review of the seeded playlists.
-
-## Own Wi-Fi (venue Wi-Fi blocks client-to-client traffic)
-
-`./hotspot.sh alongside` creates a hotspot `SongQuiz` on a second virtual interface while the laptop stays on the venue Wi-Fi (sudo, experimental: the AP must use the venue channel). `./hotspot.sh start` uses the only radio instead and needs a cable for YouTube. The server then advertises `10.42.0.1`, and the TV's **W** key shows a QR code that joins the hotspot. `./hotspot.sh stop` tears it down.
