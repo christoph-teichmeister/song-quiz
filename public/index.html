@@ -13,6 +13,7 @@ import { qrSvg } from './qr.js';
 const $ = (id) => document.getElementById(id);
 let session = null, S = null, lists = {}, errs = {}, last = {}, yt = null, ytReady = false, unlocked = false, lastIdx = -1;
 const now = () => Date.now();
+window.onYouTubeIframeAPIReady = () => { yt = new YT.Player('yt', { width: 320, height: 200, playerVars: { playsinline: 1, controls: 0 }, events: { onReady: () => { ytReady = true; audio(); } } }); };
 
 try { const saved = JSON.parse(localStorage.sqState || 'null'); if (saved) session = saved; } catch {} // resume after a TV reload
 
@@ -38,9 +39,12 @@ function put(path, val) { // write only what changed
   const j = JSON.stringify(val ?? null);
   if (last[path] === j) return;
   last[path] = j;
-  D.set(r(path), val ?? null);
+  D.set(r(path), JSON.parse(j)).catch((e) => console.error('SQ db write', path, e.message)); // round-trip: Firebase rejects undefined values
 }
 function publish() {
+  try { publish2(); } catch (e) { console.error('SQ publish', e.stack || e.message); }
+}
+function publish2() {
   const names = Object.keys(lists);
   put('public', { session: !!session, code: session?.code ?? null, lists: Object.fromEntries(names.map((n) => [n, lists[n].length])) });
   const ids = new Set(Object.keys(session?.players ?? {}));
@@ -58,7 +62,6 @@ setInterval(() => {
 
 window.keepAlive = () => { if (session) { session.lastActivity = now(); session.promptUntil = 0; publish(); } };
 window.unlock = () => { unlocked = true; render(); if (ytReady) { yt.mute(); yt.playVideo(); yt.pauseVideo(); yt.unMute(); } };
-window.onYouTubeIframeAPIReady = () => { yt = new YT.Player('yt', { width: 320, height: 200, playerVars: { playsinline: 1, controls: 0 }, events: { onReady: () => { ytReady = true; audio(); } } }); };
 
 const q = (url) => `<div class=qrsvg>${qrSvg(url)}</div>`;
 const base = location.origin;

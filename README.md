@@ -57,3 +57,10 @@ Charts now, 80s, 90s, 2000s, Christmas, movie/TV themes, intro-only, speed (play
 
 - Which channel for the channel category (send later).
 - Review of the seeded playlists.
+
+## Live
+
+- URL: https://song-quiz-xmas-a414536c.web.app (TV `/`, phones `/play`), Firebase project `song-quiz-xmas-a414536c`, DB in europe-west1.
+- The device that opens `/` runs the game: keep that tab visible, awake and on power (hidden tabs throttle timers).
+- Gotcha: Firebase Hosting caches `/` for an hour by default; `firebase.json` sets `no-cache` for everything, otherwise redeploys do not show up.
+- Gotcha: `game.js` must live in `public/` (hosting only serves that folder); Firebase rejects `undefined` values, so views are JSON round-tripped before writing.

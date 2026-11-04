@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSession, join, act, tick, view, T } from './game.js';
+import { createSession, join, act, tick, view, T } from './public/game.js';
 
 const songs = [{ id: 'a', title: 'T1', artist: 'A1' }, { id: 'b', title: 'T2', artist: 'A2' }];
 function setup() {
