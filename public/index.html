@@ -24,7 +24,11 @@ const now = () => Date.now();
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); // player names go into innerHTML
 let AC; // Web Audio for the end-screen sounds (synthesised, no files)
 const ac = () => (AC ||= new (window.AudioContext || window.webkitAudioContext)());
-function applause() { // many short filtered noise bursts, densest in the middle
+function applause() { // a real recording (public domain); the synthesised version below is the fallback
+  const a = new Audio('/sounds/applause.ogg'); a.volume = .85;
+  a.play().then(() => setTimeout(() => { const f = setInterval(() => { a.volume = Math.max(0, a.volume - .08); if (a.volume <= 0) { clearInterval(f); a.pause(); } }, 150); }, 8200)).catch(() => applauseSynth());
+}
+function applauseSynth() { // many short filtered noise bursts, densest in the middle
   const c = ac(), t0 = c.currentTime + .05;
   for (let i = 0; i < 130; i++) {
     const t = t0 + (Math.random() + Math.random()) / 2 * 3.8, len = .035 + Math.random() * .03;
