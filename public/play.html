@@ -122,7 +122,8 @@ function render() {
   $('main').innerHTML = v.body + (S?.err ? `<p class=err>${esc(S.err)}</p>` : '');
   $('sticky').innerHTML = v.sticky ? `<div class=sticky>${v.sticky}</div>` : '';
   const mh = sheet ? sheetHtml() : modal ? `<div class=modal onclick="closeModal()"><div onclick="event.stopPropagation()"><h2>${MODES[modal][0]}</h2><p>${MODES[modal][1]}</p><button class=btn onclick="closeModal()">Got it</button></div></div>` : '';
-  if (mh !== lastModal && !$('modal').contains(document.activeElement)) { lastModal = mh; $('modal').innerHTML = mh; } // keep typed text while a game update arrives
+  const typing = document.activeElement?.tagName === 'INPUT' && $('modal').contains(document.activeElement); // only a focused input inside the sheet blocks the rebuild, buttons must be able to close it
+  if (mh !== lastModal && !typing) { lastModal = mh; $('modal').innerHTML = mh; }
 }
 
 function game() {
