@@ -15,6 +15,7 @@ let session = null, S = null, lists = {}, errs = {}, last = {}, yt = null, ytRea
 const now = () => Date.now();
 window.onYouTubeIframeAPIReady = () => { yt = new YT.Player('yt', { width: 320, height: 200, playerVars: { playsinline: 1, controls: 0 }, events: { onReady: () => { ytReady = true; audio(); } } }); };
 
+if (new URLSearchParams(location.search).has('new')) localStorage.sqState = ''; // /?new starts clean
 try { const saved = JSON.parse(localStorage.sqState || 'null'); if (saved) session = saved; } catch {} // resume after a TV reload
 
 // Only one TV page may host: a second one would run its own game on the same database.
