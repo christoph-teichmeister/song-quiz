@@ -1,6 +1,6 @@
 // Pure game state machine. No I/O: server.js feeds it actions and ticks.
 // Phases: lobby -> pickfront (first song only) -> countdown -> playing <-> verify -> reveal -> (countdown | end)
-export const T = { countdown: 3000, reveal: 6000, idle: 180000, prompt: 15000, introMs: 5000, speedMs: 5000 };
+export const T = { countdown: 3000, reveal: 10000, idle: 180000, prompt: 15000, introMs: 5000, speedMs: 5000 };
 const other = (t) => (t === 'A' ? 'B' : 'A');
 const uid = () => Math.random().toString(36).slice(2, 10);
 
