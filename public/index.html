@@ -2,7 +2,7 @@
 <link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
 <link rel=stylesheet href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;600&display=swap">
 <link rel=stylesheet href=style.css>
-<div id=yt></div><div id=cover style="display:none"><div class=bars><i></i><i style="animation-delay:.2s"></i><i style="animation-delay:.4s"></i><i style="animation-delay:.1s"></i><i style="animation-delay:.3s"></i></div><h1 id=cover-t></h1></div>
+<div id=yt></div><div id=cover style="display:none"><div class=bars><i></i><i style="animation-delay:.2s"></i><i style="animation-delay:.4s"></i><i style="animation-delay:.1s"></i><i style="animation-delay:.3s"></i></div><h1 id=cover-t></h1><div id=cover-s></div></div>
 <div class=tv id=main></div>
 <canvas id=confetti></canvas>
 <div id=np><button id=npb title='Music on/off' onclick='toggleMusic()'></button><span id=npt></span></div>
@@ -103,6 +103,8 @@ window.keepAlive = () => { if (session) { session.lastActivity = now(); session.
 
 const q = (url) => `<div class=qrsvg>${qrSvg(url)}</div>`;
 const base = location.origin;
+const fr = (t) => S.players.find((p) => p.id === S.teams[t].front)?.name ?? '–';
+const matchup = () => `<div class=matchup><div class="mu A"><small>Team A</small><b>${fr('A')}</b><span>🎤 at the buzzer</span></div><div class=vs>vs</div><div class="mu B"><small>Team B</small><b>${fr('B')}</b><span>🎤 at the buzzer</span></div></div>`;
 function names(t) { return S.players.filter((p) => p.team === t).map((p) => p.name + (S.teams[t].front === p.id && S.phase !== 'lobby' ? ' 🎤' : '')).join(', ') || '–'; }
 
 function render() {
@@ -124,9 +126,9 @@ function render() {
   const ph = S.phase; let h = '';
   if (ph === 'lobby') h = `<h1>Join with code <b>${S.code}</b></h1><div class=qrcard style="width:min(30vw,380px);margin:auto">${q(base + '/play?code=' + S.code)}</div>${sc}<p>Host picks the list and starts.</p>`;
   else if (ph === 'pickfront') h = `<h1>Song ${S.idx + 1}/${S.total}: pick your front-person</h1>${sc}<p>🎤 Front-persons tap Ready on their phone.</p>`;
-  else if (ph === 'countdown') h = `<div class=big>${Math.max(1, Math.ceil((S.until - now()) / 1000))}</div>${S.judgeName ? `<p>🎧 Judge this song: ${S.judgeName}</p>` : ''}`;
-  else if (ph === 'playing') { $('cover-t').textContent = `Song ${S.idx + 1}/${S.total}${S.locked.length ? ' — ' + S.locked.join(',') + ' locked' : ''}`; }
-  else if (ph === 'verify') { $('cover-t').innerHTML = `<span class=${S.buzz.team}>Team ${S.buzz.team}</span> buzzed!${S.judgeName ? `<br><small>🎧 ${S.judgeName} judges</small>` : ''}`; }
+  else if (ph === 'countdown') h = `<h2>Song ${S.idx + 1} of ${S.total}</h2>${matchup()}<div class="big sm">${Math.max(1, Math.ceil((S.until - now()) / 1000))}</div>${S.judgeName ? `<div class=judge-pill>🎧 Judge: <b>${S.judgeName}</b></div>` : ''}`;
+  else if (ph === 'playing') { $('cover-t').textContent = `Song ${S.idx + 1}/${S.total}${S.locked.length ? ' — ' + S.locked.join(',') + ' locked' : ''}`; $('cover-s').innerHTML = matchup(); }
+  else if (ph === 'verify') { $('cover-t').innerHTML = `<span class=${S.buzz.team}>Team ${S.buzz.team}</span> buzzed!${S.judgeName ? `<br><small>🎧 ${S.judgeName} judges</small>` : ''}`; $('cover-s').innerHTML = matchup(); }
   else if (ph === 'reveal') h = `<h1>${S.answer.title}</h1><h2>${S.answer.artist}</h2>${S.lastResult ? `<p>Team ${S.lastResult.team}: +${S.lastResult.pts}</p>` : ''}${S.next ? `<h2>Next up: <span class=A>${S.next.names.A}</span> (A) · <span class=B>${S.next.names.B}</span> (B)${S.next.names.judge ? ` · 🎧 ${S.next.names.judge} judges` : ''}</h2>` : ''}${sc}`;
   else if (ph === 'end') { const w = S.teams.A.score === S.teams.B.score ? 'Draw!' : 'Team ' + (S.teams.A.score > S.teams.B.score ? 'A' : 'B') + ' wins!'; h = `<h1>${w}</h1>${sc}`; }
   if (lastHtml !== h) { lastHtml = h; $('main').innerHTML = h; } // only touch the DOM on change so animations do not restart every tick
