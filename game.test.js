@@ -78,7 +78,7 @@ test('after a reveal the next song starts with a countdown, fronts rotate', () =
   act(s, first, { type: 'ready' }, now); act(s, b, { type: 'ready' }, now);
   now += T.countdown; tick(s, now);
   act(s, first, { type: 'buzz' }, now);
-  act(s, b, { type: 'verify', title: true, artist: true }, now);
+  act(s, s.judge, { type: 'verify', title: true, artist: true }, now);
   now += T.reveal; tick(s, now);
   assert.equal(s.phase, 'countdown');
   assert.notEqual(s.teams.A.front, first);
