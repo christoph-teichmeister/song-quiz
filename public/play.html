@@ -1,56 +1,112 @@
-<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Song Quiz</title>
-<link rel=stylesheet href=style.css><div class=wrap id=main>Connecting…</div>
+<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Song Quiz</title>
+<link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
+<link rel=stylesheet href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;600&display=swap">
+<link rel=stylesheet href=style.css>
+<div class=app id=main>Connecting…</div><div id=sticky></div><div id=modal></div>
 <script type=module>
 import { D, r } from './db.js';
 const $ = (id) => document.getElementById(id);
-window.$ = $;
 const pid = localStorage.sqPid ||= Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6);
 const qs = new URLSearchParams(location.search);
-let S = null, pub = { session: false, lists: {} };
+let S = null, pub = { session: false, catalog: [] };
+let cfg = { list: null, mode: 'normal', length: 10 }, modal = null, nameV = localStorage.sqName || '', codeV = qs.get('code') || '';
+let jt = false, ja = false, lastKey = '', lastVerify = '';
 
 const send = (o) => D.push(r('actions'), { pid, ...o });
-window.act = (a) => send({ act: a });
-window.send = send;
-window.nm = () => ($('name')?.value || localStorage.sqName || '').trim() || 'Player';
+const act = (a) => send({ act: a });
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const buzzNow = (el) => { navigator.vibrate?.(40); el.classList.add('fire'); act({ type: 'buzz' }); };
+const MODES = {
+  normal: ['Normal', 'The song plays until someone buzzes.'],
+  intro: ['Intro only', 'Every song stops after 5 seconds. Only the intro counts, so buzz fast.'],
+  speed: ['Speed', 'Buzz within the first 5 seconds and the points for that answer count double.'],
+};
+// handlers for inline onclick
+Object.assign(window, {
+  act, send,
+  setName: (v) => { nameV = v; localStorage.sqName = v; },
+  setCode: (v) => { codeV = v; },
+  create: () => send({ create: nameV.trim() || 'Player' }),
+  joinGame: () => send({ join: { code: codeV.trim(), name: nameV.trim() || 'Player' } }),
+  pickList: (id) => { cfg.list = id; render(); },
+  pickLen: (n) => { cfg.length = n; render(); },
+  pickMode: (m) => { cfg.mode = m; modal = m === 'normal' ? null : m; render(); },
+  closeModal: () => { modal = null; render(); },
+  start: () => act({ type: 'start', list: cfg.list || pub.catalog[0]?.id, mode: cfg.mode, length: cfg.length }),
+  togJ: (k) => { if (k === 't') jt = !jt; else ja = !ja; render(); },
+  confirmJ: () => act({ type: 'verify', title: jt, artist: ja }),
+  buzzNow,
+});
 
-D.onValue(r('public'), (s) => { pub = s.val() || { session: false, lists: {} }; render(); });
+D.onValue(r('public'), (s) => { pub = s.val() || { session: false, catalog: [] }; render(); });
 D.onValue(r(`views/${pid}`), (s) => { S = s.val(); render(); });
-const live = () => S && pub.session && S.code === pub.code; // a view from an older game is ignored
+const live = () => S && S.me && pub.session && S.code === pub.code; // a view from an older game is ignored
 
 function entry() {
-  const code = qs.get('code') || pub.code || '';
-  return `<h1>🎵 Song Quiz</h1><input id=name placeholder="Your name" value="${localStorage.sqName || ''}" oninput="localStorage.sqName=this.value">` +
-    (pub.session
-      ? `<input id=code placeholder="Code" value="${code}" inputmode=numeric><button onclick="send({join:{code:$('code').value.trim(),name:nm()}})">Join game</button>`
-      : `<button onclick="send({create:nm()})">Create a new game</button>`);
+  return { key: 'entry', body: `<h1>🎵 Song Quiz</h1><p class=hint style="text-align:left">Team up, buzz in, guess the song.</p>
+    <div class=stack><input class=input id=name placeholder="Your name" maxlength=20 value="${esc(nameV)}" oninput="setName(this.value)" autocomplete=nickname>
+    ${pub.session ? `<input class=input id=code placeholder="Game code" inputmode=numeric value="${esc(codeV)}" oninput="setCode(this.value)"><button class=btn onclick="joinGame()">Join game</button>`
+      : `<button class=btn onclick="create()">Create a new game</button>`}</div>`, sticky: '' };
 }
 
 function render() {
-  if (!live() || !S.me) { $('main').innerHTML = entry(); return; }
-  const e = S.err ? `<p style="color:#f66">${S.err}</p>` : '';
-  const me = S.me, t = me.team, ph = S.phase, tm = (x) => S.players.filter((p) => p.team === x);
-  const judgeNote = S.judge === me.id && ['countdown', 'playing'].includes(ph) ? '<p>🎧 You are the judge this song. Listen, don\'t tell anyone.</p>' : '';
-  let h = judgeNote + `<p>${me.name} · ${t ? `<b class=${t}>Team ${t}</b>` : 'no team'} · A ${S.teams.A.score} : ${S.teams.B.score} B</p>`;
+  let v;
+  if (!live()) v = entry(); else v = game();
+  const enter = v.key !== lastKey; lastKey = v.key;
+  $('main').className = 'app' + (enter ? ' enter' : '');
+  $('main').innerHTML = v.body + (S?.err ? `<p class=err>${esc(S.err)}</p>` : '');
+  $('sticky').innerHTML = v.sticky ? `<div class=sticky>${v.sticky}</div>` : '';
+  $('modal').innerHTML = modal ? `<div class=modal onclick="closeModal()"><div onclick="event.stopPropagation()"><h2>${MODES[modal][0]}</h2><p>${MODES[modal][1]}</p><button class=btn onclick="closeModal()">Got it</button></div></div>` : '';
+}
+
+function game() {
+  const me = S.me, t = me.team, ph = S.phase, mem = (x) => S.players.filter((p) => p.team === x);
+  const isJudge = S.judge === me.id, front = t && S.teams[t].front === me.id, lk = (S.locked || []).includes(t);
+  const hdr = `<div class=hdr><span><b>${esc(me.name)}</b> · ${t ? `<b class=${t}>Team ${t}</b>` : 'no team yet'}</span><span class=score-pill><span class=A>${S.teams.A.score}</span> : <span class=B>${S.teams.B.score}</span></span></div>`;
+  const judgeBanner = isJudge && ['countdown', 'playing'].includes(ph) ? `<div class=judge-banner>🎧 <b>You are the judge this song.</b> Listen along and keep the answer to yourself.</div>` : '';
+  let body = '', sticky = '', key = ph;
+
   if (ph === 'lobby') {
-    h += `<div class=row><button class=alt onclick="act({type:'team',team:'A'})">Join A (${tm('A').length})</button><button class=alt onclick="act({type:'team',team:'B'})">Join B (${tm('B').length})</button></div><p>Code: <b>${S.code}</b></p>`;
-    if (S.host) h += `<select id=list>${Object.entries(pub.lists || {}).map(([k, n]) => `<option value="${k}">${k} (${n})</option>`).join('')}</select>
-      <select id=mode><option value=normal>Normal</option><option value=intro>Intro only (5 s)</option><option value=speed>Speed (fast = double)</option></select>
-      <select id=len><option value=5>Quick: 5 songs</option><option value=10 selected>Normal: 10 songs</option></select>
-      <button onclick="act({type:'start',list:$('list').value,mode:$('mode').value,length:+$('len').value})">Start game</button>`;
+    const ready = mem('A').length > 0 && mem('B').length > 0;
+    const card = (x) => `<button class="team-card ${x}${t === x ? ' on' : ''}" onclick="act({type:'team',team:'${x}'})"><h3 class=${x}>Team ${x}</h3><div class=chips>${mem(x).map((p) => `<span class=chip>${esc(p.name)}</span>`).join('') || '<span class=hint>empty</span>'}</div></button>`;
+    body = `${hdr}<div class=label>Game code ${esc(S.code)}</div><div class=team-cards>${card('A')}${card('B')}</div>`;
+    if (S.host) {
+      const cat = pub.catalog || [], sel = cfg.list || cat[0]?.id;
+      body += `<div class=label>Playlist</div><div class=tiles>${cat.map((c) => `<button class="tile${c.id === sel ? ' on' : ''}" onclick="pickList('${c.id}')"><i>${c.emoji || '🎵'}</i><b>${esc(c.name)}</b><span>${c.count} songs</span></button>`).join('')}</div>
+        <div class=label>Mode</div><div class=seg>${Object.entries(MODES).map(([k, m]) => `<button class="${cfg.mode === k ? 'on' : ''}" onclick="pickMode('${k}')">${m[0].split(' ')[0]}</button>`).join('')}</div>
+        <div class=label>Length</div><div class=seg>${[5, 10, 15].map((n) => `<button class="${cfg.length === n ? 'on' : ''}" onclick="pickLen(${n})">${n} songs</button>`).join('')}</div>`;
+      sticky = `<button class=btn onclick="start()" ${ready ? '' : 'disabled'}>${ready ? 'Start game' : 'Each team needs a player'}</button>`;
+    } else body += `<p class=hint>Pick a team. The host starts the game <span class=dots><i></i><i></i><i></i></span></p>`;
   } else if (ph === 'pickfront' && t) {
-    const fr = S.teams[t].front; h += `<p>Who stands at the front?</p>` + tm(t).map((p) => `<button class="${p.id === fr ? '' : 'alt'}" onclick="act({type:'front',id:'${p.id}'})">${p.name}${p.id === fr ? ' 🎤' : ''}</button>`).join('<br>');
-    h += fr === me.id ? `<button onclick="act({type:'ready'})" ${S.teams[t].ready ? 'disabled' : ''}>${S.teams[t].ready ? 'Waiting for the other team…' : 'Ready'}</button>` : '';
-  } else if (ph === 'countdown') h += `<div class=big>…</div>`;
-  else if (ph === 'playing') {
-    const front = S.teams[t]?.front === me.id, lk = (S.locked || []).includes(t);
-    h += front ? `<button id=buzz ${lk ? 'disabled' : ''} onclick="act({type:'buzz'})">${lk ? 'LOCKED' : 'BUZZ!'}</button>` : `<p>${lk ? 'Your team is locked.' : 'Listening… your front-person buzzes.'}</p>`;
+    const fr = S.teams[t].front;
+    body = `${hdr}<h2>Who stands at the front?</h2><div class=stack>${mem(t).map((p) => `<button class="btn ghost${p.id === fr ? ' on' : ''}" onclick="act({type:'front',id:'${p.id}'})">${esc(p.name)}${p.id === fr ? ' 🎤' : ''}</button>`).join('')}</div>`;
+    if (fr === me.id) sticky = `<button class=btn onclick="act({type:'ready'})" ${S.teams[t].ready ? 'disabled' : ''}>${S.teams[t].ready ? 'Waiting for the other team…' : 'Ready'}</button>`;
+  } else if (ph === 'countdown') {
+    body = `${hdr}${judgeBanner}<h2 style="text-align:center;margin-top:6vh">Get ready<br><span class=dots><i></i><i></i><i></i></span></h2>${front ? '<p class=hint>You are the front-person. Buzz when you know it.</p>' : ''}`;
+    key = 'countdown' + S.idx;
+  } else if (ph === 'playing') {
+    key = 'playing' + S.idx;
+    body = `${hdr}${judgeBanner}` + (front
+      ? `<button class=buzz id=buzz ${lk ? 'disabled' : ''} onclick="buzzNow(this)">${lk ? 'LOCKED' : 'BUZZ'}</button>`
+      : `<h2 style="text-align:center;margin-top:6vh">${lk ? 'Your team is locked' : 'Listening…'}</h2><p class=hint>${lk ? 'The other team gets a try.' : 'Your front-person buzzes.'}</p>`);
   } else if (ph === 'verify') {
-    if (S.judge ? me.id === S.judge : t && t !== S.buzz.team) h += `<h2>You are the judge: Team ${S.buzz.team} buzzed. Is it right?</h2><p><b>${S.answer.title}</b><br>${S.answer.artist}</p>
-      <label><input type=checkbox id=ct style="width:2em;height:2em"> Title correct</label><br><label><input type=checkbox id=ca style="width:2em;height:2em"> Artist correct</label><br><button onclick="act({type:'verify',title:$('ct').checked,artist:$('ca').checked})">Confirm</button>`;
-    else h += `<h2>Team ${S.buzz.team} buzzed — ${S.judgeName ? S.judgeName + ' judges' : 'say your answer out loud'}!</h2>`;
-  } else if (ph === 'reveal') h += `<h2>${S.answer.title}</h2><p>${S.answer.artist}</p>`;
-  else if (ph === 'end') h += `<h2>Game over</h2>` + (S.host ? `<button onclick="act({type:'again'})">Play again</button>` : '');
-  $('main').innerHTML = h + e;
+    const vk = S.idx + ':' + S.buzz.at; if (vk !== lastVerify) { lastVerify = vk; jt = ja = false; }
+    if (isJudge || (!S.judge && t && t !== S.buzz.team)) {
+      body = `${hdr}<div class=judge-banner>🎧 <b>You are the judge.</b> Team ${S.buzz.team} buzzed. Is their answer right?</div>
+        <div class=card><div class=answer>${esc(S.answer.title)}<small>${esc(S.answer.artist)}</small></div></div>
+        <div class=stack><button class="tog${jt ? ' on' : ''}" onclick="togJ('t')">Title correct <em>${jt ? '✓' : '✗'}</em></button><button class="tog${ja ? ' on' : ''}" onclick="togJ('a')">Artist correct <em>${ja ? '✓' : '✗'}</em></button></div>`;
+      sticky = `<button class=btn onclick="confirmJ()">Confirm</button>`;
+    } else body = `${hdr}<h2 style="text-align:center;margin-top:6vh"><span class=${S.buzz.team}>Team ${S.buzz.team}</span> buzzed</h2><p class=hint>${S.judgeName ? esc(S.judgeName) + ' is judging' : 'Say your answer out loud'} <span class=dots><i></i><i></i><i></i></span></p>`;
+    key = 'verify' + vk;
+  } else if (ph === 'reveal') {
+    const lr = S.lastResult;
+    body = `${hdr}<div class=card><div class=answer>${esc(S.answer.title)}<small>${esc(S.answer.artist)}</small></div></div>${lr ? `<p class=hint><b class=${lr.team}>Team ${lr.team}</b> ${lr.pts ? `+${lr.pts}` : 'no points'}</p>` : ''}<p class=hint>Next song starts in a moment…</p>`;
+  } else if (ph === 'end') {
+    const w = S.teams.A.score === S.teams.B.score ? 'It\'s a draw' : `Team ${S.teams.A.score > S.teams.B.score ? 'A' : 'B'} wins`;
+    body = `${hdr}<h1>${w} 🎉</h1><div class=card><b class=A>Team A</b> ${S.teams.A.score} · <b class=B>Team B</b> ${S.teams.B.score}</div>`;
+    if (S.host) sticky = `<button class=btn onclick="act({type:'again'})">Play again</button>`;
+  } else body = hdr;
+  return { key, body, sticky };
 }
 render();
 </script>

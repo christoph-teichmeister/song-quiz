@@ -1,7 +1,10 @@
 <!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Song Quiz TV</title>
+<link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
+<link rel=stylesheet href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;600&display=swap">
 <link rel=stylesheet href=style.css>
 <div id=yt></div><div id=cover style="display:none"><div class=bars><i></i><i style="animation-delay:.2s"></i><i style="animation-delay:.4s"></i><i style="animation-delay:.1s"></i><i style="animation-delay:.3s"></i></div><h1 id=cover-t></h1></div>
 <div class=tv id=main></div>
+<canvas id=confetti></canvas>
 <div id=np><button id=npb title='Music on/off' onclick='toggleMusic()'></button><span id=npt></span></div>
 <div id=snd>🔊 Click once anywhere to enable sound</div>
 <div id=prompt onclick="keepAlive()">Still there? Resetting in <b id=pc></b> s — tap anywhere to keep playing</div>
@@ -38,7 +41,8 @@ const beat = () => D.set(r('host'), { id: myId, ts: Date.now() });
 beat(); setInterval(beat, 1000);
 D.onValue(r('host'), (sn) => { if (sn.val() && sn.val().id !== myId) location.reload(); }); // someone took over: show the notice
 
-for (const n of await (await fetch('songs/index.json')).json()) lists[n] = await (await fetch(`songs/${n}.json`)).json();
+const catalog = await (await fetch('songs/index.json')).json(); // [{id, name, emoji}], in display order
+for (const c of catalog) lists[c.id] = await (await fetch(`songs/${c.id}.json`)).json();
 await D.remove(r('actions')); // stale phone actions from before this page load
 if (!session) await D.remove(r('views')); // stale views of earlier games
 
@@ -67,8 +71,7 @@ function publish() {
   try { publish2(); } catch (e) { console.error('SQ publish', e.stack || e.message); }
 }
 function publish2() {
-  const names = Object.keys(lists);
-  put('public', { session: !!session, code: session?.code ?? null, lists: Object.fromEntries(names.map((n) => [n, lists[n].length])) });
+  put('public', { session: !!session, code: session?.code ?? null, catalog: catalog.map((c) => ({ ...c, count: lists[c.id].length })) });
   if (!session && Object.keys(last).some((k) => k.startsWith('views/'))) { // game ended: wipe all views
     for (const k of Object.keys(last)) if (k.startsWith('views/')) delete last[k];
     D.remove(r('views'));
@@ -98,7 +101,7 @@ function render() {
   if (prompt) $('pc').textContent = Math.max(0, Math.ceil((S.promptUntil - now()) / 1000));
   const cover = S && ['playing', 'verify'].includes(S.phase); // not during the countdown: its number and the judge note live in #main $('cover').style.display = cover ? 'flex' : 'none';
   if (!S) { // idle: stays up, nothing to do until someone scans
-    const key = 'idle'; if ($('main').dataset.k === key) return; $('main').dataset.k = key;
+    const key = 'idle'; if ($('main').dataset.k === key) return; $('main').dataset.k = key; lastHtml = '';
     $('main').innerHTML = `<div class=idle><div class=notes>${'♪♫♬♩♪♫'.split('').map((n, i) => `<em style="left:${5 + i * 17}%;animation-delay:${i * 1.1}s">${n}</em>`).join('')}</div>
   <div class=hero><div class=rings><i></i><i></i><i></i><span>🎵</span></div><h1>Song Quiz</h1>
   <ol class=steps><li><b>1</b><span>Scan the QR code with your phone</span></li><li><b>2</b><span>Create a game or join one</span></li><li><b>3</b><span>Pick a team and play</span></li></ol></div>
@@ -106,7 +109,7 @@ function render() {
     return;
   }
   $('main').dataset.k = '';
-  const sc = `<div class=row><div class=card><div class=A>Team A</div><div class=score>${S.teams.A.score}</div>${names('A')}</div><div class=card><div class=B>Team B</div><div class=score>${S.teams.B.score}</div>${names('B')}</div></div>`;
+  const sc = `<div class=row><div class="tcard A"><div class=A>Team A</div><div class=score>${S.teams.A.score}</div>${names('A')}</div><div class="tcard B"><div class=B>Team B</div><div class=score>${S.teams.B.score}</div>${names('B')}</div></div>`;
   const ph = S.phase; let h = '';
   if (ph === 'lobby') h = `<h1>Join with code <b>${S.code}</b></h1><div class=qrcard style="width:min(30vw,380px);margin:auto">${q(base + '/play?code=' + S.code)}</div>${sc}<p>Host picks the list and starts.</p>`;
   else if (ph === 'pickfront') h = `<h1>Song ${S.idx + 1}/${S.total}: pick your front-person</h1>${sc}<p>🎤 Front-persons tap Ready on their phone.</p>`;
@@ -115,9 +118,22 @@ function render() {
   else if (ph === 'verify') { $('cover-t').innerHTML = `<span class=${S.buzz.team}>Team ${S.buzz.team}</span> buzzed!${S.judgeName ? `<br><small>🎧 ${S.judgeName} judges</small>` : ''}`; }
   else if (ph === 'reveal') h = `<h1>${S.answer.title}</h1><h2>${S.answer.artist}</h2>${S.lastResult ? `<p>Team ${S.lastResult.team}: +${S.lastResult.pts}</p>` : ''}${sc}`;
   else if (ph === 'end') { const w = S.teams.A.score === S.teams.B.score ? 'Draw!' : 'Team ' + (S.teams.A.score > S.teams.B.score ? 'A' : 'B') + ' wins!'; h = `<h1>${w}</h1>${sc}`; }
-  $('main').innerHTML = h;
+  if (lastHtml !== h) { lastHtml = h; $('main').innerHTML = h; } // only touch the DOM on change so animations do not restart every tick
+  if (ph === 'end' && !confettiDone) { confettiDone = true; confetti(); } else if (ph !== 'end') confettiDone = false;
 }
 
+let lastHtml = '', confettiDone = false;
+function confetti() { // one short burst at the end of a game
+  const cv = $('confetti'), g = cv.getContext('2d'); cv.width = innerWidth; cv.height = innerHeight;
+  const cols = ['#ff4f8b', '#52d1ff', '#ffb347', '#5ee6a0', '#f4f1fa'];
+  const ps = Array.from({ length: 170 }, () => ({ x: innerWidth / 2, y: innerHeight * .35, vx: (Math.random() - .5) * 26, vy: -Math.random() * 22 - 4, w: 8 + Math.random() * 8, h: 5 + Math.random() * 6, a: Math.random() * 6, va: (Math.random() - .5) * .4, c: cols[Math.floor(Math.random() * cols.length)] }));
+  const t0 = performance.now();
+  (function frame(t) {
+    g.clearRect(0, 0, cv.width, cv.height);
+    for (const q of ps) { q.vy += .55; q.x += q.vx; q.y += q.vy; q.vx *= .99; q.a += q.va; g.save(); g.translate(q.x, q.y); g.rotate(q.a); g.fillStyle = q.c; g.globalAlpha = Math.max(0, 1 - (t - t0) / 5000); g.fillRect(-q.w / 2, -q.h / 2, q.w, q.h); g.restore(); }
+    if (t - t0 < 5000) requestAnimationFrame(frame); else g.clearRect(0, 0, cv.width, cv.height);
+  })(t0);
+}
 let musicOn = localStorage.sqMusic !== 'off';
 function setNp(txt) { $('npt').textContent = txt; $('npb').textContent = musicOn ? '🔊' : '🔇'; $('np').style.display = (!S || S.phase === 'lobby') ? 'flex' : 'none'; }
 window.toggleMusic = () => {
