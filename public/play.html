@@ -15,6 +15,7 @@ window.nm = () => ($('name')?.value || localStorage.sqName || '').trim() || 'Pla
 
 D.onValue(r('public'), (s) => { pub = s.val() || { session: false, lists: {} }; render(); });
 D.onValue(r(`views/${pid}`), (s) => { S = s.val(); render(); });
+const live = () => S && pub.session && S.code === pub.code; // a view from an older game is ignored
 
 function entry() {
   const code = qs.get('code') || pub.code || '';
@@ -25,7 +26,7 @@ function entry() {
 }
 
 function render() {
-  if (!S || !S.me) { $('main').innerHTML = entry(); return; }
+  if (!live() || !S.me) { $('main').innerHTML = entry(); return; }
   const e = S.err ? `<p style="color:#f66">${S.err}</p>` : '';
   const me = S.me, t = me.team, ph = S.phase, tm = (x) => S.players.filter((p) => p.team === x);
   let h = `<p>${me.name} · ${t ? `<b class=${t}>Team ${t}</b>` : 'no team'} · A ${S.teams.A.score} : ${S.teams.B.score} B</p>`;

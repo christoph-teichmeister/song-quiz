@@ -8,7 +8,8 @@
       "$pid": {
         ".read": true,
         ".write": true
-      }
+      },
+      ".write": true
     },
     "actions": {
       ".read": true,

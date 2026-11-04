@@ -40,6 +40,7 @@ D.onValue(r('host'), (sn) => { if (sn.val() && sn.val().id !== myId) location.re
 
 for (const n of await (await fetch('songs/index.json')).json()) lists[n] = await (await fetch(`songs/${n}.json`)).json();
 await D.remove(r('actions')); // stale phone actions from before this page load
+if (!session) await D.remove(r('views')); // stale views of earlier games
 
 D.onChildAdded(r('actions'), (snap) => { D.remove(snap.ref); handle(snap.val()); });
 
@@ -68,6 +69,10 @@ function publish() {
 function publish2() {
   const names = Object.keys(lists);
   put('public', { session: !!session, code: session?.code ?? null, lists: Object.fromEntries(names.map((n) => [n, lists[n].length])) });
+  if (!session && Object.keys(last).some((k) => k.startsWith('views/'))) { // game ended: wipe all views
+    for (const k of Object.keys(last)) if (k.startsWith('views/')) delete last[k];
+    D.remove(r('views'));
+  }
   const ids = new Set(Object.keys(session?.players ?? {}));
   for (const k of Object.keys(last)) if (k.startsWith('views/') && !ids.has(k.slice(6))) put(k, null);
   for (const id of ids) put(`views/${id}`, { ...view(session, id), err: errs[id] ?? null });
