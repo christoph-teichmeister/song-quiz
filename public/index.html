@@ -2,7 +2,7 @@
 <link rel=stylesheet href=style.css>
 <div id=yt></div><div id=cover style="display:none"><div class=bars><i></i><i style="animation-delay:.2s"></i><i style="animation-delay:.4s"></i><i style="animation-delay:.1s"></i><i style="animation-delay:.3s"></i></div><h1 id=cover-t></h1></div>
 <div class=tv id=main></div>
-<div id=np></div>
+<div id=np><button id=npb title='Music on/off' onclick='toggleMusic()'></button><span id=npt></span></div>
 <div id=snd>🔊 Click once anywhere to enable sound</div>
 <div id=prompt onclick="keepAlive()">Still there? Resetting in <b id=pc></b> s — tap anywhere to keep playing</div>
 <script src="https://www.youtube.com/iframe_api"></script>
@@ -15,7 +15,7 @@ import { qrSvg } from './qr.js';
 const $ = (id) => document.getElementById(id);
 let session = null, S = null, lists = {}, errs = {}, last = {}, yt = null, ytReady = false, unlocked = false, lastIdx = -1;
 const now = () => Date.now();
-window.onYouTubeIframeAPIReady = () => { yt = new YT.Player('yt', { width: 320, height: 200, playerVars: { playsinline: 1, controls: 0 }, events: { onReady: () => { ytReady = true; audio(); }, onStateChange: (e) => { if (e.data === 0 && idleOn) ambient(); $('np').textContent = idleOn ? ({ 1: '♪ ' + (yt.getVideoData?.().title || ''), 3: '♪ loading…', '-1': '♪ starting…', 2: '♪ paused (click the page)' }[e.data] ?? '') : ''; }, onError: (e) => { if (idleOn) return ambient(); $('cover-t').textContent = `Video unavailable (YouTube error ${e.data})`; console.error('SQ yt error', e.data); } } }); };
+window.onYouTubeIframeAPIReady = () => { yt = new YT.Player('yt', { width: 320, height: 200, playerVars: { playsinline: 1, controls: 0 }, events: { onReady: () => { ytReady = true; audio(); }, onStateChange: (e) => { if (e.data === 0 && idleOn) ambient(); setNp(idleOn ? ({ 1: '♪ ' + (yt.getVideoData?.().title || ''), 3: '♪ loading…', '-1': '♪ starting…', 2: '♪ paused (click the page)' }[e.data] ?? '') : ''); }, onError: (e) => { if (idleOn) return ambient(); $('cover-t').textContent = `Video unavailable (YouTube error ${e.data})`; console.error('SQ yt error', e.data); } } }); };
 
 window.unlock = () => { unlocked = true; $('snd').style.display = 'none'; try { audio(); } catch {} };
 addEventListener('click', () => { if (!unlocked) window.unlock(); }); addEventListener('keydown', () => { if (!unlocked) window.unlock(); });
@@ -93,6 +93,7 @@ const base = location.origin;
 function names(t) { return S.players.filter((p) => p.team === t).map((p) => p.name + (S.teams[t].front === p.id && S.phase !== 'lobby' ? ' 🎤' : '')).join(', ') || '–'; }
 
 function render() {
+  setNp($('npt').textContent);
   const prompt = S && S.promptUntil; $('prompt').style.display = prompt ? 'flex' : 'none';
   if (prompt) $('pc').textContent = Math.max(0, Math.ceil((S.promptUntil - now()) / 1000));
   const cover = S && ['playing', 'verify'].includes(S.phase); // not during the countdown: its number and the judge note live in #main $('cover').style.display = cover ? 'flex' : 'none';
@@ -117,15 +118,23 @@ function render() {
   $('main').innerHTML = h;
 }
 
+let musicOn = localStorage.sqMusic !== 'off';
+function setNp(txt) { $('npt').textContent = txt; $('npb').textContent = musicOn ? '🔊' : '🔇'; $('np').style.display = (!S || S.phase === 'lobby') ? 'flex' : 'none'; }
+window.toggleMusic = () => {
+  musicOn = !musicOn; localStorage.sqMusic = musicOn ? 'on' : 'off';
+  if (!musicOn && idleOn) { idleOn = false; yt.stopVideo(); }
+  setNp(musicOn ? '' : 'Music off'); if (musicOn) audio();
+};
 let idleOn = false; // quiet background music on the start page and in the lobby
 function ambient() {
   const all = Object.values(lists).flat();
+  if (!musicOn) return;
   if (!all.length) return;
-  $('np').textContent = '♪ starting…'; yt.setVolume(25); yt.loadVideoById(all[Math.floor(Math.random() * all.length)].id); idleOn = true;
+  setNp('♪ starting…'); yt.setVolume(25); yt.loadVideoById(all[Math.floor(Math.random() * all.length)].id); idleOn = true;
 }
 function audio() {
   if (!ytReady) return;
-  if (!S || S.phase === 'lobby') { if (unlocked && !idleOn) ambient(); return; }
+  if (!S || S.phase === 'lobby') { if (unlocked && musicOn && !idleOn) ambient(); return; }
   if (idleOn) { idleOn = false; yt.setVolume(100); lastIdx = -1; }
   const p = S.phase;
   if (p === 'playing') { if (S.idx !== lastIdx || !yt.getVideoData?.().video_id) { lastIdx = S.idx; yt.loadVideoById(S.videoId); } else yt.playVideo(); }
