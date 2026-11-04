@@ -11,11 +11,23 @@ button{background:#e0457b;color:#fff;cursor:pointer}button.alt{background:#2e2e4
 #yt{position:fixed;left:0;bottom:0;width:320px;height:200px;opacity:.01;z-index:1}
 #prompt{position:fixed;inset:0;background:#000d;z-index:9;display:none;align-items:center;justify-content:center;flex-direction:column;font-size:3vw}
 
+
 .wifi{margin-top:1.5em;padding:.6em 1.2em;border-radius:2em;background:#2e2e48;display:inline-block;font-size:max(1.4vw,16px)}
-.idle{position:relative;overflow:hidden;min-height:90vh}.idle h1{margin:.2em 0}
-.rings{position:relative;width:14vw;height:14vw;margin:2vh auto;display:flex;align-items:center;justify-content:center;font-size:6vw}
+body:has(.idle){background:radial-gradient(ellipse at 30% 40%,#2d1b4e,#12121c 70%)}
+.idle{position:relative;overflow:hidden;min-height:92vh;display:grid;grid-template-columns:1.1fr 1fr;align-items:center;gap:4vw;padding:0 4vw}
+.idle>*{position:relative;z-index:1}.idle>.notes{position:absolute;inset:0;z-index:0;pointer-events:none}
+.hero{text-align:left}.hero h1{font-size:max(7vw,48px);margin:.1em 0 .4em;letter-spacing:.02em}
+.rings{position:relative;width:11vw;height:11vw;display:flex;align-items:center;justify-content:center;font-size:5.5vw;margin-left:2vw}
+.rings span{filter:drop-shadow(0 0 1.5vw #e0457b)}
 .rings i{position:absolute;inset:0;border:3px solid #e0457b;border-radius:50%;opacity:0;animation:ring 3.6s infinite ease-out}
 .rings i:nth-child(2){animation-delay:1.2s}.rings i:nth-child(3){animation-delay:2.4s}
-@keyframes ring{0%{transform:scale(.4);opacity:.9}100%{transform:scale(2.6);opacity:0}}
-.notes em{position:absolute;bottom:-10%;font-style:normal;font-size:5vw;color:#e0457b66;animation:rise 7s infinite linear}
+@keyframes ring{0%{transform:scale(.5);opacity:.9}100%{transform:scale(2.2);opacity:0}}
+.steps{list-style:none;padding:0;margin:0;font-size:max(2.2vw,18px)}.steps li{display:flex;align-items:center;gap:1vw;margin:1.2vh 0}
+.steps b{flex:none;width:2.2em;height:2.2em;border-radius:50%;background:#e0457b;display:flex;align-items:center;justify-content:center}
+.steps u{text-decoration:none;color:#ffb74d;font-weight:700}
+.scan{text-align:center}.scan p{font-size:max(2vw,16px);opacity:.85}
+.qrcard{background:#fff;padding:1.2vw;border-radius:2vw;width:min(32vw,420px);margin:auto;box-shadow:0 0 5vw #e0457b55;animation:glow 3s infinite ease-in-out}
+@keyframes glow{50%{box-shadow:0 0 8vw #e0457baa}}
+.notes em{position:absolute;bottom:-12%;font-style:normal;font-size:6vw;color:#e0457b55;animation:rise 9s infinite linear}
 @keyframes rise{0%{transform:translateY(0) rotate(-10deg);opacity:0}15%{opacity:1}100%{transform:translateY(-110vh) rotate(15deg);opacity:0}}
+@media(max-width:800px){.idle{grid-template-columns:1fr}.qrcard{width:60vw}}
