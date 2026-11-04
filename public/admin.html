@@ -8,38 +8,46 @@ import { D, r } from './db.js';
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 if (location.hash.length > 1) { localStorage.sqAdminKey = decodeURIComponent(location.hash.slice(1)); history.replaceState(null, '', location.pathname); } // /admin#<key> saves the key, then hides it
-let pub = null, host = null, key = localStorage.sqAdminKey || '', confirming = false, msg = '', hostSeen = { ts: null, at: 0 };
-D.onValue(r('public'), (s) => { pub = s.val(); render(); });
-D.onValue(r('host'), (s) => { host = s.val(); if (host && host.ts !== hostSeen.ts) hostSeen = { ts: host.ts, at: Date.now() }; render(); });
+let key = localStorage.sqAdminKey || '', confirming = null, msg = '', lastHtml = '';
+const rooms = {}; // room -> { ts, seenAt, pub }
+D.onValue(r('roomIndex'), (s) => {
+  const v = s.val() || {};
+  for (const room of Object.keys(v)) {
+    if (!rooms[room]) { rooms[room] = { ts: null, seenAt: 0, pub: null }; D.onValue(r(`rooms/${room}/public`), (p) => { rooms[room].pub = p.val(); render(); }); }
+    if (v[room].ts !== rooms[room].ts) rooms[room].seenAt = Date.now(), rooms[room].ts = v[room].ts;
+  }
+  for (const room of Object.keys(rooms)) if (!(room in v)) delete rooms[room];
+  render();
+});
 setInterval(render, 1000);
 window.setKey = (v) => { key = v.trim(); localStorage.sqAdminKey = key; };
-window.ask = () => { confirming = true; render(); };
-window.cancel = () => { confirming = false; render(); };
-window.kill = async () => { // key + epoch go in one atomic update; the rules compare the key, the TV reacts to the epoch
-  confirming = false;
+window.ask = (room) => { confirming = room; render(); };
+window.cancel = () => { confirming = null; render(); };
+window.forget = (room) => D.remove(r(`roomIndex/${room}`));
+window.kill = async (room) => { // key + epoch in one atomic update; the rules compare the key, the TV of that room reacts to the epoch
+  confirming = null;
   try {
-    await D.update(r(''), { 'admin/key': key, 'admin/epoch': Date.now() });
-    msg = 'Session killed. The TV and all phones are reset.';
+    await D.update(r(''), { [`rooms/${room}/admin/key`]: key, [`rooms/${room}/admin/epoch`]: Date.now() });
+    msg = `Room ${room}: session killed, the TV and all phones are reset.`;
   } catch (e) { msg = 'Refused: wrong admin key.'; }
-  D.remove(r('admin/key')).catch(() => {});
+  D.remove(r(`rooms/${room}/admin/key`)).catch(() => {});
   render();
 };
-let lastHtml = '';
 function render() {
   if (document.activeElement?.id === 'keyin') return; // do not rebuild the page while the key is typed
-  const alive = hostSeen.at && Date.now() - hostSeen.at < 4000;
-  const s = pub?.summary, run = pub?.session;
-  const html = `<h1>Admin</h1>
-  <div class=card><div class=label>TV host</div><b style="color:var(${alive ? '--ok' : '--bad'})">${alive ? 'Online' : 'No TV page running'}</b></div>
-  <div class=label>Sessions (one room, one game at a time)</div>
-  ${run && s ? `<div class=card><div class=answer>Game ${esc(pub.code)}<small>${esc(s.phase)}${s.total ? ` · song ${s.idx + 1} of ${s.total}` : ''}${s.list ? ` · ${esc(s.list)} · ${esc(s.mode)}` : ''}</small></div>
-    <p>Score <b class=A>A ${s.scores.A}</b> : <b class=B>${s.scores.B} B</b></p>
-    <div class=chips>${s.players.map((p) => `<span class=chip>${esc(p.name)}${p.team ? ' · ' + p.team : ''}</span>`).join('')}</div></div>`
-    : '<div class=card><p class=hint style="margin:0">No session running.</p></div>'}
-  <div class=label>Admin key</div><input class=input id=keyin type=password placeholder="Admin key" value="${esc(key)}" oninput="setKey(this.value)" autocomplete=off>
-  ${confirming ? `<div class=stack><p class=err>Kill the session for everyone?</p><button class=btn onclick="kill()">Yes, kill it</button><button class="btn ghost" onclick="cancel()">Cancel</button></div>`
-    : `<button class=btn onclick="ask()" ${run ? '' : 'disabled'}>Kill session</button>`}
-  ${msg ? `<p class=hint>${esc(msg)}</p>` : ''}`;
+  const list = Object.entries(rooms).sort(([a], [b]) => a.localeCompare(b));
+  const card = ([room, o]) => {
+    const alive = o.seenAt && Date.now() - o.seenAt < 4000, p = o.pub, s = p?.summary, run = p?.session && s;
+    return `<div class=card><div style="display:flex;justify-content:space-between;gap:8px"><b>Room ${esc(room)}</b><b style="color:var(${alive ? '--ok' : '--mute'})">${alive ? 'TV online' : 'TV offline'}</b></div>
+      ${run ? `<div class=answer style="margin-top:8px">Game ${esc(p.code)}<small>${esc(s.phase)}${s.total ? ` · song ${s.idx + 1} of ${s.total}` : ''}${s.list ? ` · ${esc(s.list)} · ${esc(s.mode)}` : ''}</small></div>
+        <p style="margin:8px 0">Score <b class=A>A ${s.scores.A}</b> : <b class=B>${s.scores.B} B</b></p><div class=chips>${s.players.map((q) => `<span class=chip>${esc(q.name)}${q.team ? ' · ' + q.team : ''}</span>`).join('')}</div>`
+        : '<p class=hint style="margin:8px 0;text-align:left">No game running.</p>'}
+      <div class=stack style="margin-top:12px">${confirming === room
+        ? `<p class=err style="margin:0">Kill the session for everyone?</p><button class=btn onclick="kill('${room}')">Yes, kill it</button><button class="btn ghost" onclick="cancel()">Cancel</button>`
+        : `<button class=btn onclick="ask('${room}')" ${run ? '' : 'disabled'}>Kill session</button>${alive ? '' : `<button class="btn ghost" onclick="forget('${room}')">Remove from list</button>`}`}</div></div>`;
+  };
+  const html = `<h1>Admin</h1><div class=label>Rooms (${list.length})</div>${list.map(card).join('') || '<div class=card><p class=hint style="margin:0">No room has been opened yet.</p></div>'}
+  <div class=label>Admin key</div><input class=input id=keyin type=password placeholder="Admin key" value="${esc(key)}" oninput="setKey(this.value)" autocomplete=off>${msg ? `<p class=hint>${esc(msg)}</p>` : ''}`;
   if (html !== lastHtml) { lastHtml = html; $('main').innerHTML = html; }
 }
 render();

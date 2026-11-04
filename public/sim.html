@@ -8,8 +8,9 @@ iframe{width:100%;height:78vh;min-height:620px;border:2px solid var(--line);bord
 <div class=sim><h1>Test phones</h1>
 <p>Four fake players on one screen. Keep the TV page (<a href="/?new" target=_blank style="color:var(--hot2)">open it here</a>) visible in another window, tap Start there, then: Anna creates a game, the others join, everybody picks a team (Anna and Cleo in A, Ben and Dan in B), Anna starts.</p>
 <div class=grid>
-<figure><figcaption>Anna (host)</figcaption><iframe src="/play?p=Anna"></iframe></figure>
-<figure><figcaption>Ben</figcaption><iframe src="/play?p=Ben"></iframe></figure>
-<figure><figcaption>Cleo</figcaption><iframe src="/play?p=Cleo"></iframe></figure>
-<figure><figcaption>Dan</figcaption><iframe src="/play?p=Dan"></iframe></figure>
+<figure><figcaption>Anna (host)</figcaption><iframe data-p="Anna"></iframe></figure>
+<figure><figcaption>Ben</figcaption><iframe data-p="Ben"></iframe></figure>
+<figure><figcaption>Cleo</figcaption><iframe data-p="Cleo"></iframe></figure>
+<figure><figcaption>Dan</figcaption><iframe data-p="Dan"></iframe></figure>
 </div></div>
+<script>const room=new URLSearchParams(location.search).get('room');document.querySelectorAll('iframe').forEach(f=>{f.src='/play?p='+f.dataset.p+(room?'&room='+room:'')})</script>

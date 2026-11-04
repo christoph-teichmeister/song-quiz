@@ -1,32 +1,42 @@
 {
   "rules": {
-    "public": {
-      ".read": true,
-      ".write": true
+    "rooms": {
+      "$room": {
+        "public": {
+          ".read": true,
+          ".write": true
+        },
+        "views": {
+          "$pid": {
+            ".read": true,
+            ".write": true
+          },
+          ".write": true
+        },
+        "actions": {
+          ".read": true,
+          ".write": true
+        },
+        "host": {
+          ".read": true,
+          ".write": true
+        },
+        "admin": {
+          "key": {
+            ".read": false,
+            ".write": true
+          },
+          "epoch": {
+            ".read": true,
+            ".write": "newData.parent().child('key').val() === '__ADMIN_KEY__'"
+          }
+        }
+      }
     },
-    "views": {
-      "$pid": {
-        ".read": true,
+    "roomIndex": {
+      ".read": true,
+      "$room": {
         ".write": true
-      },
-      ".write": true
-    },
-    "actions": {
-      ".read": true,
-      ".write": true
-    },
-    "host": {
-      ".read": true,
-      ".write": true
-    },
-    "admin": {
-      "key": {
-        ".read": false,
-        ".write": true
-      },
-      "epoch": {
-        ".read": true,
-        ".write": "newData.parent().child('key').val() === '__ADMIN_KEY__'"
       }
     }
   }

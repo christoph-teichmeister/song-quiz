@@ -4,7 +4,7 @@
 <link rel=stylesheet href=style.css>
 <div class=app id=main>Connecting…</div><div id=sticky></div><div id=modal></div>
 <script type=module>
-import { D, r } from './db.js';
+import { D, rr, ROOM } from './db.js';
 import { awards } from './game.js';
 const $ = (id) => document.getElementById(id);
 const qs = new URLSearchParams(location.search);
@@ -15,7 +15,7 @@ let cfg = { list: null, mode: 'normal', length: 10 }, modal = null, nameV = sim 
 let jt = false, ja = false, lastKey = '', lastVerify = '';
 const revealAt = {}; // when each reveal was first seen, so the countdown bar survives re-renders
 
-const send = (o) => D.push(r('actions'), { pid, ...o });
+const send = (o) => D.push(rr('actions'), { pid, ...o });
 const act = (a) => send({ act: a });
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const buzzNow = (el) => { navigator.vibrate?.(40); el.classList.add('fire'); act({ type: 'buzz' }); };
@@ -41,8 +41,8 @@ Object.assign(window, {
   buzzNow,
 });
 
-D.onValue(r('public'), (s) => { pub = s.val() || { session: false, catalog: [] }; render(); });
-D.onValue(r(`views/${pid}`), (s) => { S = s.val(); render(); });
+D.onValue(rr('public'), (s) => { pub = s.val() || { session: false, catalog: [] }; render(); });
+D.onValue(rr(`views/${pid}`), (s) => { S = s.val(); render(); });
 const live = () => S && S.me && pub.session && S.code === pub.code; // a view from an older game is ignored
 
 function entry() {
