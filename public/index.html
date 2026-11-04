@@ -5,6 +5,7 @@
 <div id=yt></div><div id=cover style="display:none"><div class=bars><i></i><i style="animation-delay:.2s"></i><i style="animation-delay:.4s"></i><i style="animation-delay:.1s"></i><i style="animation-delay:.3s"></i></div><h1 id=cover-t></h1><div id=cover-s></div></div>
 <div class=tv id=main></div>
 <canvas id=confetti></canvas>
+<div id=prog><div id=progt></div><div id=progb><i id=progf></i></div></div>
 <div id=np><button id=npb title='Music on/off' onclick='toggleMusic()'></button><span id=npt></span></div>
 <div id=snd><div class=gate><div class=gate-note>🎵</div><h1>Song Quiz</h1><button class=gate-btn onclick=unlock()>▶ Tap to start</button><p>Turns on the sound for tonight</p></div></div>
 <div id=prompt onclick="keepAlive()">Still there? Resetting in <b id=pc></b> s — tap anywhere to keep playing</div>
@@ -111,6 +112,9 @@ function render() {
   setNp($('npt').textContent);
   const prompt = S && S.promptUntil; $('prompt').style.display = prompt ? 'flex' : 'none';
   if (prompt) $('pc').textContent = Math.max(0, Math.ceil((S.promptUntil - now()) / 1000));
+  const inGame = S && ['pickfront', 'countdown', 'playing', 'verify', 'reveal'].includes(S.phase) && S.total;
+  $('prog').style.display = inGame ? 'block' : 'none';
+  if (inGame) { const left = S.total - S.idx - 1; $('progt').textContent = `Song ${S.idx + 1} of ${S.total} · ${left ? left + ' to go' : 'last song'}`; $('progf').style.width = (100 * (S.idx + (S.phase === 'reveal' ? 1 : 0)) / S.total) + '%'; }
   const cover = S && ['playing', 'verify'].includes(S.phase); // not during the countdown: its number and the judge note live in #main $('cover').style.display = cover ? 'flex' : 'none';
   if (!S) { // idle: stays up, nothing to do until someone scans
     const key = 'idle'; if ($('main').dataset.k === key) return; $('main').dataset.k = key; lastHtml = '';

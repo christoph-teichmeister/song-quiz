@@ -64,8 +64,10 @@ function game() {
   const me = S.me, t = me.team, ph = S.phase, mem = (x) => S.players.filter((p) => p.team === x);
   const isJudge = S.judge === me.id, front = t && S.teams[t].front === me.id, lk = (S.locked || []).includes(t);
   const hdr = `<div class=hdr><span><b>${esc(me.name)}</b> · ${t ? `<b class=${t}>Team ${t}</b>` : 'no team yet'}</span><span class=score-pill><span class=A>${S.teams.A.score}</span> : <span class=B>${S.teams.B.score}</span></span></div>`;
+  const prog = S.total && !['lobby', 'end'].includes(ph) ? `<div class=prog><span>Song ${S.idx + 1} of ${S.total} · ${S.total - S.idx - 1 ? (S.total - S.idx - 1) + ' to go' : 'last song'}</span><div><i style="width:${100 * (S.idx + (ph === 'reveal' ? 1 : 0)) / S.total}%"></i></div></div>` : '';
   const judgeBanner = isJudge && ['countdown', 'playing'].includes(ph) ? `<div class=judge-banner>🎧 <b>You are the judge this song.</b> Listen along and keep the answer to yourself.</div>` : '';
   let body = '', sticky = '', key = ph;
+  const hdrP = hdr + prog;
 
   if (ph === 'lobby') {
     const ready = mem('A').length > 0 && mem('B').length > 0;
@@ -80,30 +82,30 @@ function game() {
     } else body += `<p class=hint>${t ? '' : 'Pick a team. '}The host starts the game <span class=dots><i></i><i></i><i></i></span></p>`;
   } else if (ph === 'pickfront' && t) {
     const fr = S.teams[t].front;
-    body = `${hdr}<h2>Who stands at the front?</h2><div class=stack>${mem(t).map((p) => `<button class="btn ghost${p.id === fr ? ' on' : ''}" onclick="act({type:'front',id:'${p.id}'})">${esc(p.name)}${p.id === fr ? ' 🎤' : ''}</button>`).join('')}</div>`;
+    body = `${hdrP}<h2>Who stands at the front?</h2><div class=stack>${mem(t).map((p) => `<button class="btn ghost${p.id === fr ? ' on' : ''}" onclick="act({type:'front',id:'${p.id}'})">${esc(p.name)}${p.id === fr ? ' 🎤' : ''}</button>`).join('')}</div>`;
     if (fr === me.id) sticky = `<button class=btn onclick="act({type:'ready'})" ${S.teams[t].ready ? 'disabled' : ''}>${S.teams[t].ready ? 'Waiting for the other team…' : 'Ready'}</button>`;
   } else if (ph === 'countdown') {
-    body = `${hdr}${judgeBanner}<h2 style="text-align:center;margin-top:6vh">Get ready<br><span class=dots><i></i><i></i><i></i></span></h2>${front ? '<p class=hint>You are the front-person. Buzz when you know it.</p>' : ''}`;
+    body = `${hdrP}${judgeBanner}<h2 style="text-align:center;margin-top:6vh">Get ready<br><span class=dots><i></i><i></i><i></i></span></h2>${front ? '<p class=hint>You are the front-person. Buzz when you know it.</p>' : ''}`;
     key = 'countdown' + S.idx;
   } else if (ph === 'playing') {
     key = 'playing' + S.idx;
-    body = `${hdr}${judgeBanner}` + (front
+    body = `${hdrP}${judgeBanner}` + (front
       ? `<div class=center><button class=buzz id=buzz ${lk ? 'disabled' : ''} onclick="buzzNow(this)">${lk ? 'LOCKED' : 'BUZZ'}</button></div>`
       : `<div class=center><h2>${lk ? 'Your team is locked' : 'Listening…'}</h2><p class=hint>${lk ? 'The other team gets a try.' : 'Your front-person buzzes.'}</p></div>`);
   } else if (ph === 'verify') {
     const vk = S.idx + ':' + S.buzz.at; if (vk !== lastVerify) { lastVerify = vk; jt = ja = false; }
     if (isJudge || (!S.judge && t && t !== S.buzz.team)) {
-      body = `${hdr}<div class=judge-banner>🎧 <b>You are the judge.</b> Team ${S.buzz.team} buzzed. Is their answer right?</div>
+      body = `${hdrP}<div class=judge-banner>🎧 <b>You are the judge.</b> Team ${S.buzz.team} buzzed. Is their answer right?</div>
         <div class=card><div class=answer>${esc(S.answer.title)}<small>${esc(S.answer.artist)}</small></div></div>
         <div class=stack><button class="tog${jt ? ' on' : ''}" onclick="togJ('t')">Title correct <em>${jt ? '✓' : '✗'}</em></button><button class="tog${ja ? ' on' : ''}" onclick="togJ('a')">Artist correct <em>${ja ? '✓' : '✗'}</em></button></div>`;
       sticky = `<button class=btn onclick="confirmJ()">Confirm</button>`;
-    } else body = `${hdr}<h2 style="text-align:center;margin-top:6vh"><span class=${S.buzz.team}>Team ${S.buzz.team}</span> buzzed</h2><p class=hint>${S.judgeName ? esc(S.judgeName) + ' is judging' : 'Say your answer out loud'} <span class=dots><i></i><i></i><i></i></span></p>`;
+    } else body = `${hdrP}<h2 style="text-align:center;margin-top:6vh"><span class=${S.buzz.team}>Team ${S.buzz.team}</span> buzzed</h2><p class=hint>${S.judgeName ? esc(S.judgeName) + ' is judging' : 'Say your answer out loud'} <span class=dots><i></i><i></i><i></i></span></p>`;
     key = 'verify' + vk;
   } else if (ph === 'reveal') {
     const lr = S.lastResult;
     const nx = S.next, upNext = nx && (nx.A === me.id || nx.B === me.id), judgeNext = nx && nx.judge === me.id;
     const nextNote = upNext ? `<div class=judge-banner>🎤 <b>You are the next guesser.</b> Get to the front and buzz for Team ${t}.</div>` : judgeNext ? `<div class=judge-banner>🎧 <b>You are the next judge.</b> You will see the answer, keep it to yourself.</div>` : '';
-    body = `${hdr}${nextNote}<div class=card><div class=answer>${esc(S.answer.title)}<small>${esc(S.answer.artist)}</small></div></div>${lr ? `<p class=hint><b class=${lr.team}>Team ${lr.team}</b> ${lr.pts ? `+${lr.pts}` : 'no points'}</p>` : ''}<p class=hint>${nx ? 'Next song starts in a moment…' : 'That was the last song…'}</p>`;
+    body = `${hdrP}${nextNote}<div class=card><div class=answer>${esc(S.answer.title)}<small>${esc(S.answer.artist)}</small></div></div>${lr ? `<p class=hint><b class=${lr.team}>Team ${lr.team}</b> ${lr.pts ? `+${lr.pts}` : 'no points'}</p>` : ''}<p class=hint>${nx ? 'Next song starts in a moment…' : 'That was the last song…'}</p>`;
   } else if (ph === 'end') {
     const w = S.teams.A.score === S.teams.B.score ? 'It\'s a draw' : `Team ${S.teams.A.score > S.teams.B.score ? 'A' : 'B'} wins`;
     body = `${hdr}<h1>${w} 🎉</h1><div class=card><b class=A>Team A</b> ${S.teams.A.score} · <b class=B>Team B</b> ${S.teams.B.score}</div>`;
