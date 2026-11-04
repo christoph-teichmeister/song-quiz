@@ -14,7 +14,7 @@ import { qrSvg } from './qr.js';
 const $ = (id) => document.getElementById(id);
 let session = null, S = null, lists = {}, errs = {}, last = {}, yt = null, ytReady = false, unlocked = false, lastIdx = -1;
 const now = () => Date.now();
-window.onYouTubeIframeAPIReady = () => { yt = new YT.Player('yt', { width: 320, height: 200, playerVars: { playsinline: 1, controls: 0 }, events: { onReady: () => { ytReady = true; audio(); }, onError: (e) => { $('cover-t').textContent = `Video unavailable (YouTube error ${e.data})`; console.error('SQ yt error', e.data); } } }); };
+window.onYouTubeIframeAPIReady = () => { yt = new YT.Player('yt', { width: 320, height: 200, playerVars: { playsinline: 1, controls: 0 }, events: { onReady: () => { ytReady = true; audio(); }, onStateChange: (e) => { if (e.data === 0 && idleOn) ambient(); }, onError: (e) => { if (idleOn) return ambient(); $('cover-t').textContent = `Video unavailable (YouTube error ${e.data})`; console.error('SQ yt error', e.data); } } }); };
 
 if (new URLSearchParams(location.search).has('new')) localStorage.sqState = ''; // /?new starts clean
 try { const saved = JSON.parse(localStorage.sqState || 'null'); if (saved) session = saved; } catch {} // resume after a TV reload
@@ -79,7 +79,7 @@ setInterval(() => {
 
 addEventListener('click', () => { if (!unlocked) window.unlock(); }); addEventListener('keydown', () => { if (!unlocked) window.unlock(); });
 window.keepAlive = () => { if (session) { session.lastActivity = now(); session.promptUntil = 0; publish(); } };
-window.unlock = () => { unlocked = true; $('snd').style.display = 'none'; render(); if (ytReady) { yt.mute(); yt.playVideo(); yt.pauseVideo(); yt.unMute(); } };
+window.unlock = () => { unlocked = true; $('snd').style.display = 'none'; render(); audio(); };
 
 const q = (url) => `<div class=qrsvg>${qrSvg(url)}</div>`;
 const base = location.origin;
@@ -110,12 +110,19 @@ function render() {
   $('main').innerHTML = h;
 }
 
+let idleOn = false; // quiet background music on the start page and in the lobby
+function ambient() {
+  const all = Object.values(lists).flat();
+  if (!all.length) return;
+  yt.setVolume(25); yt.loadVideoById(all[Math.floor(Math.random() * all.length)].id); idleOn = true;
+}
 function audio() {
-  if (!ytReady || !S) { if (ytReady) { yt.stopVideo(); lastIdx = -1; } return; }
+  if (!ytReady) return;
+  if (!S || S.phase === 'lobby') { if (unlocked && !idleOn) ambient(); return; }
+  if (idleOn) { idleOn = false; yt.setVolume(100); lastIdx = -1; }
   const p = S.phase;
   if (p === 'playing') { if (S.idx !== lastIdx || !yt.getVideoData?.().video_id) { lastIdx = S.idx; yt.loadVideoById(S.videoId); } else yt.playVideo(); }
   else if (p === 'verify' || (p === 'reveal' && S.settings.mode === 'intro')) yt.pauseVideo();
-  else if (p === 'lobby' || p === 'end' || p === 'pickfront') { yt.stopVideo(); lastIdx = -1; }
+  else if (p === 'end' || p === 'pickfront') { yt.stopVideo(); lastIdx = -1; }
 }
-publish();
 </script>
