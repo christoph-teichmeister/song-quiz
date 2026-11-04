@@ -15,7 +15,7 @@ export function createSession(hostName, now, hostId) {
     settings: { list: null, mode: 'normal', length: 10 },
     songs: [], idx: 0, locked: [], buzz: null, startedAt: 0, until: 0,
     lastActivity: now, promptUntil: 0,
-    stats: {}, timeline: [{ A: 0, B: 0 }], // per-player buzz stats and the score after every song
+    gameNo: 0, stats: {}, timeline: [{ A: 0, B: 0 }], // per-player buzz stats and the score after every song
   };
 }
 
@@ -49,7 +49,7 @@ export function act(s, pid, a, now) {
       if (!a.songs?.length) return 'no songs';
       s.settings = { list: a.list, mode: a.mode || 'normal', length: a.length || 10 };
       s.songs = shuffle(a.songs).slice(0, s.settings.length);
-      s.idx = 0; s.stats = {}; s.timeline = [{ A: 0, B: 0 }];
+      s.idx = 0; s.gameNo++; s.stats = {}; s.timeline = [{ A: 0, B: 0 }];
       return pickFront(s);
     }
     case 'front': { // teammate sets the front-person of own team
@@ -160,7 +160,7 @@ export function view(s, pid, now) {
     code: s.code, phase: s.phase, host: pid === s.hostId, me: me && { id: me.id, team: me.team, name: me.name },
     players: Object.values(s.players).map((p) => ({ id: p.id, name: p.name, team: p.team })),
     next: s.next ? { A: s.next.A, B: s.next.B, judge: s.next.judge, names: { A: s.players[s.next.A]?.name, B: s.players[s.next.B]?.name, judge: s.players[s.next.judge]?.name } } : null,
-    stats: s.phase === 'end' ? playerStats(s) : null, timeline: s.phase === 'end' ? s.timeline : null,
+    game: s.gameNo, stats: s.phase === 'end' ? playerStats(s) : null, timeline: s.phase === 'end' ? s.timeline : null,
     judge: s.judge, judgeName: s.judge ? s.players[s.judge]?.name : null,
     teams: s.teams, settings: s.settings, idx: s.idx, total: s.songs.length, locked: s.locked, buzz: s.buzz,
     lastResult: s.lastResult, until: s.until, promptUntil: s.promptUntil,

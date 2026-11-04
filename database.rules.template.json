@@ -28,7 +28,7 @@
           },
           "epoch": {
             ".read": true,
-            ".write": "newData.parent().child('key').val() === '__ADMIN_KEY__'"
+            ".write": "(auth != null && auth.uid === '__ADMIN_UID__') || newData.parent().child('key').val() === '__ADMIN_KEY__'"
           }
         }
       }
@@ -37,6 +37,12 @@
       ".read": true,
       "$room": {
         ".write": true
+      }
+    },
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
       }
     }
   }

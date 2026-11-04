@@ -4,8 +4,10 @@
 <link rel=stylesheet href=style.css>
 <div class=app id=main>Connecting…</div><div id=sticky></div><div id=modal></div>
 <script type=module>
-import { D, rr, ROOM } from './db.js';
+import { D, r, rr, ROOM } from './db.js';
 import { awards } from './game.js';
+import { qrSvg } from './qr.js';
+import { auth, onUser, google, signIn, signUp, resetPw, signOut, removeAccount, authError } from './auth.js';
 const $ = (id) => document.getElementById(id);
 const qs = new URLSearchParams(location.search);
 const sim = qs.get('p'); // /sim opens several fake phones: ?p=Anna gives a fixed player id and name
@@ -13,6 +15,7 @@ const pid = sim ? 'sim-' + sim : (localStorage.sqPid ||= Math.random().toString(
 let S = null, pub = { session: false, catalog: [] };
 let cfg = { list: null, mode: 'normal', length: 10 }, modal = null, nameV = sim || localStorage.sqName || '', codeV = qs.get('code') || '';
 let jt = false, ja = false, lastKey = '', lastVerify = '';
+let user = null, sheet = null, authMsg = '', games = null, delConfirm = false, homeRoom = null, emailV = '', pwV = '', deferredInstall = null, installHint = '', lastModal = '';
 const revealAt = {}; // when each reveal was first seen, so the countdown bar survives re-renders
 
 const send = (o) => D.push(rr('actions'), { pid, ...o });
@@ -39,17 +42,70 @@ Object.assign(window, {
   togJ: (k) => { if (k === 't') jt = !jt; else ja = !ja; render(); },
   confirmJ: () => act({ type: 'verify', title: jt, artist: ja }),
   buzzNow,
+  openSheet: async (k) => { sheet = k; authMsg = ''; delConfirm = false; if (k === 'stats' && user) { games = null; render(); const sn = await D.get(r(`users/${user.uid}/games`)); games = Object.values(sn.val() || {}).sort((a, b) => b.ts - a.ts); } render(); },
+  closeSheet: () => { sheet = null; render(); },
+  setEmail: (v) => { emailV = v; }, setPw: (v) => { pwV = v; },
+  doGoogle: async () => { try { await google(); sheet = null; } catch (e) { authMsg = authError(e); } render(); },
+  doSignIn: async () => { try { await signIn(emailV.trim(), pwV); sheet = null; } catch (e) { authMsg = authError(e); } render(); },
+  doSignUp: async () => { try { await signUp(emailV.trim(), pwV); sheet = null; } catch (e) { authMsg = authError(e); } render(); },
+  doReset: async () => { try { await resetPw(emailV.trim()); authMsg = 'Reset email sent. Check your inbox.'; } catch (e) { authMsg = authError(e); } render(); },
+  doSignOut: async () => { await signOut(); sheet = null; render(); },
+  askDelete: (v) => { delConfirm = v; render(); },
+  doDelete: async () => { try { await D.remove(r(`users/${user.uid}`)); await removeAccount(); sheet = null; } catch (e) { authMsg = authError(e); } render(); },
+  hostHome: () => { homeRoom = Math.random().toString(36).slice(2, 8); D.set(r(`users/${user.uid}/rooms/${homeRoom}`), { created: Date.now() }); sheet = 'home'; render(); },
+  copyLink: () => { navigator.clipboard?.writeText(location.origin + '/?room=' + homeRoom).then(() => { authMsg = 'Link copied.'; render(); }).catch(() => {}); },
+  shareLink: () => { const url = location.origin + '/?room=' + homeRoom; if (navigator.share) navigator.share({ title: 'Song Quiz', text: 'Open this on the TV:', url }).catch(() => {}); else window.copyLink(); },
+  goRoom: () => { location.href = '/play?room=' + homeRoom; },
+  installApp: async () => { if (deferredInstall) { deferredInstall.prompt(); await deferredInstall.userChoice; deferredInstall = null; } else installHint = 'On iPhone: tap Share, then “Add to Home Screen”. On Android: browser menu, then “Install app”.'; render(); },
 });
 
 D.onValue(rr('public'), (s) => { pub = s.val() || { session: false, catalog: [] }; render(); });
-D.onValue(rr(`views/${pid}`), (s) => { S = s.val(); render(); });
+D.onValue(rr(`views/${pid}`), (s) => { S = s.val(); maybeSave(); render(); });
+addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; });
+onUser((u) => { user = u; maybeSave(); render(); });
+function maybeSave() { // each phone writes its own stats into its own account when a game ends (the rules only let the owner write)
+  if (!user || !S || S.phase !== 'end' || !S.stats) return;
+  const id = `${ROOM}-${S.code}-${S.game}`, me2 = S.stats.find((p) => p.id === S.me?.id);
+  if (!me2 || localStorage['sqSaved:' + id]) return;
+  localStorage['sqSaved:' + id] = '1';
+  const a = S.teams.A.score, b = S.teams.B.score, mine = me2.team === 'A' ? a : b, other = me2.team === 'A' ? b : a;
+  D.set(r(`users/${user.uid}/games/${id}`), { ts: Date.now(), room: ROOM, list: S.settings?.list ?? null, mode: S.settings?.mode ?? 'normal', songs: S.total, team: me2.team, A: a, B: b, result: mine > other ? 'win' : mine < other ? 'loss' : 'draw',
+    pts: me2.pts, buzzes: me2.buzzes, right: me2.right, wrong: me2.wrong, avgMs: me2.avgMs ?? null, bestMs: me2.bestMs ?? null });
+}
 const live = () => S && S.me && pub.session && S.code === pub.code; // a view from an older game is ignored
 
 function entry() {
-  return { key: 'entry', body: `<h1>🎵 Song Quiz</h1><p class=hint style="text-align:left">Team up, buzz in, guess the song.</p>
+  return { key: 'entry', body: `<div class=hdr><span></span><button class=score-pill style="border:0;color:inherit;cursor:pointer" onclick="openSheet('account')">${user ? '👤 ' + esc((user.displayName || user.email || 'Account').split(' ')[0]) : 'Sign in'}</button></div><h1>🎵 Song Quiz</h1><p class=hint style="text-align:left">Team up, buzz in, guess the song.</p>
     <div class=stack><input class=input id=name placeholder="Your name" maxlength=20 value="${esc(nameV)}" oninput="setName(this.value)" autocomplete=nickname>
     ${pub.session ? `<input class=input id=code placeholder="Game code" inputmode=numeric value="${esc(codeV || pub.code || '')}" oninput="setCode(this.value)"><button class=btn onclick="joinGame()">Join game</button>`
       : `<button class=btn onclick="create()">Create a new game</button>`}</div><p class=admin-link><a href="/admin">admin</a></p>`, sticky: '' };
+}
+
+function sheetHtml() {
+  const close = '<button class="btn ghost" onclick="closeSheet()">Close</button>', msg = authMsg ? `<p class=hint>${esc(authMsg)}</p>` : '';
+  const sec = (ms) => (ms == null ? '–' : (ms / 1000).toFixed(1) + ' s');
+  let inner = '';
+  if (sheet === 'account' && !user) inner = `<h2>Sign in</h2><p>A free account lets you host your own games at home and keeps your stats.</p>
+    <button class=btn onclick="doGoogle()">Continue with Google</button><p class=hint>or with email</p>
+    <input class=input id=email type=email placeholder=Email value="${esc(emailV)}" oninput="setEmail(this.value)" autocomplete=email>
+    <input class=input id=pw type=password placeholder=Password value="${esc(pwV)}" oninput="setPw(this.value)" autocomplete=current-password>
+    <button class=btn onclick="doSignIn()">Sign in</button><button class="btn ghost" onclick="doSignUp()">Create account</button>
+    <p class=hint><a href="#" onclick="doReset();return false" style="color:inherit">Forgot password?</a></p>${msg}
+    <p class=hint style="font-size:.78rem">We store your email, name and your game stats. You can delete the account any time.</p>${close}`;
+  else if (sheet === 'account') inner = `<h2>${esc(user.displayName || 'Your account')}</h2><p>${esc(user.email || '')}</p>
+    <button class=btn onclick="hostHome()">🏠 Host a game at home</button><button class="btn ghost" onclick="openSheet('stats')">📊 My stats</button><button class="btn ghost" onclick="doSignOut()">Sign out</button>
+    ${delConfirm ? `<p class=err>Delete your account and all saved stats?</p><button class=btn onclick="doDelete()">Yes, delete everything</button><button class="btn ghost" onclick="askDelete(false)">Cancel</button>` : `<button class="btn ghost" onclick="askDelete(true)">Delete my account</button>`}${msg}${close}`;
+  else if (sheet === 'home') { const link = location.origin + '/?room=' + homeRoom; inner = `<h2>Your home room</h2><p>Open this link in the browser of the TV or a laptop at home. Then create the game on your phone: friends scan the QR code that shows up on the TV.</p>
+    <div class=card style="word-break:break-all;font-size:.9rem">${esc(link)}</div><div class=qrsvg style="width:150px;background:#fff;padding:8px;border-radius:12px;margin:auto">${qrSvg(link)}</div>
+    <button class=btn onclick="copyLink()">Copy TV link</button><button class="btn ghost" onclick="shareLink()">Share link</button><button class="btn ghost" onclick="goRoom()">Open my room on this phone</button>${msg}${close}`; }
+  else if (sheet === 'stats') {
+    if (!games) inner = `<h2>My stats</h2><p>Loading…</p>${close}`;
+    else if (!games.length) inner = `<h2>My stats</h2><p>No games saved yet. Play one while signed in and it shows up here.</p>${close}`;
+    else { const n = games.length, sum = (k) => games.reduce((a, g) => a + (g[k] || 0), 0), wins = games.filter((g) => g.result === 'win').length, av = games.filter((g) => g.avgMs != null), best = games.filter((g) => g.bestMs != null);
+      inner = `<h2>My stats</h2><div class=stat-grid><div><b>${n}</b><span>games</span></div><div><b>${wins}</b><span>wins</span></div><div><b>${sum('pts')}</b><span>points</span></div><div><b>${sum('right')}</b><span>right</span></div><div><b>${sec(av.length ? Math.round(av.reduce((a, g) => a + g.avgMs, 0) / av.length) : null)}</b><span>avg buzz</span></div><div><b>${sec(best.length ? Math.min(...best.map((g) => g.bestMs)) : null)}</b><span>fastest</span></div></div>
+        <div class=label>Recent games</div>${games.slice(0, 8).map((g) => `<div class=card style="padding:10px 14px;font-size:.9rem">${new Date(g.ts).toLocaleDateString()} · ${esc(g.result)} · ${g.A}:${g.B} · ${g.pts} pts</div>`).join('')}${close}`; }
+  }
+  return inner ? `<div class=modal onclick="closeSheet()"><div class=sheet onclick="event.stopPropagation()">${inner}</div></div>` : '';
 }
 
 function render() {
@@ -59,7 +115,8 @@ function render() {
   $('main').className = 'app' + (enter ? ' enter' : '');
   $('main').innerHTML = v.body + (S?.err ? `<p class=err>${esc(S.err)}</p>` : '');
   $('sticky').innerHTML = v.sticky ? `<div class=sticky>${v.sticky}</div>` : '';
-  $('modal').innerHTML = modal ? `<div class=modal onclick="closeModal()"><div onclick="event.stopPropagation()"><h2>${MODES[modal][0]}</h2><p>${MODES[modal][1]}</p><button class=btn onclick="closeModal()">Got it</button></div></div>` : '';
+  const mh = sheet ? sheetHtml() : modal ? `<div class=modal onclick="closeModal()"><div onclick="event.stopPropagation()"><h2>${MODES[modal][0]}</h2><p>${MODES[modal][1]}</p><button class=btn onclick="closeModal()">Got it</button></div></div>` : '';
+  if (mh !== lastModal && !$('modal').contains(document.activeElement)) { lastModal = mh; $('modal').innerHTML = mh; } // keep typed text while a game update arrives
 }
 
 function game() {
@@ -116,6 +173,8 @@ function game() {
     const sec = (ms) => (ms == null ? '–' : (ms / 1000).toFixed(1) + ' s');
     body = `${hdr}<h1>${w} ${S.teams.A.score === S.teams.B.score ? '🤝' : '🎉'}</h1><div class=card><b class=A>Team A</b> ${S.teams.A.score} · <b class=B>Team B</b> ${S.teams.B.score}</div>` + (me2 ? `<div class=label>Your game</div>${aw.length ? `<div class=chips>${aw.map((l) => `<span class=chip>${l}</span>`).join('')}</div>` : ''}
       <div class=stat-grid><div><b>${me2.pts}</b><span>points</span></div><div><b>${me2.buzzes}</b><span>buzzes</span></div><div><b>${me2.right}</b><span>right</span></div><div><b>${me2.wrong}</b><span>wrong</span></div><div><b>${sec(me2.avgMs)}</b><span>avg buzz</span></div><div><b>${sec(me2.bestMs)}</b><span>fastest</span></div></div>` : '<p class=hint>You were the judge or listened this game, no stats for you.</p>');
+    const standalone = matchMedia('(display-mode: standalone)').matches;
+    body += user ? `<p class=hint>✓ Your stats are saved to your account.</p>` : `<div class=card><b>Liked it?</b><p style="margin:.4em 0 .8em;color:var(--mute)">Install the app and create a free account: host your own games at home, send the TV link to friends and keep your stats.</p><div class=stack>${standalone ? '' : '<button class="btn ghost" onclick="installApp()">Install the app</button>'}<button class=btn onclick="openSheet(\'account\')">Create a free account</button></div>${installHint ? `<p class=hint>${esc(installHint)}</p>` : ''}</div>`;
     if (S.host) sticky = `<button class=btn onclick="act({type:'again'})">Play again</button>`;
   } else body = hdr;
   return { key, body, sticky };

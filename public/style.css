@@ -87,8 +87,8 @@ body:has(.idle){background:radial-gradient(ellipse at 30% 40%,#2d1b4e,var(--bg) 
 .qrsvg svg{width:100%;height:auto;display:block}
 .notes em{position:absolute;bottom:-12%;font-style:normal;font-size:6vw;color:#ff4f8b55;animation:rise2 9s infinite linear}
 @keyframes rise2{0%{transform:translateY(0) rotate(-10deg);opacity:0}15%{opacity:1}100%{transform:translateY(-110vh) rotate(15deg);opacity:0}}
-#np{position:fixed;bottom:1.5vh;left:2vw;z-index:30;opacity:.75;font-size:max(1.2vw,13px);display:none;align-items:center;gap:.6em;background:#0008;padding:.3em 1em .3em .4em;border-radius:2em}
-#np:hover{opacity:1}#np button{background:none;padding:.2em .4em;margin:0;font-size:1.4em}
+#np{position:fixed;bottom:1.5vh;left:2vw;z-index:30;opacity:.75;font-size:max(1.2vw,13px);display:none;align-items:center;background:#0008;padding:.25em;border-radius:2em}
+#np:hover{opacity:1}#np button{background:none;padding:0;margin:0;font-size:1.4em;width:1.9em;height:1.9em;border-radius:50%;display:flex;align-items:center;justify-content:center}#np button:hover{background:#ffffff1a}#npt:empty{display:none}#npt:not(:empty){padding:0 .9em 0 .3em}
 @media(max-width:800px){.idle{grid-template-columns:1fr}.qrcard{width:60vw}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 
@@ -145,3 +145,11 @@ table.stats td{padding:.45em .5em;text-align:right;border-top:1px solid var(--li
 .again{margin:3vh 0 0;font-size:max(1.8vw,16px);color:var(--mute);animation:rise .6s .8s both}
 .cdp{font-size:.85rem;color:var(--mute)}.cdp div{height:6px;margin-top:6px}
 .admin-link{text-align:center;font-size:.8rem;color:var(--mute);margin-top:12px}.admin-link a{color:inherit}
+
+.modal>.sheet{max-height:90dvh;overflow-y:auto}
+.modal .stack,.modal .btn{flex-shrink:0}
+
+/* gate -> start page transition: the gate lifts away, then the start page builds up */
+#snd{transition:opacity .6s ease,transform .6s ease}#snd.out{opacity:0;transform:scale(1.06);pointer-events:none}
+.gated .idle>*{opacity:0}
+html:not(.gated) .idle .hero{animation:rise .8s .25s both}html:not(.gated) .idle .scan{animation:rise .8s .5s both}html:not(.gated) .idle .repo{animation:rise .8s .9s both}

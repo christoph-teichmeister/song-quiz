@@ -1,4 +1,4 @@
-<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Song Quiz TV</title><link rel=icon type="image/svg+xml" href=/favicon.svg>
+<!doctype html><script>document.documentElement.className='gated'</script><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Song Quiz TV</title><link rel=icon type="image/svg+xml" href=/favicon.svg>
 <link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
 <link rel=stylesheet href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;600&display=swap">
 <link rel=stylesheet href=style.css>
@@ -57,7 +57,7 @@ function drawFx() { // a draw: equal numbers of blue and orange bubbles drift up
 }
 window.onYouTubeIframeAPIReady = () => { yt = new YT.Player('yt', { width: 320, height: 200, playerVars: { playsinline: 1, controls: 0 }, events: { onReady: () => { ytReady = true; audio(); }, onStateChange: (e) => { if (e.data === 0 && idleOn) ambient(); setNp(idleOn ? ({ 1: '♪ ' + (yt.getVideoData?.().title || ''), 3: '♪ loading…', '-1': '♪ starting…', 2: '♪ paused (click the page)' }[e.data] ?? '') : ''); }, onError: (e) => { if (idleOn) return ambient(); $('cover-t').textContent = `Video unavailable (YouTube error ${e.data})`; console.error('SQ yt error', e.data); } } }); };
 
-window.unlock = () => { unlocked = true; $('snd').style.display = 'none'; try { ac().resume(); audio(); } catch {} };
+window.unlock = () => { if (unlocked) return; unlocked = true; document.documentElement.classList.remove('gated'); $('snd').classList.add('out'); setTimeout(() => { $('snd').style.display = 'none'; }, 700); try { ac().resume(); audio(); } catch {} };
 addEventListener('click', () => { if (!unlocked) window.unlock(); }); addEventListener('keydown', () => { if (!unlocked) window.unlock(); });
 if (window.YT?.Player) window.onYouTubeIframeAPIReady(); // the API script may have loaded before this module ran
 if (new URLSearchParams(location.search).has('new')) localStorage.sqState = ''; // /?new starts clean
