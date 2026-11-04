@@ -20,7 +20,7 @@ Charts now, 80s, 90s, 2000s, Christmas, movie/TV themes, intro-only, speed (play
 
 ## Robustness
 
-- Idle timeout: after N s without activity, the TV shows a 2 s "Are you still there?" countdown; no tap resets the session to the lobby. No deadlocks if someone walks away.
+- Idle timeout: after N s without activity, the TV shows a 10-15 s "Are you still there?" countdown; no tap resets the session to the lobby. No deadlocks if someone walks away.
 - Server state is in memory, reconnecting phones re-attach via a stored player token.
 - Host drop: host role passes on after a grace period.
 
@@ -45,8 +45,12 @@ Charts now, 80s, 90s, 2000s, Christmas, movie/TV themes, intro-only, speed (play
 - Scoring: 1 point for the title, 1 for the artist; the verifier ticks both. A **speed** category (earlier buzz = more points) is its own category.
 - Two teams, players pick their team. Each round every team picks its front-person (the buzzer) again.
 
+- Variable team size: 1 to N players per team (even 2 players total works).
+- Game length is selectable: quick (5 songs) or normal (10 songs); the song count per round follows the chosen length and the category's list size.
+- Idle timeout 3 min, then a 10-15 s "Are you still there?" countdown; no tap resets to the lobby.
+- Playlists: I seed curated lists per category; additionally, a "channel" category: all songs of a YouTube channel the host supplies later.
+
 ## Open questions
 
-- Max players and songs per round.
-- Idle timeout length (proposal: 3 min lobby/game, then 2 s prompt).
-- Who curates the playlists, and how many songs per category.
+- Which channel for the channel category (send later).
+- Review of the seeded playlists.
