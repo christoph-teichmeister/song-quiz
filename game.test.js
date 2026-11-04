@@ -103,3 +103,14 @@ test('end of game: per-player stats and score timeline', () => {
   assert.deepEqual([st.buzzes, st.right, st.wrong, st.pts, st.avgMs], [1, 1, 0, 1, 1500]);
   assert.deepEqual(view(s, h, now).timeline, [{ A: 0, B: 0 }, { A: 1, B: 0 }]);
 });
+
+test('custom length is clamped to 1..50 and works with 1 song', () => {
+  const s = createSession('hanna', 0), b = join(s, 'ben', 0).id;
+  act(s, s.hostId, { type: 'team', team: 'A' }, 0); act(s, b, { type: 'team', team: 'B' }, 0);
+  act(s, s.hostId, { type: 'start', list: 'x', songs, length: 0 }, 0);
+  assert.equal(s.settings.length, 10);
+  s.phase = 'lobby'; act(s, s.hostId, { type: 'start', list: 'x', songs, length: 1 }, 0);
+  assert.equal(view(s, s.hostId, 0).total, 1);
+  s.phase = 'lobby'; act(s, s.hostId, { type: 'start', list: 'x', songs, length: 999 }, 0);
+  assert.equal(s.settings.length, 50);
+});

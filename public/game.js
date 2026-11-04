@@ -47,7 +47,7 @@ export function act(s, pid, a, now) {
       if (pid !== s.hostId || s.phase !== 'lobby') return 'host only';
       if (!members(s, 'A').length || !members(s, 'B').length) return 'both teams need a player';
       if (!a.songs?.length) return 'no songs';
-      s.settings = { list: a.list, mode: a.mode || 'normal', length: a.length || 10 };
+      s.settings = { list: a.list, mode: a.mode || 'normal', length: Math.max(1, Math.min(50, Math.floor(+a.length) || 10)) }; // 1 to 50 songs
       s.songs = shuffle(a.songs).slice(0, s.settings.length);
       s.idx = 0; s.gameNo++; s.stats = {}; s.timeline = [{ A: 0, B: 0 }];
       s.phase = 'howto'; s.ack = {}; // everyone with a team confirms the rules first

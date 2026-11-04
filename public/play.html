@@ -14,7 +14,7 @@ const qs = new URLSearchParams(location.search);
 const sim = qs.get('p'); // /sim opens several fake phones: ?p=Anna gives a fixed player id and name
 const pid = sim ? 'sim-' + sim : (localStorage.sqPid ||= Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6));
 let S = null, pub = { session: false, catalog: [] };
-let cfg = { list: null, mode: 'normal', length: 10 }, modal = null, nameV = sim || localStorage.sqName || '', codeV = qs.get('code') || '';
+let cfg = { list: null, mode: 'normal', length: 10, custom: false }, modal = null, nameV = sim || localStorage.sqName || '', codeV = qs.get('code') || '';
 let jt = false, ja = false, lastKey = '', lastVerify = '';
 let user = null, sheet = null, authMsg = '', games = null, delConfirm = false, homeRoom = null, emailV = '', pwV = '', deferredInstall = null, installHint = '', lastModal = '';
 const revealAt = {}; // when each reveal was first seen, so the countdown bar survives re-renders
@@ -36,7 +36,10 @@ Object.assign(window, {
   create: () => send({ create: nameV.trim() || 'Player' }),
   joinGame: () => send({ join: { code: (codeV || pub.code || '').trim(), name: nameV.trim() || 'Player' } }),
   pickList: (id) => { cfg.list = id; render(); },
-  pickLen: (n) => { cfg.length = n; render(); },
+  pickLen: (n) => { cfg.length = n; cfg.custom = false; render(); },
+  pickCustom: () => { cfg.custom = true; render(); },
+  stepLen: (d) => { cfg.length = Math.max(1, Math.min(50, cfg.length + d)); render(); },
+  setLen: (v) => { const n = parseInt(v, 10); if (n > 0) cfg.length = Math.min(50, n); },
   pickMode: (m) => { cfg.mode = m; modal = m === 'normal' ? null : m; render(); },
   closeModal: () => { modal = null; render(); },
   start: () => act({ type: 'start', list: cfg.list || pub.catalog[0]?.id, mode: cfg.mode, length: cfg.length }),
@@ -136,10 +139,11 @@ function game() {
     const card = (x) => `<button class="team-card ${x}${t === x ? ' on' : ''}" onclick="act({type:'team',team:'${x}'})"><h3 class=${x}>Team ${x}</h3><div class=chips>${mem(x).map((p) => `<span class=chip>${esc(p.name)}</span>`).join('') || '<span class=hint>nobody yet</span>'}</div><span class=join-pill>${t === x ? '✓ You are in' : t ? 'Tap to switch' : 'Tap to join'}</span></button>`;
     body = `${hdr}<div class=label>Game code ${esc(S.code)}</div><div class="step${t ? ' done' : ''}"><b>${t ? '✓' : 1}</b>Pick your team<small>tap a card</small></div><div class=team-cards>${card('A')}${card('B')}</div>`;
     if (S.host) {
-      const cat = pub.catalog || [], sel = cfg.list || cat[0]?.id;
+      const cat = pub.catalog || [], sel = cfg.list || cat[0]?.id, custom = cfg.custom || ![5, 10, 15].includes(cfg.length);
       body += `<div class=step><b>2</b>Choose a playlist<small>tap one</small></div><div class=tiles>${cat.map((c) => `<button class="tile${c.id === sel ? ' on' : ''}" onclick="pickList('${c.id}')"><i>${c.emoji || '🎵'}</i><b>${esc(c.name)}</b><span>${c.count} songs</span></button>`).join('')}</div>
         <div class=step><b>3</b>Pick a mode<small>tap to change</small></div><div class=seg>${Object.entries(MODES).map(([k, m]) => `<button class="${cfg.mode === k ? 'on' : ''}" onclick="pickMode('${k}')">${m[0].split(' ')[0]}</button>`).join('')}</div>
-        <div class=step><b>4</b>Game length<small>tap to change</small></div><div class=seg>${[5, 10, 15].map((n) => `<button class="${cfg.length === n ? 'on' : ''}" onclick="pickLen(${n})">${n} songs</button>`).join('')}</div>`;
+        <div class=step><b>4</b>Number of songs<small>tap to change</small></div><div class=seg>${[5, 10, 15].map((n) => `<button class="${!custom && cfg.length === n ? 'on' : ''}" onclick="pickLen(${n})">${n}</button>`).join('')}<button class="${custom ? 'on' : ''}" onclick="pickCustom()">Custom</button></div>
+        ${custom ? `<div class=stepper><button onclick="stepLen(-1)" aria-label="fewer">−</button><input class=input id=len type=number inputmode=numeric min=1 max=50 value="${cfg.length}" oninput="setLen(this.value)"><button onclick="stepLen(1)" aria-label="more">+</button></div>` : ''}`;
       sticky = `<button class=btn onclick="start()" ${t && ready ? '' : 'disabled'}>${!t ? 'Pick a team first' : ready ? 'Start game' : 'Each team needs a player'}</button>`;
     } else body += `<p class=hint>${t ? '' : 'Pick a team. '}The host starts the game <span class=dots><i></i><i></i><i></i></span></p>`;
   } else if (ph === 'howto') {

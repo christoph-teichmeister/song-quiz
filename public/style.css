@@ -164,3 +164,6 @@ html:not(.gated) .idle .hero{animation:rise .8s .25s both}html:not(.gated) .idle
 .ack.ok{border-color:var(--ok);background:#5ee6a01a}.ack.A.ok{border-color:var(--ok)}
 .tip{margin-top:3vh;max-width:42vw;min-height:5.5em;font-size:max(1.5vw,14px);color:var(--mute);line-height:1.4}.tip b{color:var(--fg)}.tip.swap{animation:rise .6s both}
 @media(max-width:800px){.rulegrid{grid-template-columns:1fr}.tip{max-width:none}}
+
+.stepper{display:flex;gap:10px;align-items:center}.stepper .input{text-align:center;font:800 1.3rem var(--display);padding:0}
+.stepper button{flex:none;width:56px;height:56px;border-radius:16px;background:var(--card);font:800 1.5rem var(--display);transition:transform .12s}.stepper button:active{transform:scale(.94)}
