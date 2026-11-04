@@ -5,6 +5,7 @@
 <div class=app id=main>Connecting…</div><div id=sticky></div><div id=modal></div>
 <script type=module>
 import { D, r } from './db.js';
+import { awards } from './game.js';
 const $ = (id) => document.getElementById(id);
 const qs = new URLSearchParams(location.search);
 const sim = qs.get('p'); // /sim opens several fake phones: ?p=Anna gives a fixed player id and name
@@ -108,7 +109,10 @@ function game() {
     body = `${hdrP}${nextNote}<div class=card><div class=answer>${esc(S.answer.title)}<small>${esc(S.answer.artist)}</small></div></div>${lr ? `<p class=hint><b class=${lr.team}>Team ${lr.team}</b> ${lr.pts ? `+${lr.pts}` : 'no points'}</p>` : ''}<p class=hint>${nx ? 'Next song starts in a moment…' : 'That was the last song…'}</p>`;
   } else if (ph === 'end') {
     const w = S.teams.A.score === S.teams.B.score ? 'It\'s a draw' : `Team ${S.teams.A.score > S.teams.B.score ? 'A' : 'B'} wins`;
-    body = `${hdr}<h1>${w} 🎉</h1><div class=card><b class=A>Team A</b> ${S.teams.A.score} · <b class=B>Team B</b> ${S.teams.B.score}</div>`;
+    const me2 = (S.stats || []).find((p) => p.id === me.id), aw = awards(S.stats || [])[me.id] || [];
+    const sec = (ms) => (ms == null ? '–' : (ms / 1000).toFixed(1) + ' s');
+    body = `${hdr}<h1>${w} 🎉</h1><div class=card><b class=A>Team A</b> ${S.teams.A.score} · <b class=B>Team B</b> ${S.teams.B.score}</div>` + (me2 ? `<div class=label>Your game</div>${aw.length ? `<div class=chips>${aw.map((l) => `<span class=chip>${l}</span>`).join('')}</div>` : ''}
+      <div class=stat-grid><div><b>${me2.pts}</b><span>points</span></div><div><b>${me2.buzzes}</b><span>buzzes</span></div><div><b>${me2.right}</b><span>right</span></div><div><b>${me2.wrong}</b><span>wrong</span></div><div><b>${sec(me2.avgMs)}</b><span>avg buzz</span></div><div><b>${sec(me2.bestMs)}</b><span>fastest</span></div></div>` : '<p class=hint>You were the judge or listened this game, no stats for you.</p>');
     if (S.host) sticky = `<button class=btn onclick="act({type:'again'})">Play again</button>`;
   } else body = hdr;
   return { key, body, sticky };

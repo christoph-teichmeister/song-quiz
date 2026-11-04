@@ -85,3 +85,16 @@ test('after a reveal the next song starts with a countdown, fronts rotate', () =
   assert.notEqual(s.teams.A.front, first);
   assert.equal(s.teams.A.front, planned);
 });
+
+test('end of game: per-player stats and score timeline', () => {
+  const { s, h, b, now } = setup();
+  act(s, h, { type: 'buzz' }, now + 1500);
+  act(s, b, { type: 'verify', title: true, artist: false }, now + 1600);   // no spare player: opponent judges
+  const v = view(s, h, now);
+  assert.equal(v.stats, null);                                             // only shown once the game ended
+  tick(s, now + 1600 + T.reveal);
+  assert.equal(s.phase, 'end');
+  const st = view(s, h, now).stats.find((p) => p.id === h);
+  assert.deepEqual([st.buzzes, st.right, st.wrong, st.pts, st.avgMs], [1, 1, 0, 1, 1500]);
+  assert.deepEqual(view(s, h, now).timeline, [{ A: 0, B: 0 }, { A: 1, B: 0 }]);
+});

@@ -15,6 +15,7 @@ export function createSession(hostName, now, hostId) {
     settings: { list: null, mode: 'normal', length: 10 },
     songs: [], idx: 0, locked: [], buzz: null, startedAt: 0, until: 0,
     lastActivity: now, promptUntil: 0,
+    stats: {}, timeline: [{ A: 0, B: 0 }], // per-player buzz stats and the score after every song
   };
 }
 
@@ -48,7 +49,7 @@ export function act(s, pid, a, now) {
       if (!a.songs?.length) return 'no songs';
       s.settings = { list: a.list, mode: a.mode || 'normal', length: a.length || 10 };
       s.songs = shuffle(a.songs).slice(0, s.settings.length);
-      s.idx = 0;
+      s.idx = 0; s.stats = {}; s.timeline = [{ A: 0, B: 0 }];
       return pickFront(s);
     }
     case 'front': { // teammate sets the front-person of own team
@@ -67,7 +68,7 @@ export function act(s, pid, a, now) {
     }
     case 'buzz': {
       if (s.phase !== 'playing' || !p.team || s.teams[p.team].front !== pid || s.locked.includes(p.team)) return 'cannot buzz';
-      s.buzz = { team: p.team, at: now - s.startedAt };
+      s.buzz = { team: p.team, at: now - s.startedAt, pid };
       s.phase = 'verify';
       return null;
     }
@@ -78,6 +79,8 @@ export function act(s, pid, a, now) {
       const fast = s.settings.mode === 'speed' && s.buzz.at < T.speedMs;
       s.teams[s.buzz.team].score += pts + (fast ? pts : 0);
       s.lastResult = { team: s.buzz.team, title: !!a.title, artist: !!a.artist, pts: pts + (fast ? pts : 0) };
+      const st = (s.stats[s.buzz.pid] ||= { buzzes: 0, right: 0, wrong: 0, pts: 0, times: [] }); // who buzzed, how fast, right or wrong
+      st.buzzes++; st.times.push(s.buzz.at); st.pts += s.lastResult.pts; if (pts) st.right++; else st.wrong++;
       if (a.title && a.artist) return reveal(s, now);
       for (const t of s.judge ? [s.buzz.team] : ['A', 'B']) if (!s.locked.includes(t)) s.locked.push(t);
       s.buzz = null;
@@ -90,6 +93,7 @@ export function act(s, pid, a, now) {
       if (pid !== s.hostId || s.phase !== 'end') return 'host only';
       s.phase = 'lobby';
       for (const t of ['A', 'B']) s.teams[t] = { score: 0, front: null, ready: false, rot: 0 };
+      s.stats = {}; s.timeline = [{ A: 0, B: 0 }];
       return null;
   }
   return 'unknown action';
@@ -115,6 +119,7 @@ function pickFront(s) {
 
 function reveal(s, now) {
   s.phase = 'reveal'; s.until = now + T.reveal; s.buzz = null;
+  s.timeline.push({ A: s.teams.A.score, B: s.teams.B.score });
   s.next = s.idx + 1 < s.songs.length ? planNext(s) : null; // decided now so the phones can announce who is up
   return null;
 }
@@ -155,6 +160,7 @@ export function view(s, pid, now) {
     code: s.code, phase: s.phase, host: pid === s.hostId, me: me && { id: me.id, team: me.team, name: me.name },
     players: Object.values(s.players).map((p) => ({ id: p.id, name: p.name, team: p.team })),
     next: s.next ? { A: s.next.A, B: s.next.B, judge: s.next.judge, names: { A: s.players[s.next.A]?.name, B: s.players[s.next.B]?.name, judge: s.players[s.next.judge]?.name } } : null,
+    stats: s.phase === 'end' ? playerStats(s) : null, timeline: s.phase === 'end' ? s.timeline : null,
     judge: s.judge, judgeName: s.judge ? s.players[s.judge]?.name : null,
     teams: s.teams, settings: s.settings, idx: s.idx, total: s.songs.length, locked: s.locked, buzz: s.buzz,
     lastResult: s.lastResult, until: s.until, promptUntil: s.promptUntil,
@@ -167,4 +173,27 @@ function shuffle(a) {
   a = [...a];
   for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
   return a;
+}
+
+// End-of-game numbers per player (everyone with a team, including players who never buzzed).
+function playerStats(s) {
+  return Object.values(s.players).filter((p) => p.team).map((p) => {
+    const st = s.stats[p.id] || { buzzes: 0, right: 0, wrong: 0, pts: 0, times: [] };
+    return { id: p.id, name: p.name, team: p.team, buzzes: st.buzzes, right: st.right, wrong: st.wrong, pts: st.pts,
+      avgMs: st.times.length ? Math.round(st.times.reduce((a, b) => a + b, 0) / st.times.length) : null,
+      bestMs: st.times.length ? Math.min(...st.times) : null };
+  });
+}
+
+// Awards from playerStats(): {playerId: ['🏆 Most points', ...]}
+export function awards(stats) {
+  const out = {}, add = (ids, label) => ids.forEach((id) => (out[id] ||= []).push(label));
+  const top = (list, key, better) => { const v = list.map(key); const m = better(...v); return list.filter((p) => key(p) === m).map((p) => p.id); };
+  const scored = stats.filter((p) => p.pts > 0);
+  if (scored.length) add(top(scored, (p) => p.pts, Math.max), '🏆 Most points');
+  const timed = stats.filter((p) => p.avgMs != null);
+  if (timed.length) add(top(timed, (p) => p.avgMs, Math.min), '⚡ Fastest buzzer');
+  const sharp = stats.filter((p) => p.buzzes >= 2 && p.right > 0);
+  if (sharp.length) add(top(sharp, (p) => Math.round(100 * p.right / p.buzzes), Math.max), '🎯 Sharpest');
+  return out;
 }
