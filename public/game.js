@@ -1,6 +1,6 @@
 // Pure game state machine. No I/O: server.js feeds it actions and ticks.
 // Phases: lobby -> howto -> pickfront (first song only) -> countdown -> playing <-> verify -> reveal -> (countdown | end)
-export const T = { countdown: 3000, reveal: 10000, idle: 180000, prompt: 15000, introMs: 5000, speedMs: 5000, answer: 10000, judge: 20000 }; // answer: time to speak after a buzz, judge: extra time for the judge to decide (may talk it over) before it counts as wrong
+export const T = { countdown: 3000, reveal: 10000, idle: 180000, prompt: 15000, introMs: 5000, speedMs: 5000, answer: 10000 }; // answer: time to speak after a buzz (a bar on the screens); the judge has no time limit and may talk it over
 const IDLE_PHASES = ['lobby', 'howto', 'pickfront', 'end']; // the idle reset never fires while a song is running
 const other = (t) => (t === 'A' ? 'B' : 'A');
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -15,7 +15,7 @@ export function createSession(hostName, now, hostId) {
     teams: { A: { score: 0, front: null, ready: false, rot: 0 }, B: { score: 0, front: null, ready: false, rot: 0 } },
     settings: { list: null, mode: 'normal', length: 10 },
     songs: [], idx: 0, locked: [], buzz: null, startedAt: 0, playMs: 0, got: { title: null, artist: null }, until: 0, // playMs: song time before the current stretch (a wrong answer pauses the song)
-    lastActivity: now, promptUntil: 0,
+    lastActivity: now, promptUntil: 0, paused: null, // paused: { at } while the host has stopped the clock
     gameNo: 0, ack: {}, stats: {}, timeline: [{ A: 0, B: 0 }], // per-player buzz stats and the score after every song
   };
 }
@@ -39,6 +39,7 @@ export function act(s, pid, a, now) {
   const p = s.players[pid];
   if (!p) return 'unknown player';
   touch(s, now);
+  if (s.paused && a.type !== 'resume') return 'paused';
   switch (a.type) {
     case 'team':
       if (s.phase !== 'lobby' || !['A', 'B'].includes(a.team)) return 'bad';
@@ -80,7 +81,7 @@ export function act(s, pid, a, now) {
     }
     case 'buzz': {
       if (s.phase !== 'playing' || !p.team || s.teams[p.team].front !== pid || s.locked.includes(p.team)) return 'cannot buzz';
-      s.buzz = { team: p.team, at: s.playMs + now - s.startedAt, pid, until: now + T.answer, expire: now + T.answer + T.judge }; // at = song time in ms, until = end of speaking time, expire = auto-wrong
+      s.buzz = { team: p.team, at: s.playMs + now - s.startedAt, pid, until: now + T.answer }; // at = song time in ms, until = end of speaking time
       s.phase = 'verify';
       return null;
     }
@@ -98,6 +99,19 @@ export function act(s, pid, a, now) {
       if (s.phase === 'pickfront') return startCountdown(s, now);
       if (!['countdown', 'playing', 'verify'].includes(s.phase)) return 'not now';
       return reveal(s, now);
+    case 'pause':
+      if (pid !== s.hostId) return 'host only';
+      if (!['countdown', 'playing', 'verify', 'reveal'].includes(s.phase)) return 'not now';
+      s.paused = { at: now };
+      return null;
+    case 'resume': { // every running timer moves by the time spent paused
+      if (pid !== s.hostId) return 'host only';
+      if (!s.paused) return 'not now';
+      const d = now - s.paused.at;
+      s.until += d; s.startedAt += d; if (s.buzz) s.buzz.until += d;
+      s.paused = null;
+      return null;
+    }
     case 'again':
       if (pid !== s.hostId || s.phase !== 'end') return 'host only';
       s.phase = 'lobby';
@@ -174,9 +188,9 @@ function planNext(s) {
 
 // Time-driven transitions. Returns 'reset' when the session should be dropped.
 export function tick(s, now) {
+  if (s.paused) return null; // nothing moves, not even the idle prompt
   if (s.phase === 'countdown' && now >= s.until) { s.phase = 'playing'; s.startedAt = now; s.playMs = 0; }
   else if (s.phase === 'playing' && s.settings.mode === 'intro' && s.playMs + now - s.startedAt >= T.introMs) reveal(s, now);
-  else if (s.phase === 'verify' && now >= s.buzz.expire) judged(s, now, false, false); // nobody ruled in time counts as wrong
   else if (s.phase === 'reveal' && now >= s.until) {
     s.idx++;
     if (s.idx >= s.songs.length) s.phase = 'end';
@@ -205,7 +219,7 @@ export function view(s, pid, now) {
     ack: s.phase === 'howto' ? Object.keys(s.ack || {}) : null, game: s.gameNo, stats: s.phase === 'end' ? playerStats(s) : null, timeline: s.phase === 'end' ? s.timeline : null,
     judge: s.judge, judgeName: s.judge ? s.players[s.judge]?.name : null,
     teams: s.teams, settings: s.settings, idx: s.idx, total: s.songs.length, locked: s.locked, buzz: s.buzz,
-    lastResult: s.lastResult, got: s.got, until: s.until, promptUntil: s.promptUntil,
+    lastResult: s.lastResult, got: s.got, until: s.until, promptUntil: s.promptUntil, paused: !!s.paused,
     videoId: pid === 'tv' ? song?.id : undefined,
     answer: showAnswer && song ? { title: song.title, artist: song.artist } : undefined,
   };

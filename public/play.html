@@ -2,9 +2,9 @@
 <link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
 <link rel=stylesheet href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;600&display=swap">
 <link rel=stylesheet href=style.css>
-<div class=app id=main>Connecting…</div><div id=sticky></div><div id=modal></div>
+<div id=off class=offline hidden></div><div class=app id=main>Connecting…</div><div id=sticky></div><div id=modal></div>
 <script type=module>
-import { D, r, rr, ROOM } from './db.js';
+import { D, r, rr, ROOM, db } from './db.js';
 import { awards, T } from './game.js';
 import { RULES, MODE_RULE, rulesFor } from './rules.js';
 import { t, getLang, setLang } from './i18n.js';
@@ -18,6 +18,7 @@ let S = null, pub = { session: false, catalog: [] };
 let cfg = { list: null, mode: 'normal', length: 10, custom: false }, modal = null, nameV = sim || localStorage.sqName || '', codeV = qs.get('code') || '';
 let lastKey = '', skipAsk = false, wl = null;
 let user = null, sheet = null, authMsg = '', games = null, delConfirm = false, homeRoom = null, emailV = '', pwV = '', deferredInstall = null, installHint = '', lastModal = '';
+let pauseSince = 0, offline = false, offTimer = 0;
 const seenAt = {}; // when each reveal / answer window was first seen, so the countdown bars survive re-renders
 
 const send = (o) => D.push(rr('actions'), { pid, ...o });
@@ -25,6 +26,7 @@ const act = (a) => send({ act: a });
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const buzzNow = (el) => { navigator.vibrate?.(40); el.classList.add('fire'); act({ type: 'buzz' }); };
 const MODES = ['normal', 'intro', 'speed'];
+const firstList = () => (pub.catalog || []).find((c) => c.id !== 'random')?.id; // Random is the first tile but not the default
 const langPill = () => `<button class=score-pill style="border:0;color:inherit;cursor:pointer" onclick="toggleLang()" aria-label="Language">${getLang() === 'de' ? '<b>DE</b> · EN' : 'DE · <b>EN</b>'}</button>`;
 // handlers for inline onclick
 Object.assign(window, {
@@ -41,7 +43,7 @@ Object.assign(window, {
   setLen: (v) => { const n = parseInt(v, 10); if (n > 0) cfg.length = Math.min(50, n); },
   pickMode: (m) => { cfg.mode = m; modal = m === 'normal' ? null : m; render(); },
   closeModal: () => { modal = null; render(); },
-  start: () => act({ type: 'start', list: cfg.list || pub.catalog[0]?.id, mode: cfg.mode, length: cfg.length }),
+  start: () => act({ type: 'start', list: cfg.list || firstList(), mode: cfg.mode, length: cfg.length }),
   skip: () => { if (!skipAsk) { skipAsk = true; render(); } else { skipAsk = false; act({ type: 'skip' }); } },
   buzzNow,
   openSheet: async (k) => { sheet = k; authMsg = ''; delConfirm = false; if (k === 'stats' && user) { games = null; render(); const sn = await D.get(r(`users/${user.uid}/games`)); games = Object.values(sn.val() || {}).sort((a, b) => b.ts - a.ts); } render(); },
@@ -61,6 +63,11 @@ Object.assign(window, {
   installApp: async () => { if (deferredInstall) { deferredInstall.prompt(); await deferredInstall.userChoice; deferredInstall = null; } else installHint = t('iosHint'); render(); },
 });
 
+// Firebase says false until it has connected: only a gap of 3 s counts as offline
+D.onValue(D.ref(db, '.info/connected'), (s) => {
+  if (s.val()) { clearTimeout(offTimer); offTimer = 0; if (offline) { offline = false; render(); } }
+  else if (!offTimer) offTimer = setTimeout(() => { offline = true; render(); }, 3000);
+});
 D.onValue(rr('public'), (s) => { pub = s.val() || { session: false, catalog: [] }; render(); });
 D.onValue(rr(`views/${pid}`), (s) => { S = s.val(); maybeSave(); render(); });
 addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; });
@@ -116,6 +123,7 @@ function sheetHtml() {
 }
 
 function render() {
+  $('off').hidden = !offline; $('off').textContent = t('offlineBanner');
   let v;
   if (!live()) v = entry(); else v = game();
   const enter = v.key !== lastKey; if (enter) skipAsk = false; lastKey = v.key;
@@ -137,15 +145,20 @@ function game() {
   const judgeBanner = isJudge && ['countdown', 'playing'].includes(ph) ? `<div class=judge-banner>${t('judgeBanner')}</div>` : '';
   let body = '', sticky = '', key = ph;
   const hdrP = hdr + prog;
-  const skipBtn = S.host && ['pickfront', 'countdown', 'playing', 'verify'].includes(ph) ? `<div class=stack style="margin-top:2.5rem"><button class="btn ghost" onclick="skip()">${skipAsk ? t('skipAsk') : t('skip')}</button></div>` : '';
+  // countdown bars run on this phone's clock: freeze them with the game and push them on by the paused time
+  if (S.paused && !pauseSince) pauseSince = Date.now();
+  else if (!S.paused && pauseSince) { for (const k in seenAt) seenAt[k] += Date.now() - pauseSince; pauseSince = 0; }
+  document.body.classList.toggle('paused', !!S.paused);
+  const pauseBtn = S.host && ['countdown', 'playing', 'verify', 'reveal'].includes(ph) ? `<div class=stack style="margin-top:1rem"><button class="btn ghost" onclick="act({type:'${S.paused ? 'resume' : 'pause'}'})">${S.paused ? '▶ ' + t('resume') : '⏸ ' + t('pause')}</button></div>` : '';
+  const skipBtn = S.host && ['pickfront', 'countdown', 'playing', 'verify'].includes(ph) && !S.paused ? `<div class=stack style="margin-top:2.5rem"><button class="btn ghost" onclick="skip()">${skipAsk ? t('skipAsk') : t('skip')}</button></div>` : '';
 
   if (ph === 'lobby') {
     const ready = mem('A').length > 0 && mem('B').length > 0;
     const card = (x) => `<button class="team-card ${x}${tm === x ? ' on' : ''}" onclick="act({type:'team',team:'${x}'})"><h3 class=${x}>${t('team')} ${x}</h3><div class=chips>${mem(x).map((p) => `<span class=chip>${esc(p.name)}</span>`).join('') || `<span class=hint>${t('nobody')}</span>`}</div><span class=join-pill>${tm === x ? t('youIn') : tm ? t('tapSwitch') : t('tapJoin')}</span></button>`;
     body = `${hdr}<div class=label>${t('code')} ${esc(S.code)}</div><div class="step${tm ? ' done' : ''}"><b>${tm ? '✓' : 1}</b>${t('step1')}<small>${t('tapCard')}</small></div><div class=team-cards>${card('A')}${card('B')}</div>`;
     if (S.host) {
-      const cat = pub.catalog || [], sel = cfg.list || cat[0]?.id, custom = cfg.custom || ![5, 10, 15].includes(cfg.length);
-      body += `<div class=step><b>2</b>${t('step2')}<small>${t('tapOne')}</small></div><div class=tiles>${cat.map((c) => `<button class="tile${c.id === sel ? ' on' : ''}" onclick="pickList('${c.id}')"><i>${c.emoji || '🎵'}</i><b>${esc(c.name)}</b><span>${t('songsN', { n: c.count })}</span></button>`).join('')}</div>
+      const cat = pub.catalog || [], sel = cfg.list || firstList(), custom = cfg.custom || ![5, 10, 15].includes(cfg.length);
+      body += `<div class=step><b>2</b>${t('step2')}<small>${t('tapOne')}</small></div><div class=tiles>${cat.map((c) => `<button class="tile${c.id === sel ? ' on' : ''}" onclick="pickList('${c.id}')"><i>${c.emoji || '🎵'}</i><b>${esc(getLang() === 'de' && c.de ? c.de : c.name)}</b><span>${t('songsN', { n: c.count })}</span></button>`).join('')}</div>
         <div class=step><b>3</b>${t('step3')}<small>${t('tapChange')}</small></div><div class=seg>${MODES.map((k) => `<button class="${cfg.mode === k ? 'on' : ''}" onclick="pickMode('${k}')">${t('m.' + k)}</button>`).join('')}</div>
         <div class=step><b>4</b>${t('step4')}<small>${t('tapChange')}</small></div><div class=seg>${[5, 10, 15].map((n) => `<button class="${!custom && cfg.length === n ? 'on' : ''}" onclick="pickLen(${n})">${n}</button>`).join('')}<button class="${custom ? 'on' : ''}" onclick="pickCustom()">${t('custom')}</button></div>
         ${custom ? `<div class=stepper><button onclick="stepLen(-1)" aria-label="${t('fewer')}">−</button><input class=input id=len type=number inputmode=numeric min=1 max=50 value="${cfg.length}" oninput="setLen(this.value)"><button onclick="stepLen(1)" aria-label="${t('more')}">+</button></div>` : ''}`;
@@ -165,34 +178,34 @@ function game() {
     body = `${hdrP}<h2>${t('whoFront')}</h2><div class=stack>${mem(tm).map((p) => `<button class="btn ghost${p.id === fr ? ' on' : ''}" onclick="act({type:'front',id:'${p.id}'})">${esc(p.name)}${p.id === fr ? ' 🎤' : ''}</button>`).join('')}</div>${skipBtn}`;
     if (fr === me.id) sticky = `<button class=btn onclick="act({type:'ready'})" ${S.teams[tm].ready ? 'disabled' : ''}>${S.teams[tm].ready ? t('waitOtherTeam') : t('ready')}</button>`;
   } else if (ph === 'countdown') {
-    body = `${hdrP}${judgeBanner}<h2 style="text-align:center;margin-top:6vh">${t('getReady')}<br><span class=dots><i></i><i></i><i></i></span></h2>${front ? `<p class=hint>${t('youFront')}</p>` : ''}${skipBtn}`;
+    body = `${hdrP}${judgeBanner}<h2 style="text-align:center;margin-top:6vh">${t('getReady')}<br><span class=dots><i></i><i></i><i></i></span></h2>${front ? `<p class=hint>${t('youFront')}</p>` : ''}${pauseBtn}${skipBtn}`;
     key = 'countdown' + S.idx;
   } else if (ph === 'playing') {
     key = 'playing' + S.idx;
     body = `${hdrP}${judgeBanner}` + (front
-      ? `<div class=center><button class=buzz id=buzz ${lk ? 'disabled' : ''} onclick="buzzNow(this)">${lk ? t('locked') : t('buzz')}</button></div>`
-      : `<div class=center><h2>${lk ? t('teamLocked') : t('listening')}</h2><p class=hint>${lk ? t('otherTry') : t('frontBuzzes')}</p></div>`) + skipBtn;
+      ? `<div class=center><button class=buzz id=buzz ${lk || S.paused || offline ? 'disabled' : ''} onclick="buzzNow(this)">${offline ? t('offline') : S.paused ? t('pauseBuzz') : lk ? t('locked') : t('buzz')}</button></div>`
+      : `<div class=center><h2>${lk ? t('teamLocked') : t('listening')}</h2><p class=hint>${lk ? t('otherTry') : t('frontBuzzes')}</p></div>`) + pauseBtn + skipBtn;
   } else if (ph === 'verify') {
-    const vk = S.idx + ':' + S.buzz.at, since = (seenAt['v' + vk] ||= Date.now()), el = Math.min(Date.now() - since, T.answer);
-    const bar = `<div class=cdp><span>${el >= T.answer || Date.now() - since >= T.answer ? t('talkOver') : t('timeLeft')}</span><div><i style="animation-duration:${T.answer}ms;animation-delay:-${el}ms"></i></div></div>`;
+    const vk = S.idx + ':' + S.buzz.at, since = (seenAt['v' + vk] ||= Date.now()), clock = pauseSince || Date.now(), el = Math.min(clock - since, T.answer);
+    const bar = `<div class=cdp><span>${el >= T.answer ? t('talkOver') : t('timeLeft')}</span><div><i style="animation-duration:${T.answer}ms;animation-delay:-${el}ms"></i></div></div>`;
     if (isJudge || (!S.judge && tm && tm !== S.buzz.team)) {
       const g = S.got || {}, openT = !g.title, openA = !g.artist;
-      const b = (label, ti, ar, cls = '') => `<button class="btn ${cls}" onclick="act({type:'verify',title:${ti},artist:${ar}})">${label}</button>`;
+      const dis = S.paused || offline ? 'disabled' : '', b = (label, ti, ar, cls = '') => `<button class="btn ${cls}" ${dis} onclick="act({type:'verify',title:${ti},artist:${ar}})">${label}</button>`;
       const opts = (openT && openA ? b(t('bothRight'), true, true) + b(t('onlyTitle'), true, false, 'ghost') + b(t('onlyArtist'), false, true, 'ghost') : openT ? b(t('titleRight'), true, false) : b(t('artistRight'), false, true)) + b(t('allWrong'), false, false, 'ghost');
       const taken = !openT || !openA ? `<p class=hint>${t('taken', { what: !openT && !openA ? t('wBoth') : !openT ? t('wTitle') : t('wArtist'), team: t('team') + ' ' + (g.title || g.artist) })}</p>` : '';
       body = `${hdrP}<div class=judge-banner>${t('judgeNow', { team: S.buzz.team })}</div>${bar}
         <div class=card><div class=answer>${esc(S.answer.title)}<small>${esc(S.answer.artist)}</small></div></div>${taken}
-        <div class=stack>${opts}<button class="btn ghost" style="font-size:.85rem" onclick="act({type:'misfire'})">${t('misfire')}</button></div>${skipBtn}`;
-    } else if (S.buzz.pid === me.id) body = `${hdrP}<h2 style="text-align:center;margin-top:4vh">${t('youBuzzed')}</h2>${bar}${S.judgeName ? `<p class=hint>${t('isJudging', { name: esc(S.judgeName) })} <span class=dots><i></i><i></i><i></i></span></p>` : ''}`;
-    else body = `${hdrP}<h2 style="text-align:center;margin-top:6vh"><span class=${S.buzz.team}>${t('team')} ${S.buzz.team}</span> ${t('buzzed')}</h2>${bar}<p class=hint>${S.judgeName ? t('isJudging', { name: esc(S.judgeName) }) : t('sayOut')} · ${t('quiet')} <span class=dots><i></i><i></i><i></i></span></p>${skipBtn}`;
+        <div class=stack>${opts}<button class="btn ghost" ${dis} style="font-size:.85rem" onclick="act({type:'misfire'})">${t('misfire')}</button></div>${pauseBtn}${skipBtn}`;
+    } else if (S.buzz.pid === me.id) body = `${hdrP}<h2 style="text-align:center;margin-top:4vh">${t('youBuzzed')}</h2>${bar}${S.judgeName ? `<p class=hint>${t('isJudging', { name: esc(S.judgeName) })} <span class=dots><i></i><i></i><i></i></span></p>` : ''}${pauseBtn}`;
+    else body = `${hdrP}<h2 style="text-align:center;margin-top:6vh"><span class=${S.buzz.team}>${t('team')} ${S.buzz.team}</span> ${t('buzzed')}</h2>${bar}<p class=hint>${S.judgeName ? t('isJudging', { name: esc(S.judgeName) }) : t('sayOut')} · ${t('quiet')} <span class=dots><i></i><i></i><i></i></span></p>${pauseBtn}${skipBtn}`;
     key = 'verify' + vk;
   } else if (ph === 'reveal') {
     const lr = S.lastResult;
     const nx = S.next, upNext = nx && (nx.A === me.id || nx.B === me.id), judgeNext = nx && nx.judge === me.id;
     const nextNote = upNext ? `<div class=judge-banner>${t('nextGuesser', { team: tm })}</div>` : judgeNext ? `<div class=judge-banner>${t('nextJudge')}</div>` : '';
-    const rs = (seenAt['r' + S.idx] ||= Date.now()), el = Math.min(Date.now() - rs, 10000);
+    const rs = (seenAt['r' + S.idx] ||= Date.now()), el = Math.min((pauseSince || Date.now()) - rs, 10000);
     const cdp = nx ? `<div class=cdp><span>${t('nextSoon')}</span><div><i style="animation-duration:10000ms;animation-delay:-${el}ms"></i></div></div>` : '';
-    body = `${hdrP}${nextNote}${cdp}<div class=card><div class=answer>${esc(S.answer.title)}<small>${esc(S.answer.artist)}</small></div></div>${lr ? `<p class=hint><b class=${lr.team}>${t('team')} ${lr.team}</b> ${lr.pts ? `+${lr.pts}` : t('noPoints')}</p>` : ''}<p class=hint>${nx ? '' : t('lastOne')}</p>`;
+    body = `${hdrP}${nextNote}${cdp}<div class=card><div class=answer>${esc(S.answer.title)}<small>${esc(S.answer.artist)}</small></div></div>${lr ? `<p class=hint><b class=${lr.team}>${t('team')} ${lr.team}</b> ${lr.pts ? `+${lr.pts}` : t('noPoints')}</p>` : ''}<p class=hint>${nx ? '' : t('lastOne')}</p>${pauseBtn}`;
   } else if (ph === 'end') {
     const draw = S.teams.A.score === S.teams.B.score, w = draw ? t('draw2') : t('winsT', { team: S.teams.A.score > S.teams.B.score ? 'A' : 'B' });
     const me2 = (S.stats || []).find((p) => p.id === me.id), aw = awards(S.stats || [])[me.id] || [];
@@ -204,7 +217,8 @@ function game() {
     if (S.host) sticky = `<button class=btn onclick="act({type:'again'})">${t('again')}</button>`;
   } else body = hdr;
   const tvWarn = pub.tvHidden && S.host && ph !== 'end' ? `<div class=judge-banner style="border-color:var(--bad);background:#ff6b6b1a">${t('tvHidden')}</div>` : '';
-  return { key, body: tvWarn + body, sticky };
+  const pauseWarn = S.paused ? `<div class=judge-banner style="text-align:center;font-weight:600">${S.host ? t('pauseHost') : t('pauseBanner')}</div>` : '';
+  return { key, body: tvWarn + pauseWarn + body, sticky };
 }
 render();
 if ('serviceWorker' in navigator && !sim) navigator.serviceWorker.register('/sw.js').catch(() => {});

@@ -67,7 +67,9 @@ export const remove = (r) => window.__dbop({ op: 'set', path: r.path, v: null })
 export const push = async (r, v) => { const k = await window.__dbop({ op: 'push', path: r.path, v }); return { path: r.path + '/' + k, key: k }; };
 export const get = async (r) => { const v = await window.__dbop({ op: 'get', path: r.path }); return { val: () => v, exists: () => v != null }; };
 const listen = (r, cb, kind) => { const id = 'l' + (++n) + '-' + Math.random(); L.set(id, { cb, path: r.path, kind }); window.__dbop({ op: 'listen', id, path: r.path, kind: kind === 'value' ? 'value' : 'child' }); return () => L.delete(id); };
-export const onValue = (r, cb) => listen(r, cb, 'value');
+const CON = new Set(); let online = true; // '.info/connected' lives in the page, tests flip it with window.__online(bool)
+window.__online = (b) => { online = b; CON.forEach((cb) => cb({ val: () => online })); };
+export const onValue = (r, cb) => { if (r.path === '.info/connected') { CON.add(cb); cb({ val: () => online }); return () => CON.delete(cb); } return listen(r, cb, 'value'); };
 export const onChildAdded = (r, cb) => listen(r, cb, 'child');
 `;
   const FAKE_AUTH = `export const getAuth = () => ({ currentUser: null }); export const onAuthStateChanged = (a, cb) => { setTimeout(() => cb(null), 0); return () => {}; };

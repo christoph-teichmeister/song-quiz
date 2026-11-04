@@ -77,4 +77,6 @@ Charts now, 80s, 90s, 2000s, Christmas, movie/TV themes, intro-only, speed (play
 - Title and artist score once per song; the other team can only win what is open. Judge button "pressed by mistake" undoes a buzz without lock.
 - Host can skip a song (two taps); a finished or broken video skips by itself. Idle reset only in lobby/howto/pickfront/end.
 - Speed/intro time counts song time, not time since the last resume.
+- Judge has no time limit (only the 10 s speaking bar). Host can pause/resume; TV flashes in the team colour on a buzz; red banner when the connection is down (3 s grace).
+- Playlists: `scripts/seed-songs.py` resolves `scripts/seed/<list>.txt` to embeddable YouTube ids; tile "Zufall/Random" mixes all lists (not the ambient music). `index.json` has `de` names.
 - Texts live in `public/i18n.js` (German default, EN switch per device).

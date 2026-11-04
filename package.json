@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test game.test.js i18n.test.js",
+    "test": "node --test game.test.js i18n.test.js pages.test.js",
     "e2e": "node --test --test-concurrency=1 e2e/*.e2e.js",
     "deploy": "firebase deploy"
   },

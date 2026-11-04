@@ -152,21 +152,13 @@ test('title and artist score once: the other team can only win what is still ope
   assert.equal(s.phase, 'reveal');                                                // both parts are won
 });
 
-test('the judge gets extra time after the speaking time; a ruling in that window still counts', () => {
+test('the judge has no time limit: a ruling long after the speaking time still counts', () => {
   const { s, fa, now } = four();
   act(s, fa, { type: 'buzz' }, now);
-  tick(s, now + T.answer + T.judge - 1);
-  assert.equal(s.phase, 'verify');                                                // speaking time over, judge may still decide
-  assert.equal(act(s, s.judge, { type: 'verify', title: true, artist: true }, now + T.answer + 5000), null);
+  tick(s, now + 10 * 60 * 1000);
+  assert.equal(s.phase, 'verify');                                                // nothing times out, the game waits for the judge
+  assert.equal(act(s, s.judge, { type: 'verify', title: true, artist: true }, now + 10 * 60 * 1000), null);
   assert.equal(s.teams[s.players[fa].team].score, 2);
-});
-
-test('nobody rules in time: counts as wrong and locks the buzzer', () => {
-  const { s, fa, now } = four();
-  act(s, fa, { type: 'buzz' }, now);
-  tick(s, now + T.answer + T.judge);
-  assert.equal(s.phase, 'playing');
-  assert.deepEqual(s.locked, [s.players[fa].team]);
 });
 
 test('misfire: back to the song, nobody locked, no stats', () => {
@@ -221,4 +213,81 @@ test('someone who joins mid-game has no team and cannot take one', () => {
   const late = join(s, 'late', now).id;
   assert.equal(act(s, late, { type: 'team', team: 'A' }, now), 'bad');
   assert.equal(view(s, late, now).me.team, null);
+});
+
+test('pause is host only and only while a song is on', () => {
+  const { s, h, b, now } = setup();
+  assert.equal(act(s, b, { type: 'pause' }, now), 'host only');
+  assert.equal(act(s, b, { type: 'resume' }, now), 'host only');
+  assert.equal(act(s, h, { type: 'resume' }, now), 'not now');
+  assert.equal(act(s, h, { type: 'pause' }, now), null);
+  assert.equal(view(s, h, now).paused, true);
+  assert.equal(act(s, h, { type: 'resume' }, now), null);
+  assert.equal(view(s, h, now).paused, false);
+  const lobby = createSession('x', 0);
+  assert.equal(act(lobby, lobby.hostId, { type: 'pause' }, 0), 'not now');
+});
+
+test('paused: every other action is refused and tick changes nothing', () => {
+  const { s, h, b, now } = setup();
+  act(s, h, { type: 'pause' }, now);
+  for (const type of ['buzz', 'skip', 'misfire', 'verify', 'front', 'ready', 'ack']) assert.equal(act(s, h, { type, a: 1 }, now), 'paused');
+  assert.equal(act(s, b, { type: 'buzz' }, now), 'paused');
+  assert.equal(tick(s, now + T.idle * 5), null);
+  assert.equal(s.phase, 'playing');
+  assert.equal(s.promptUntil, 0);
+});
+
+test('resume shifts the countdown by the paused time', () => {
+  const { s, h, b } = setup();
+  let now = 100000;
+  s.phase = 'countdown'; s.until = now + T.countdown;
+  act(s, h, { type: 'pause' }, now + 1000);
+  tick(s, now + T.countdown + 60000);
+  assert.equal(s.phase, 'countdown');
+  act(s, h, { type: 'resume' }, now + 1000 + 60000);
+  assert.equal(s.until, now + T.countdown + 60000);
+  tick(s, now + T.countdown + 60000 - 1);
+  assert.equal(s.phase, 'countdown');
+  tick(s, now + T.countdown + 60000);
+  assert.equal(s.phase, 'playing');
+});
+
+test('resume keeps the intro clock: paused time does not eat the 5 seconds', () => {
+  let now = 0;
+  const s = createSession('host', now), h = s.hostId, b = join(s, 'bob', now).id;
+  act(s, h, { type: 'team', team: 'A' }, now); act(s, b, { type: 'team', team: 'B' }, now);
+  act(s, h, { type: 'start', list: 'x', songs, length: 1, mode: 'intro' }, now);
+  act(s, h, { type: 'skiphowto' }, now); act(s, h, { type: 'ready' }, now); act(s, b, { type: 'ready' }, now);
+  now += T.countdown; tick(s, now);
+  now += 3000; act(s, h, { type: 'pause' }, now);
+  now += 600000; act(s, h, { type: 'resume' }, now);
+  now += 1900; tick(s, now);
+  assert.equal(s.phase, 'playing');
+  now += 200; tick(s, now);
+  assert.equal(s.phase, 'reveal');
+});
+
+test('resume shifts the answer bar of a pending buzz and the buzz time stays right', () => {
+  const { s, h, b, now } = setup();
+  act(s, h, { type: 'buzz' }, now + 1000);
+  const until = s.buzz.until;
+  act(s, h, { type: 'pause' }, now + 2000);
+  act(s, h, { type: 'resume' }, now + 52000);
+  assert.equal(s.buzz.until, until + 50000);
+  assert.equal(s.phase, 'verify');
+  act(s, b, { type: 'misfire' }, now + 53000); // back to the song: playMs is the song time of the buzz, unaffected by the pause
+  assert.equal(s.playMs, 1000);
+  assert.equal(s.phase, 'playing');
+});
+
+test('a paused reveal does not move on, and resumes with its full time left', () => {
+  const { s, h, now } = setup();
+  act(s, h, { type: 'skip' }, now);
+  assert.equal(s.phase, 'reveal');
+  act(s, h, { type: 'pause' }, now + 1000);
+  tick(s, now + T.reveal + 5000);
+  assert.equal(s.phase, 'reveal');
+  act(s, h, { type: 'resume' }, now + 5000);
+  assert.equal(s.until, now + T.reveal + 4000);
 });

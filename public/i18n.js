@@ -44,7 +44,7 @@ const TXT = {
     'taken': 'Schon vergeben: {what} ({team})', 'wTitle': 'Titel', 'wArtist': 'Interpret', 'wBoth': 'Titel und Interpret',
     'talkOver': 'Sprechzeit vorbei. Besprecht euch kurz und tippe dann das Ergebnis.', 'misfire': 'Versehentlich gedrückt, weiter ohne Sperre', 'timeLeft': 'Antwortzeit',
     'buzzed': 'hat gebuzzert', 'youBuzzed': 'Du hast gebuzzert! Sag jetzt laut Titel UND Interpret.', 'quiet': 'Psst, nicht reinrufen.', 'isJudging': '{name} ist Schiri', 'sayOut': 'Sagt eure Antwort laut',
-    'skip': 'Song überspringen', 'skipAsk': 'Wirklich überspringen?',
+    'skip': 'Song überspringen', 'skipAsk': 'Wirklich überspringen?', 'pause': 'Pause', 'resume': 'Weiter', 'pauseBanner': '⏸ Pause – der Host drückt gleich auf Weiter', 'pauseHost': '⏸ Pause. Tippe unten auf Weiter.', 'pauseBuzz': 'Pause', 'offline': 'OFFLINE', 'offlineBanner': 'Keine Internetverbindung. Das Spiel verbindet sich gleich wieder.', 'tv.offline': 'Keine Internetverbindung', 'tv.pauseBig': '⏸ Pause', 'e.paused': 'Das Spiel macht gerade Pause.',
     // reveal
     'nextGuesser': '🎤 <b>Du bist als Nächstes am Buzzer.</b> Geh nach vorne und buzzere für Team {team}.', 'nextJudge': '🎧 <b>Du bist beim nächsten Song Schiri.</b> Du siehst die Lösung, behalte sie für dich.',
     'nextSoon': 'Der nächste Song startet gleich', 'noPoints': 'keine Punkte', 'lastOne': 'Das war der letzte Song …', 'nobody': 'noch niemand',
@@ -101,7 +101,7 @@ const TXT = {
     'taken': 'Already scored: {what} ({team})', 'wTitle': 'title', 'wArtist': 'artist', 'wBoth': 'title and artist',
     'talkOver': 'Speaking time is over. Talk it over, then tap the result.', 'misfire': 'Pressed by mistake, go on without lock', 'timeLeft': 'Time to answer',
     'buzzed': 'buzzed', 'youBuzzed': 'You buzzed! Say the title AND the artist out loud now.', 'quiet': 'Shh, no shouting in.', 'isJudging': '{name} is judging', 'sayOut': 'Say your answer out loud',
-    'skip': 'Skip song', 'skipAsk': 'Really skip?',
+    'skip': 'Skip song', 'skipAsk': 'Really skip?', 'pause': 'Pause', 'resume': 'Resume', 'pauseBanner': '⏸ Paused – the host will tap Resume soon', 'pauseHost': '⏸ Paused. Tap Resume below.', 'pauseBuzz': 'Paused', 'offline': 'OFFLINE', 'offlineBanner': 'No internet connection. Reconnecting automatically…', 'tv.offline': 'No internet connection', 'tv.pauseBig': '⏸ Pause', 'e.paused': 'The game is paused right now.',
     'nextGuesser': '🎤 <b>You are the next guesser.</b> Get to the front and buzz for Team {team}.', 'nextJudge': '🎧 <b>You are the next judge.</b> You will see the answer, keep it to yourself.',
     'nextSoon': 'Next song starts soon', 'noPoints': 'no points', 'lastOne': 'That was the last song…',
     'draw2': 'It\'s a draw', 'winsT': 'Team {team} wins', 'yourGame': 'Your game', 'noStats': 'You only watched this time, no stats for you.', 'saved': '✓ Your stats are saved to your account.',

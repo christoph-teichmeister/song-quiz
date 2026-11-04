@@ -2,51 +2,79 @@
  {
   "id": "charts-now",
   "name": "Charts now",
-  "emoji": "🔥"
+  "emoji": "🔥",
+  "de": "Aktuelle Charts"
  },
  {
   "id": "charts-2010s",
   "name": "2010s hits",
-  "emoji": "📱"
+  "emoji": "📱",
+  "de": "Hits der 2010er"
  },
  {
   "id": "charts-2000s",
   "name": "2000s hits",
-  "emoji": "💿"
+  "emoji": "💿",
+  "de": "Hits der 2000er"
  },
  {
   "id": "hits-90s",
   "name": "90s hits",
-  "emoji": "📼"
+  "emoji": "📼",
+  "de": "90er-Hits"
  },
  {
   "id": "hits-80s",
   "name": "80s hits",
-  "emoji": "🕺"
+  "emoji": "🕺",
+  "de": "80er-Hits"
  },
  {
   "id": "hits-70s",
   "name": "70s classics",
-  "emoji": "🪩"
+  "emoji": "🪩",
+  "de": "70er-Klassiker"
  },
  {
   "id": "christmas",
   "name": "Christmas",
-  "emoji": "🎄"
+  "emoji": "🎄",
+  "de": "Weihnachten"
  },
  {
   "id": "movie-tv-themes",
   "name": "Movies & TV",
-  "emoji": "🎬"
+  "emoji": "🎬",
+  "de": "Film- & TV-Themes"
  },
  {
   "id": "deutsche-hits",
   "name": "Deutsche Hits",
-  "emoji": "🥨"
+  "emoji": "🥨",
+  "de": "Deutsche Hits"
+ },
+ {
+  "id": "tv-classics",
+  "name": "TV classics",
+  "emoji": "📺",
+  "de": "TV-Klassiker"
+ },
+ {
+  "id": "tv-now",
+  "name": "TV series now",
+  "emoji": "🍿",
+  "de": "Aktuelle Serien"
+ },
+ {
+  "id": "kids-tv",
+  "name": "Kids TV & cartoons",
+  "emoji": "🧸",
+  "de": "Kinder-TV & Zeichentrick"
  },
  {
   "id": "ambient-sound-system",
   "name": "Ambient Sound System",
-  "emoji": "🎧"
+  "emoji": "🎧",
+  "de": "Ambient Sound System"
  }
 ]

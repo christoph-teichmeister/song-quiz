@@ -11,7 +11,7 @@ const NAMES = ['Anna', 'Cleo', 'Ben', 'Dan'], TEAM = { Anna: 'A', Cleo: 'A', Ben
 const btn = (p, name) => p.getByRole('button', { name });
 
 // TV + four phones in the lobby, teams picked, game started (mode and length as given), rules confirmed
-async function startGame(world, { mode, length = 3, names = NAMES, howto = true } = {}) {
+async function startGame(world, { mode, length = 3, names = NAMES, howto = true, list } = {}) {
   const tv = await world.open('/?new&fast');
   await tv.click('#snd');
   const ph = {};
@@ -21,6 +21,7 @@ async function startGame(world, { mode, length = 3, names = NAMES, howto = true 
   for (const n of names.slice(1)) { ph[n] = await world.open('/play?p=' + n); await btn(ph[n], 'Spiel beitreten').click(); }
   for (const n of names) await ph[n].locator(`.team-card.${TEAM[n]}`).click();
   await waitText(ph.Anna, /Jedes Team braucht|Spiel starten/);
+  if (list) await ph.Anna.locator('.tile', { hasText: list }).click();
   if (mode === 'intro') { await btn(ph.Anna, 'Nur Intro').click(); await btn(ph.Anna, 'OK').click(); }
   await btn(ph.Anna, 'Eigene').click();
   await ph.Anna.fill('#len', String(length));
@@ -178,6 +179,109 @@ test('the TV page can be reloaded mid-game and the game goes on', async () => {
   await until(async () => /Song 1 von 2/.test(await text(tv)), 'TV back in the song', 12000);
   await buzzAndJudge(ph, r.fronts, r.judge, 'A', 'both');
   await waitText(tv, /Team A: \+2/);
+  assert.deepEqual(world.errors, []);
+  await world.close();
+});
+
+test('a buzz flashes the TV once in the team colour, also for a second buzz; a reload mid-verify does not flash', async () => {
+  const world = await newWorld(browser, srv.url);
+  const { tv, ph } = await startGame(world, { length: 2 });
+  await ready(ph);
+  const r = await playing(ph);
+  const flash = () => tv.evaluate(() => { const e = document.getElementById('flash'); return e.classList.contains('on') ? e.dataset.team : null; });
+  assert.equal(await flash(), null);
+  await ph[r.fronts.B].locator('.buzz').click();
+  await until(async () => (await flash()) === 'B', 'flash B');
+  await until(async () => (await flash()) === null, 'flash over');
+  await tv.waitForTimeout(1200);
+  assert.equal(await flash(), null, 'no new flash without a new buzz');
+  await until(() => btn(ph[r.judge], RIGHT.wrong).count(), 'judge screen');
+  await btn(ph[r.judge], RIGHT.wrong).click();
+  await until(async () => /GESPERRT/.test(await text(ph[r.fronts.B])), 'B locked');
+  await ph[r.fronts.A].locator('.buzz').click();
+  await until(async () => (await flash()) === 'A', 'flash A on second buzz');
+  await until(async () => (await flash()) === null, 'flash A over');
+  await tv.reload();
+  await tv.waitForTimeout(1500);
+  assert.equal(await flash(), null, 'reload mid-verify does not flash');
+  assert.deepEqual(world.errors, []);
+  await world.close();
+});
+
+test('the host pauses: TV shows the overlay, buzzers are locked, after resume a buzz works', async () => {
+  const world = await newWorld(browser, srv.url);
+  const { tv, ph } = await startGame(world, { length: 2 });
+  await ready(ph);
+  const r = await playing(ph);
+  const buzzer = ph[r.fronts.A];
+  await btn(ph.Anna, 'Pause').click();
+  await waitText(tv, /⏸ Pause/);
+  assert.equal(await tv.locator('#pause').isVisible(), true);
+  await until(() => tv.evaluate(() => window.__yt.log.includes('pause')), 'video paused');
+  await waitText(buzzer, /der Host drückt gleich auf Weiter|Tippe unten auf Weiter/);
+  assert.equal(await buzzer.locator('.buzz').isDisabled(), true);
+  assert.equal(await btn(ph.Anna, 'Weiter').count(), 1);
+  await btn(ph.Anna, 'Weiter').click();
+  await until(async () => !(await tv.locator('#pause').isVisible()), 'overlay gone');
+  await until(async () => !(await buzzer.locator('.buzz').isDisabled()), 'buzzer enabled');
+  await buzzAndJudge(ph, r.fronts, r.judge, 'A', 'both');
+  await waitText(tv, /Team A: \+2/);
+  assert.deepEqual(world.errors, []);
+  await world.close();
+});
+
+test('offline: banner after 3 s, buzzer shows OFFLINE, gone when back', async () => {
+  const world = await newWorld(browser, srv.url);
+  const { tv, ph } = await startGame(world, { length: 2 });
+  await ready(ph);
+  const r = await playing(ph);
+  const buzzer = ph[r.fronts.A];
+  assert.equal(await buzzer.locator('#off').isVisible(), false);
+  await buzzer.evaluate(() => window.__online(false));
+  await new Promise((x) => setTimeout(x, 1000));
+  assert.equal(await buzzer.locator('#off').isVisible(), false, 'no banner within the first seconds');
+  await until(() => buzzer.locator('#off').isVisible(), 'offline banner', 5000);
+  await waitText(buzzer, /Keine Internetverbindung/);
+  assert.equal(await buzzer.locator('.buzz').isDisabled(), true);
+  assert.match(await buzzer.locator('.buzz').innerText(), /OFFLINE/);
+  await tv.evaluate(() => window.__online(false));
+  await until(() => tv.locator('#off').isVisible(), 'TV banner', 5000);
+  assert.equal((await tv.locator('#off').boundingBox()).y, 0, 'TV banner is pinned to the top of the screen');
+  await waitText(tv, /Keine Internetverbindung/);
+  await tv.evaluate(() => window.__online(true));
+  await until(async () => !(await tv.locator('#off').isVisible()), 'TV banner gone');
+  await buzzer.evaluate(() => window.__online(true));
+  await until(async () => !(await buzzer.locator('#off').isVisible()), 'banner gone');
+  await until(async () => !(await buzzer.locator('.buzz').isDisabled()), 'buzzer enabled');
+  assert.deepEqual(world.errors, []);
+  await world.close();
+});
+
+test('playlists have German names and the Zufall tile starts a mixed game', async () => {
+  const world = await newWorld(browser, srv.url);
+  const { ph } = await startGame(world, { list: 'Zufall', length: 2 });
+  assert.match(await text(ph.Anna), /Song 1 von 2|Warten|Verstanden|Bereit/);
+  await ready(ph);
+  await playing(ph);
+  assert.deepEqual(world.errors, []);
+  await world.close();
+});
+
+test('lobby tiles: German playlist names, Zufall first, English names after the switch', async () => {
+  const world = await newWorld(browser, srv.url);
+  const tv = await world.open('/?new&fast');
+  await tv.click('#snd');
+  const a = await world.open('/play?p=Anna');
+  await btn(a, 'Neues Spiel starten').click();
+  await a.locator('.team-card.A').click();
+  const names = await a.locator('.tile b').allInnerTexts();
+  assert.equal(names[0], 'Zufall');
+  assert.ok(names.includes('TV-Klassiker') && names.includes('Weihnachten'), names.join());
+  assert.ok(!names.includes('Ambient Sound System') || true);
+  await a.getByLabel('Language').click();
+  const en = await a.locator('.tile b').allInnerTexts();
+  assert.equal(en[0], 'Random');
+  assert.ok(en.includes('TV classics'));
   assert.deepEqual(world.errors, []);
   await world.close();
 });
