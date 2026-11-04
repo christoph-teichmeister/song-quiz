@@ -11,7 +11,7 @@
 <div id=prompt onclick="keepAlive()">Still there? Resetting in <b id=pc></b> s — tap anywhere to keep playing</div>
 <script src="https://www.youtube.com/iframe_api"></script>
 <script type=module>
-import { createSession, join, act, tick, view, awards } from './game.js';
+import { createSession, join, act, tick, view, awards, T } from './game.js';
 import { D, r } from './db.js';
 import { qrSvg } from './qr.js';
 const REPO = 'https://github.com/christoph-teichmeister/song-quiz';
@@ -20,9 +20,44 @@ const REPO = 'https://github.com/christoph-teichmeister/song-quiz';
 const $ = (id) => document.getElementById(id);
 let session = null, S = null, lists = {}, errs = {}, last = {}, yt = null, ytReady = false, unlocked = false, lastIdx = -1;
 const now = () => Date.now();
+let AC; // Web Audio for the end-screen sounds (synthesised, no files)
+const ac = () => (AC ||= new (window.AudioContext || window.webkitAudioContext)());
+function applause() { // many short filtered noise bursts, densest in the middle
+  const c = ac(), t0 = c.currentTime + .05;
+  for (let i = 0; i < 130; i++) {
+    const t = t0 + (Math.random() + Math.random()) / 2 * 3.8, len = .035 + Math.random() * .03;
+    const buf = c.createBuffer(1, Math.ceil(c.sampleRate * len), c.sampleRate), d = buf.getChannelData(0);
+    for (let k = 0; k < d.length; k++) d[k] = (Math.random() * 2 - 1) * Math.exp(-k / (d.length * .25));
+    const src = c.createBufferSource(); src.buffer = buf;
+    const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1200 + Math.random() * 2600; f.Q.value = .7;
+    const g = c.createGain(); g.gain.value = .35 + Math.random() * .45;
+    src.connect(f); f.connect(g); g.connect(c.destination); src.start(t);
+  }
+}
+function sadTrombone() { // wah wah wah wahhh
+  const c = ac(); let t = c.currentTime + .05;
+  [[233, .42], [220, .42], [208, .42], [196, 1.3]].forEach(([hz, dur], i, a) => {
+    const o = c.createOscillator(), f = c.createBiquadFilter(), g = c.createGain(), last = i === a.length - 1;
+    o.type = 'sawtooth'; o.frequency.setValueAtTime(hz, t);
+    if (last) { o.frequency.linearRampToValueAtTime(hz * .94, t + dur); const v = c.createOscillator(), vg = c.createGain(); v.frequency.value = 5.5; vg.gain.value = 4; v.connect(vg); vg.connect(o.frequency); v.start(t); v.stop(t + dur); }
+    f.type = 'lowpass'; f.frequency.setValueAtTime(500, t); f.frequency.linearRampToValueAtTime(1100, t + dur * .35); f.frequency.linearRampToValueAtTime(450, t + dur);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.22, t + .05); g.gain.setValueAtTime(.22, t + dur - .08); g.gain.linearRampToValueAtTime(0, t + dur);
+    o.connect(f); f.connect(g); g.connect(c.destination); o.start(t); o.stop(t + dur + .02); t += dur + .04;
+  });
+}
+function drawFx() { // a draw: equal numbers of blue and orange bubbles drift up and meet in the middle
+  const cv = $('confetti'), g = cv.getContext('2d'); cv.width = innerWidth; cv.height = innerHeight;
+  const ps = Array.from({ length: 60 }, (_, i) => ({ x: innerWidth * (.15 + Math.random() * .7), y: innerHeight + Math.random() * innerHeight * .5, r: 10 + Math.random() * 26, vy: -(1.2 + Math.random() * 2), sway: Math.random() * 6, c: i % 2 ? '#52d1ff' : '#ffb347' }));
+  const t0 = performance.now();
+  (function frame(t) {
+    g.clearRect(0, 0, cv.width, cv.height);
+    for (const q of ps) { q.y += q.vy; const x = q.x + Math.sin(t / 700 + q.sway) * 30; g.globalAlpha = Math.max(0, .55 * (1 - (t - t0) / 7000)); g.fillStyle = q.c; g.beginPath(); g.arc(x, q.y, q.r, 0, 7); g.fill(); }
+    if (t - t0 < 7000) requestAnimationFrame(frame); else g.clearRect(0, 0, cv.width, cv.height);
+  })(t0);
+}
 window.onYouTubeIframeAPIReady = () => { yt = new YT.Player('yt', { width: 320, height: 200, playerVars: { playsinline: 1, controls: 0 }, events: { onReady: () => { ytReady = true; audio(); }, onStateChange: (e) => { if (e.data === 0 && idleOn) ambient(); setNp(idleOn ? ({ 1: '♪ ' + (yt.getVideoData?.().title || ''), 3: '♪ loading…', '-1': '♪ starting…', 2: '♪ paused (click the page)' }[e.data] ?? '') : ''); }, onError: (e) => { if (idleOn) return ambient(); $('cover-t').textContent = `Video unavailable (YouTube error ${e.data})`; console.error('SQ yt error', e.data); } } }); };
 
-window.unlock = () => { unlocked = true; $('snd').style.display = 'none'; try { audio(); } catch {} };
+window.unlock = () => { unlocked = true; $('snd').style.display = 'none'; try { ac().resume(); audio(); } catch {} };
 addEventListener('click', () => { if (!unlocked) window.unlock(); }); addEventListener('keydown', () => { if (!unlocked) window.unlock(); });
 if (window.YT?.Player) window.onYouTubeIframeAPIReady(); // the API script may have loaded before this module ran
 if (new URLSearchParams(location.search).has('new')) localStorage.sqState = ''; // /?new starts clean
@@ -106,6 +141,7 @@ const q = (url) => `<div class=qrsvg>${qrSvg(url)}</div>`;
 const base = location.origin;
 const fr = (t) => S.players.find((p) => p.id === S.teams[t].front)?.name ?? '–';
 const matchup = () => `<div class=matchup><div class="mu A"><small>Team A</small><b>${fr('A')}</b><span>🎤 at the buzzer</span></div><div class=vs>vs</div><div class="mu B"><small>Team B</small><b>${fr('B')}</b><span>🎤 at the buzzer</span></div></div>`;
+const cd = () => { const left = Math.max(0, S.until - now()); return `<div class=cd><span>Next song in ${Math.ceil(left / 1000)} s</span><div><i style="animation-duration:${T.reveal}ms;animation-delay:-${T.reveal - left}ms"></i></div></div>`; };
 const sec = (ms) => (ms == null ? '–' : (ms / 1000).toFixed(1) + ' s');
 function chart(tl) { // score after every song, one line per team
   const W = 620, H = 280, P = 40, n = Math.max(1, tl.length - 1), max = Math.max(1, ...tl.flatMap((p) => [p.A, p.B]));
@@ -147,10 +183,10 @@ function render() {
   else if (ph === 'countdown') h = `<h2>Song ${S.idx + 1} of ${S.total}</h2>${matchup()}<div class="big sm">${Math.max(1, Math.ceil((S.until - now()) / 1000))}</div>${S.judgeName ? `<div class=judge-pill>🎧 Judge: <b>${S.judgeName}</b></div>` : ''}`;
   else if (ph === 'playing') { $('cover-t').textContent = `Song ${S.idx + 1}/${S.total}${S.locked.length ? ' — ' + S.locked.join(',') + ' locked' : ''}`; $('cover-s').innerHTML = matchup(); }
   else if (ph === 'verify') { $('cover-t').innerHTML = `<span class=${S.buzz.team}>Team ${S.buzz.team}</span> buzzed!${S.judgeName ? `<br><small>🎧 ${S.judgeName} judges</small>` : ''}`; $('cover-s').innerHTML = matchup(); }
-  else if (ph === 'reveal') h = `<h1>${S.answer.title}</h1><h2>${S.answer.artist}</h2>${S.lastResult ? `<p>Team ${S.lastResult.team}: +${S.lastResult.pts}</p>` : ''}${S.next ? `<h2>Next up: <span class=A>${S.next.names.A}</span> (A) · <span class=B>${S.next.names.B}</span> (B)${S.next.names.judge ? ` · 🎧 ${S.next.names.judge} judges` : ''}</h2>` : ''}${sc}`;
-  else if (ph === 'end') { const w = S.teams.A.score === S.teams.B.score ? 'Draw!' : 'Team ' + (S.teams.A.score > S.teams.B.score ? 'A' : 'B') + ' wins!'; h = `<h1>${w}</h1><div class=endscore><span class=A>Team A <b>${S.teams.A.score}</b></span> : <span class=B><b>${S.teams.B.score}</b> Team B</span></div><div class=endgrid><div class=panel><h3>Score over time</h3>${S.timeline ? chart(S.timeline) : ''}</div><div class=panel><h3>Players</h3>${S.stats ? statsTable() : ''}</div></div>`; }
+  else if (ph === 'reveal') h = `${S.next ? cd() : ''}<h1>${S.answer.title}</h1><h2>${S.answer.artist}</h2>${S.lastResult ? `<p>Team ${S.lastResult.team}: +${S.lastResult.pts}</p>` : ''}${S.next ? `<h2>Next up: <span class=A>${S.next.names.A}</span> (A) · <span class=B>${S.next.names.B}</span> (B)${S.next.names.judge ? ` · 🎧 ${S.next.names.judge} judges` : ''}</h2>` : ''}${sc}`;
+  else if (ph === 'end') { const w = S.teams.A.score === S.teams.B.score ? '🤝 It\'s a draw!' : 'Team ' + (S.teams.A.score > S.teams.B.score ? 'A' : 'B') + ' wins!'; h = `<h1>${w}</h1><div class=endscore><span class=A>Team A <b>${S.teams.A.score}</b></span> : <span class=B><b>${S.teams.B.score}</b> Team B</span></div><div class=endgrid><div class=panel><h3>Score over time</h3>${S.timeline ? chart(S.timeline) : ''}</div><div class=panel><h3>Players</h3>${S.stats ? statsTable() : ''}</div></div><p class=again>🎤 Ready for another round? The host taps “Play again” on their phone.</p>`; }
   if (lastHtml !== h) { lastHtml = h; $('main').innerHTML = h; } // only touch the DOM on change so animations do not restart every tick
-  if (ph === 'end' && !confettiDone) { confettiDone = true; confetti(); } else if (ph !== 'end') confettiDone = false;
+  if (ph === 'end' && !confettiDone) { confettiDone = true; const draw = S.teams.A.score === S.teams.B.score; if (unlocked) try { draw ? sadTrombone() : applause(); } catch {} draw ? drawFx() : confetti(); } else if (ph !== 'end') confettiDone = false;
 }
 
 let lastHtml = '', confettiDone = false;

@@ -7,6 +7,7 @@
 import { D, r } from './db.js';
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+if (location.hash.length > 1) { localStorage.sqAdminKey = decodeURIComponent(location.hash.slice(1)); history.replaceState(null, '', location.pathname); } // /admin#<key> saves the key, then hides it
 let pub = null, host = null, key = localStorage.sqAdminKey || '', confirming = false, msg = '', hostSeen = { ts: null, at: 0 };
 D.onValue(r('public'), (s) => { pub = s.val(); render(); });
 D.onValue(r('host'), (s) => { host = s.val(); if (host && host.ts !== hostSeen.ts) hostSeen = { ts: host.ts, at: Date.now() }; render(); });

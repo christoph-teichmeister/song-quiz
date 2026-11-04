@@ -138,3 +138,10 @@ table.stats{width:100%;border-collapse:collapse;font-size:max(1.5vw,14px)}table.
 table.stats td{padding:.45em .5em;text-align:right;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}.legend{margin:1vh 0 0;font-size:max(1.1vw,12px);color:var(--mute)}
 .stat-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}.stat-grid div{background:var(--card);border-radius:16px;padding:14px 8px;text-align:center;display:flex;flex-direction:column;gap:2px}
 .stat-grid b{font:800 1.5rem var(--display)}.stat-grid span{font-size:.75rem;color:var(--mute)}
+
+.cd{max-width:60vw;margin:0 auto 2vh;font-size:max(1.6vw,15px);color:var(--mute)}.cd div,.cdp div{height:.9vh;min-height:6px;border-radius:4px;background:#ffffff1a;margin-top:.8vh;overflow:hidden}
+.cd i,.cdp i{display:block;height:100%;width:100%;background:var(--hot);border-radius:4px;transform-origin:left;animation:drain linear forwards}
+@keyframes drain{to{transform:scaleX(0)}}
+.again{margin:3vh 0 0;font-size:max(1.8vw,16px);color:var(--mute);animation:rise .6s .8s both}
+.cdp{font-size:.85rem;color:var(--mute)}.cdp div{height:6px;margin-top:6px}
+.admin-link{text-align:center;font-size:.8rem;color:var(--mute);margin-top:12px}.admin-link a{color:inherit}

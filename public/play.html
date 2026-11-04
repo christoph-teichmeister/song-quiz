@@ -13,6 +13,7 @@ const pid = sim ? 'sim-' + sim : (localStorage.sqPid ||= Math.random().toString(
 let S = null, pub = { session: false, catalog: [] };
 let cfg = { list: null, mode: 'normal', length: 10 }, modal = null, nameV = sim || localStorage.sqName || '', codeV = qs.get('code') || '';
 let jt = false, ja = false, lastKey = '', lastVerify = '';
+const revealAt = {}; // when each reveal was first seen, so the countdown bar survives re-renders
 
 const send = (o) => D.push(r('actions'), { pid, ...o });
 const act = (a) => send({ act: a });
@@ -48,7 +49,7 @@ function entry() {
   return { key: 'entry', body: `<h1>🎵 Song Quiz</h1><p class=hint style="text-align:left">Team up, buzz in, guess the song.</p>
     <div class=stack><input class=input id=name placeholder="Your name" maxlength=20 value="${esc(nameV)}" oninput="setName(this.value)" autocomplete=nickname>
     ${pub.session ? `<input class=input id=code placeholder="Game code" inputmode=numeric value="${esc(codeV || pub.code || '')}" oninput="setCode(this.value)"><button class=btn onclick="joinGame()">Join game</button>`
-      : `<button class=btn onclick="create()">Create a new game</button>`}</div>`, sticky: '' };
+      : `<button class=btn onclick="create()">Create a new game</button>`}</div><p class=admin-link><a href="/admin">admin</a></p>`, sticky: '' };
 }
 
 function render() {
@@ -106,12 +107,14 @@ function game() {
     const lr = S.lastResult;
     const nx = S.next, upNext = nx && (nx.A === me.id || nx.B === me.id), judgeNext = nx && nx.judge === me.id;
     const nextNote = upNext ? `<div class=judge-banner>🎤 <b>You are the next guesser.</b> Get to the front and buzz for Team ${t}.</div>` : judgeNext ? `<div class=judge-banner>🎧 <b>You are the next judge.</b> You will see the answer, keep it to yourself.</div>` : '';
-    body = `${hdrP}${nextNote}<div class=card><div class=answer>${esc(S.answer.title)}<small>${esc(S.answer.artist)}</small></div></div>${lr ? `<p class=hint><b class=${lr.team}>Team ${lr.team}</b> ${lr.pts ? `+${lr.pts}` : 'no points'}</p>` : ''}<p class=hint>${nx ? 'Next song starts in a moment…' : 'That was the last song…'}</p>`;
+    const rs = (revealAt[S.idx] ||= Date.now()), el = Math.min(Date.now() - rs, 10000);
+    const cdp = nx ? `<div class=cdp><span>Next song starts soon</span><div><i style="animation-duration:10000ms;animation-delay:-${el}ms"></i></div></div>` : '';
+    body = `${hdrP}${nextNote}${cdp}<div class=card><div class=answer>${esc(S.answer.title)}<small>${esc(S.answer.artist)}</small></div></div>${lr ? `<p class=hint><b class=${lr.team}>Team ${lr.team}</b> ${lr.pts ? `+${lr.pts}` : 'no points'}</p>` : ''}<p class=hint>${nx ? '' : 'That was the last song…'}</p>`;
   } else if (ph === 'end') {
     const w = S.teams.A.score === S.teams.B.score ? 'It\'s a draw' : `Team ${S.teams.A.score > S.teams.B.score ? 'A' : 'B'} wins`;
     const me2 = (S.stats || []).find((p) => p.id === me.id), aw = awards(S.stats || [])[me.id] || [];
     const sec = (ms) => (ms == null ? '–' : (ms / 1000).toFixed(1) + ' s');
-    body = `${hdr}<h1>${w} 🎉</h1><div class=card><b class=A>Team A</b> ${S.teams.A.score} · <b class=B>Team B</b> ${S.teams.B.score}</div>` + (me2 ? `<div class=label>Your game</div>${aw.length ? `<div class=chips>${aw.map((l) => `<span class=chip>${l}</span>`).join('')}</div>` : ''}
+    body = `${hdr}<h1>${w} ${S.teams.A.score === S.teams.B.score ? '🤝' : '🎉'}</h1><div class=card><b class=A>Team A</b> ${S.teams.A.score} · <b class=B>Team B</b> ${S.teams.B.score}</div>` + (me2 ? `<div class=label>Your game</div>${aw.length ? `<div class=chips>${aw.map((l) => `<span class=chip>${l}</span>`).join('')}</div>` : ''}
       <div class=stat-grid><div><b>${me2.pts}</b><span>points</span></div><div><b>${me2.buzzes}</b><span>buzzes</span></div><div><b>${me2.right}</b><span>right</span></div><div><b>${me2.wrong}</b><span>wrong</span></div><div><b>${sec(me2.avgMs)}</b><span>avg buzz</span></div><div><b>${sec(me2.bestMs)}</b><span>fastest</span></div></div>` : '<p class=hint>You were the judge or listened this game, no stats for you.</p>');
     if (S.host) sticky = `<button class=btn onclick="act({type:'again'})">Play again</button>`;
   } else body = hdr;
