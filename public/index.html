@@ -14,12 +14,14 @@
 import { createSession, join, act, tick, view, awards, T } from './game.js';
 import { D, rr, ROOM, db } from './db.js';
 import { qrSvg } from './qr.js';
+import { RULES, rulesFor } from './rules.js';
 const REPO = 'https://github.com/christoph-teichmeister/song-quiz';
 
 // The TV page is the game server: it owns the state, phones only send actions and show their own view.
 const $ = (id) => document.getElementById(id);
 let session = null, S = null, lists = {}, errs = {}, last = {}, yt = null, ytReady = false, unlocked = false, lastIdx = -1;
 const now = () => Date.now();
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); // player names go into innerHTML
 let AC; // Web Audio for the end-screen sounds (synthesised, no files)
 const ac = () => (AC ||= new (window.AudioContext || window.webkitAudioContext)());
 function applause() { // many short filtered noise bursts, densest in the middle
@@ -139,7 +141,7 @@ window.keepAlive = () => { if (session) { session.lastActivity = now(); session.
 
 const q = (url) => `<div class=qrsvg>${qrSvg(url)}</div>`;
 const base = location.origin, rq = ROOM === 'main' ? '' : 'room=' + ROOM;
-const fr = (t) => S.players.find((p) => p.id === S.teams[t].front)?.name ?? '–';
+const fr = (t) => esc(S.players.find((p) => p.id === S.teams[t].front)?.name) || '–';
 const matchup = () => `<div class=matchup><div class="mu A"><small>Team A</small><b>${fr('A')}</b><span>🎤 at the buzzer</span></div><div class=vs>vs</div><div class="mu B"><small>Team B</small><b>${fr('B')}</b><span>🎤 at the buzzer</span></div></div>`;
 const cd = () => { const left = Math.max(0, S.until - now()); return `<div class=cd><span>Next song in ${Math.ceil(left / 1000)} s</span><div><i style="animation-duration:${T.reveal}ms;animation-delay:-${T.reveal - left}ms"></i></div></div>`; };
 const sec = (ms) => (ms == null ? '–' : (ms / 1000).toFixed(1) + ' s');
@@ -153,10 +155,10 @@ function chart(tl) { // score after every song, one line per team
 }
 function statsTable() {
   const aw = awards(S.stats), rows = [...S.stats].sort((a, b) => b.pts - a.pts || a.name.localeCompare(b.name));
-  return `<table class=stats><tr><th></th><th>Buzzes</th><th>Right</th><th>Wrong</th><th>Points</th><th>Avg</th><th>Best</th></tr>${rows.map((p) => `<tr><td class=${p.team}>${p.name} ${(aw[p.id] || []).map((l) => l.split(' ')[0]).join('')}</td><td>${p.buzzes}</td><td>${p.right}</td><td>${p.wrong}</td><td><b>${p.pts}</b></td><td>${sec(p.avgMs)}</td><td>${sec(p.bestMs)}</td></tr>`).join('')}</table>
+  return `<table class=stats><tr><th></th><th>Buzzes</th><th>Right</th><th>Wrong</th><th>Points</th><th>Avg</th><th>Best</th></tr>${rows.map((p) => `<tr><td class=${p.team}>${esc(p.name)} ${(aw[p.id] || []).map((l) => l.split(' ')[0]).join('')}</td><td>${p.buzzes}</td><td>${p.right}</td><td>${p.wrong}</td><td><b>${p.pts}</b></td><td>${sec(p.avgMs)}</td><td>${sec(p.bestMs)}</td></tr>`).join('')}</table>
     <p class=legend>🏆 most points · ⚡ fastest buzzer · 🎯 sharpest (2+ buzzes)</p>`;
 }
-function names(t) { return S.players.filter((p) => p.team === t).map((p) => p.name + (S.teams[t].front === p.id && S.phase !== 'lobby' ? ' 🎤' : '')).join(', ') || '–'; }
+function names(t) { return S.players.filter((p) => p.team === t).map((p) => esc(p.name) + (S.teams[t].front === p.id && S.phase !== 'lobby' ? ' 🎤' : '')).join(', ') || '–'; }
 
 function render() {
   setNp($('npt').textContent);
@@ -170,26 +172,34 @@ function render() {
     const key = 'idle'; if ($('main').dataset.k === key) return; $('main').dataset.k = key; lastHtml = '';
     $('main').innerHTML = `<div class=idle><div class=notes>${'♪♫♬♩♪♫'.split('').map((n, i) => `<em style="left:${5 + i * 17}%;animation-delay:${i * 1.1}s">${n}</em>`).join('')}</div>
   <div class=hero><div class=rings><i></i><i></i><i></i><span>🎵</span></div><h1>Song Quiz</h1>
-  <ol class=steps><li><b>1</b><span>Scan the QR code with your phone</span></li><li><b>2</b><span>Create a game or join one</span></li><li><b>3</b><span>Pick a team and play</span></li></ol></div>
+  <ol class=steps><li><b>1</b><span>Scan the QR code with your phone</span></li><li><b>2</b><span>Create a game or join one</span></li><li><b>3</b><span>Pick a team and play</span></li></ol><div class=tip id=tip></div></div>
   <div class=scan><div class=qrcard>${q(base + '/play' + (rq ? '?' + rq : ''))}</div><p>📱 Scan to play</p></div>
   <a class=repo href="${REPO}" target=_blank><div class=qrsvg>${qrSvg(REPO)}</div><span>GitHub</span></a></div>`;
+    tipTick();
     return;
   }
   $('main').dataset.k = '';
   const sc = `<div class=row><div class="tcard A"><div class=A>Team A</div><div class=score>${S.teams.A.score}</div>${names('A')}</div><div class="tcard B"><div class=B>Team B</div><div class=score>${S.teams.B.score}</div>${names('B')}</div></div>`;
   const ph = S.phase; let h = '';
   if (ph === 'lobby') h = `<h1>Join with code <b>${S.code}</b></h1><div class=qrcard style="width:min(30vw,380px);margin:auto">${q(base + '/play?code=' + S.code + (rq ? '&' + rq : ''))}</div>${sc}<p>Host picks the list and starts.</p>`;
+  else if (ph === 'howto') { const need = S.players.filter((p) => p.team), ok = S.ack || []; h = `<h1>How to play</h1><div class=rulegrid>${rulesFor(S.settings.mode).map((x) => `<div class=rule><i>${x.icon}</i><div><b>${x.title}</b><p>${x.text}</p></div></div>`).join('')}</div><div class=ackbar>${need.map((p) => `<span class="ack ${p.team}${ok.includes(p.id) ? ' ok' : ''}">${ok.includes(p.id) ? '✓' : '⏳'} ${esc(p.name)}</span>`).join('')}</div><h2>${ok.length} of ${need.length} ready · everyone taps “Got it” on their phone</h2>`; }
   else if (ph === 'pickfront') h = `<h1>Song ${S.idx + 1}/${S.total}: pick your front-person</h1>${sc}<p>🎤 Front-persons tap Ready on their phone.</p>`;
-  else if (ph === 'countdown') h = `<h2>Song ${S.idx + 1} of ${S.total}</h2>${matchup()}<div class="big sm">${Math.max(1, Math.ceil((S.until - now()) / 1000))}</div>${S.judgeName ? `<div class=judge-pill>🎧 Judge: <b>${S.judgeName}</b></div>` : ''}`;
+  else if (ph === 'countdown') h = `<h2>Song ${S.idx + 1} of ${S.total}</h2>${matchup()}<div class="big sm">${Math.max(1, Math.ceil((S.until - now()) / 1000))}</div>${S.judgeName ? `<div class=judge-pill>🎧 Judge: <b>${esc(S.judgeName)}</b></div>` : ''}`;
   else if (ph === 'playing') { $('cover-t').textContent = `Song ${S.idx + 1}/${S.total}${S.locked.length ? ' — ' + S.locked.join(',') + ' locked' : ''}`; $('cover-s').innerHTML = matchup(); }
-  else if (ph === 'verify') { $('cover-t').innerHTML = `<span class=${S.buzz.team}>Team ${S.buzz.team}</span> buzzed!${S.judgeName ? `<br><small>🎧 ${S.judgeName} judges</small>` : ''}`; $('cover-s').innerHTML = matchup(); }
-  else if (ph === 'reveal') h = `${S.next ? cd() : ''}<h1>${S.answer.title}</h1><h2>${S.answer.artist}</h2>${S.lastResult ? `<p>Team ${S.lastResult.team}: +${S.lastResult.pts}</p>` : ''}${S.next ? `<h2>Next up: <span class=A>${S.next.names.A}</span> (A) · <span class=B>${S.next.names.B}</span> (B)${S.next.names.judge ? ` · 🎧 ${S.next.names.judge} judges` : ''}</h2>` : ''}${sc}`;
+  else if (ph === 'verify') { $('cover-t').innerHTML = `<span class=${S.buzz.team}>Team ${S.buzz.team}</span> buzzed!${S.judgeName ? `<br><small>🎧 ${esc(S.judgeName)} judges</small>` : ''}`; $('cover-s').innerHTML = matchup(); }
+  else if (ph === 'reveal') h = `${S.next ? cd() : ''}<h1>${S.answer.title}</h1><h2>${S.answer.artist}</h2>${S.lastResult ? `<p>Team ${S.lastResult.team}: +${S.lastResult.pts}</p>` : ''}${S.next ? `<h2>Next up: <span class=A>${esc(S.next.names.A)}</span> (A) · <span class=B>${esc(S.next.names.B)}</span> (B)${S.next.names.judge ? ` · 🎧 ${esc(S.next.names.judge)} judges` : ''}</h2>` : ''}${sc}`;
   else if (ph === 'end') { const w = S.teams.A.score === S.teams.B.score ? '🤝 It\'s a draw!' : 'Team ' + (S.teams.A.score > S.teams.B.score ? 'A' : 'B') + ' wins!'; h = `<h1>${w}</h1><div class=endscore><span class=A>Team A <b>${S.teams.A.score}</b></span> : <span class=B><b>${S.teams.B.score}</b> Team B</span></div><div class=endgrid><div class=panel><h3>Score over time</h3>${S.timeline ? chart(S.timeline) : ''}</div><div class=panel><h3>Players</h3>${S.stats ? statsTable() : ''}</div></div><p class=again>🎤 Ready for another round? The host taps “Play again” on their phone.</p>`; }
   if (lastHtml !== h) { lastHtml = h; $('main').innerHTML = h; } // only touch the DOM on change so animations do not restart every tick
   if (ph === 'end' && !confettiDone) { confettiDone = true; const draw = S.teams.A.score === S.teams.B.score; if (unlocked) try { draw ? sadTrombone() : applause(); } catch {} draw ? drawFx() : confetti(); } else if (ph !== 'end') confettiDone = false;
 }
 
-let lastHtml = '', confettiDone = false;
+let lastHtml = '', confettiDone = false, tipI = Math.floor(Math.random() * 5);
+function tipTick(next) { // the start page cycles through the rules, one short card at a time
+  const el = $('tip'); if (!el) return;
+  if (next) tipI++;
+  const x = RULES[tipI % RULES.length]; el.innerHTML = `<b>${x.icon} ${x.title}</b> ${x.text}`; el.classList.remove('swap'); void el.offsetWidth; el.classList.add('swap');
+}
+setInterval(() => tipTick(true), 8000);
 function confetti() { // one short burst at the end of a game
   const cv = $('confetti'), g = cv.getContext('2d'); cv.width = innerWidth; cv.height = innerHeight;
   const cols = ['#ff4f8b', '#52d1ff', '#ffb347', '#5ee6a0', '#f4f1fa'];

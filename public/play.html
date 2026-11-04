@@ -6,6 +6,7 @@
 <script type=module>
 import { D, r, rr, ROOM } from './db.js';
 import { awards } from './game.js';
+import { RULES, MODE_RULE, rulesFor } from './rules.js';
 import { qrSvg } from './qr.js';
 import { auth, onUser, google, signIn, signUp, resetPw, signOut, removeAccount, authError } from './auth.js';
 const $ = (id) => document.getElementById(id);
@@ -78,9 +79,10 @@ function entry() {
   return { key: 'entry', body: `<div class=hdr><span></span><button class=score-pill style="border:0;color:inherit;cursor:pointer" onclick="openSheet('account')">${user ? '👤 ' + esc((user.displayName || user.email || 'Account').split(' ')[0]) : 'Sign in'}</button></div><h1>🎵 Song Quiz</h1><p class=hint style="text-align:left">Team up, buzz in, guess the song.</p>
     <div class=stack><input class=input id=name placeholder="Your name" maxlength=20 value="${esc(nameV)}" oninput="setName(this.value)" autocomplete=nickname>
     ${pub.session ? `<input class=input id=code placeholder="Game code" inputmode=numeric value="${esc(codeV || pub.code || '')}" oninput="setCode(this.value)"><button class=btn onclick="joinGame()">Join game</button>`
-      : `<button class=btn onclick="create()">Create a new game</button>`}</div><p class=admin-link><a href="/admin">admin</a></p>`, sticky: '' };
+      : `<button class=btn onclick="create()">Create a new game</button>`}</div><p class=admin-link><a href="#" onclick="openSheet(\'rules\');return false">How to play</a> · <a href="/admin">admin</a></p>`, sticky: '' };
 }
 
+const ruleCards = (list) => `<div class=rules>${list.map((x) => `<div class=rule><i>${x.icon}</i><div><b>${x.title}</b><p>${x.text}</p></div></div>`).join('')}</div>`;
 function sheetHtml() {
   const close = '<button class="btn ghost" onclick="closeSheet()">Close</button>', msg = authMsg ? `<p class=hint>${esc(authMsg)}</p>` : '';
   const sec = (ms) => (ms == null ? '–' : (ms / 1000).toFixed(1) + ' s');
@@ -95,6 +97,7 @@ function sheetHtml() {
   else if (sheet === 'account') inner = `<h2>${esc(user.displayName || 'Your account')}</h2><p>${esc(user.email || '')}</p>
     <button class=btn onclick="hostHome()">🏠 Host a game at home</button><button class="btn ghost" onclick="openSheet('stats')">📊 My stats</button><button class="btn ghost" onclick="doSignOut()">Sign out</button>
     ${delConfirm ? `<p class=err>Delete your account and all saved stats?</p><button class=btn onclick="doDelete()">Yes, delete everything</button><button class="btn ghost" onclick="askDelete(false)">Cancel</button>` : `<button class="btn ghost" onclick="askDelete(true)">Delete my account</button>`}${msg}${close}`;
+  else if (sheet === 'rules') inner = `<h2>How to play</h2>${ruleCards([...RULES, MODE_RULE.intro, MODE_RULE.speed])}${close}`;
   else if (sheet === 'home') { const link = location.origin + '/?room=' + homeRoom; inner = `<h2>Your home room</h2><p>Open this link in the browser of the TV or a laptop at home. Then create the game on your phone: friends scan the QR code that shows up on the TV.</p>
     <div class=card style="word-break:break-all;font-size:.9rem">${esc(link)}</div><div class=qrsvg style="width:150px;background:#fff;padding:8px;border-radius:12px;margin:auto">${qrSvg(link)}</div>
     <button class=btn onclick="copyLink()">Copy TV link</button><button class="btn ghost" onclick="shareLink()">Share link</button><button class="btn ghost" onclick="goRoom()">Open my room on this phone</button>${msg}${close}`; }
@@ -139,6 +142,11 @@ function game() {
         <div class=step><b>4</b>Game length<small>tap to change</small></div><div class=seg>${[5, 10, 15].map((n) => `<button class="${cfg.length === n ? 'on' : ''}" onclick="pickLen(${n})">${n} songs</button>`).join('')}</div>`;
       sticky = `<button class=btn onclick="start()" ${t && ready ? '' : 'disabled'}>${!t ? 'Pick a team first' : ready ? 'Start game' : 'Each team needs a player'}</button>`;
     } else body += `<p class=hint>${t ? '' : 'Pick a team. '}The host starts the game <span class=dots><i></i><i></i><i></i></span></p>`;
+  } else if (ph === 'howto') {
+    const need = S.players.filter((q) => q.team), done = S.ack || [], mine = done.includes(me.id);
+    body = `${hdr}<h2>How it works</h2>${ruleCards(rulesFor(S.settings.mode))}<p class=hint>${done.length} of ${need.length} ready</p>`;
+    sticky = (t ? (mine ? `<button class=btn disabled>Waiting for the others…</button>` : `<button class=btn onclick="act({type:'ack'})">Got it, I understand</button>`) : '')
+      + (S.host ? `<button class="btn ghost" onclick="act({type:'skiphowto'})">Start anyway</button>` : '');
   } else if (ph === 'pickfront' && t) {
     const fr = S.teams[t].front;
     body = `${hdrP}<h2>Who stands at the front?</h2><div class=stack>${mem(t).map((p) => `<button class="btn ghost${p.id === fr ? ' on' : ''}" onclick="act({type:'front',id:'${p.id}'})">${esc(p.name)}${p.id === fr ? ' 🎤' : ''}</button>`).join('')}</div>`;

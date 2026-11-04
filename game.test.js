@@ -10,6 +10,9 @@ function setup() {
   act(s, h, { type: 'team', team: 'A' }, now);
   act(s, b, { type: 'team', team: 'B' }, now);
   assert.equal(act(s, h, { type: 'start', list: 'x', songs, length: 1 }, now), null);
+  assert.equal(s.phase, 'howto');
+  act(s, h, { type: 'ack' }, now); act(s, b, { type: 'ack' }, now);       // both players confirm the rules
+  assert.equal(s.phase, 'pickfront');
   act(s, h, { type: 'ready' }, now); act(s, b, { type: 'ready' }, now);
   now += T.countdown; tick(s, now);
   assert.equal(s.phase, 'playing');
@@ -35,6 +38,7 @@ test('with a judge: wrong answer locks only the buzzer, other team may buzz, jud
   const h = s.hostId, b = join(s, 'ben', now).id, j1 = join(s, 'jo', now).id, j2 = join(s, 'jay', now).id;
   for (const [id, t] of [[h, 'A'], [j1, 'A'], [b, 'B'], [j2, 'B']]) act(s, id, { type: 'team', team: t }, now);
   act(s, h, { type: 'start', list: 'x', songs, length: 1 }, now);
+  act(s, h, { type: 'skiphowto' }, now);
   act(s, h, { type: 'front', id: h }, now); act(s, b, { type: 'front', id: b }, now);
   act(s, h, { type: 'ready' }, now); act(s, b, { type: 'ready' }, now);
   assert.ok([j1, j2].includes(s.judge));                   // never a front-person
@@ -74,6 +78,7 @@ test('after a reveal the next song starts with a countdown, fronts rotate', () =
   const h = s.hostId, b = join(s, 'ben', now).id, h2 = join(s, 'hugo', now).id;
   for (const [id, t] of [[h, 'A'], [h2, 'A'], [b, 'B']]) act(s, id, { type: 'team', team: t }, now);
   act(s, h, { type: 'start', list: 'x', songs, length: 2 }, now);
+  act(s, h, { type: 'skiphowto' }, now);
   const first = s.teams.A.front;
   act(s, first, { type: 'ready' }, now); act(s, b, { type: 'ready' }, now);
   now += T.countdown; tick(s, now);

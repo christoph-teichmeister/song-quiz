@@ -1,5 +1,5 @@
 // Pure game state machine. No I/O: server.js feeds it actions and ticks.
-// Phases: lobby -> pickfront (first song only) -> countdown -> playing <-> verify -> reveal -> (countdown | end)
+// Phases: lobby -> howto -> pickfront (first song only) -> countdown -> playing <-> verify -> reveal -> (countdown | end)
 export const T = { countdown: 3000, reveal: 10000, idle: 180000, prompt: 15000, introMs: 5000, speedMs: 5000 };
 const other = (t) => (t === 'A' ? 'B' : 'A');
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -15,7 +15,7 @@ export function createSession(hostName, now, hostId) {
     settings: { list: null, mode: 'normal', length: 10 },
     songs: [], idx: 0, locked: [], buzz: null, startedAt: 0, until: 0,
     lastActivity: now, promptUntil: 0,
-    gameNo: 0, stats: {}, timeline: [{ A: 0, B: 0 }], // per-player buzz stats and the score after every song
+    gameNo: 0, ack: {}, stats: {}, timeline: [{ A: 0, B: 0 }], // per-player buzz stats and the score after every song
   };
 }
 
@@ -50,6 +50,17 @@ export function act(s, pid, a, now) {
       s.settings = { list: a.list, mode: a.mode || 'normal', length: a.length || 10 };
       s.songs = shuffle(a.songs).slice(0, s.settings.length);
       s.idx = 0; s.gameNo++; s.stats = {}; s.timeline = [{ A: 0, B: 0 }];
+      s.phase = 'howto'; s.ack = {}; // everyone with a team confirms the rules first
+      return null;
+    }
+    case 'ack': {
+      if (s.phase !== 'howto' || !p.team) return 'not now';
+      s.ack[pid] = true;
+      if (Object.values(s.players).filter((q) => q.team).every((q) => s.ack[q.id])) return pickFront(s);
+      return null;
+    }
+    case 'skiphowto': {
+      if (pid !== s.hostId || s.phase !== 'howto') return 'host only';
       return pickFront(s);
     }
     case 'front': { // teammate sets the front-person of own team
@@ -160,7 +171,7 @@ export function view(s, pid, now) {
     code: s.code, phase: s.phase, host: pid === s.hostId, me: me && { id: me.id, team: me.team, name: me.name },
     players: Object.values(s.players).map((p) => ({ id: p.id, name: p.name, team: p.team })),
     next: s.next ? { A: s.next.A, B: s.next.B, judge: s.next.judge, names: { A: s.players[s.next.A]?.name, B: s.players[s.next.B]?.name, judge: s.players[s.next.judge]?.name } } : null,
-    game: s.gameNo, stats: s.phase === 'end' ? playerStats(s) : null, timeline: s.phase === 'end' ? s.timeline : null,
+    ack: s.phase === 'howto' ? Object.keys(s.ack || {}) : null, game: s.gameNo, stats: s.phase === 'end' ? playerStats(s) : null, timeline: s.phase === 'end' ? s.timeline : null,
     judge: s.judge, judgeName: s.judge ? s.players[s.judge]?.name : null,
     teams: s.teams, settings: s.settings, idx: s.idx, total: s.songs.length, locked: s.locked, buzz: s.buzz,
     lastResult: s.lastResult, until: s.until, promptUntil: s.promptUntil,

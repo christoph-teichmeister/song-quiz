@@ -153,3 +153,14 @@ table.stats td{padding:.45em .5em;text-align:right;border-top:1px solid var(--li
 #snd{transition:opacity .6s ease,transform .6s ease}#snd.out{opacity:0;transform:scale(1.06);pointer-events:none}
 .gated .idle>*{opacity:0}
 html:not(.gated) .idle .hero{animation:rise .8s .25s both}html:not(.gated) .idle .scan{animation:rise .8s .5s both}html:not(.gated) .idle .repo{animation:rise .8s .9s both}
+
+/* how to play */
+.rules{display:flex;flex-direction:column;gap:10px}.rule{display:flex;gap:14px;align-items:flex-start;background:var(--card);border-radius:16px;padding:12px 14px}
+.rule i{font-style:normal;font-size:1.6rem;line-height:1.1}.rule b{font:800 1rem var(--display)}.rule p{margin:.15em 0 0;color:var(--mute);font-size:.88rem;line-height:1.35}
+.sticky{display:flex;flex-direction:column;gap:10px}
+.rulegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.6vw;text-align:left;margin:2vh 0}.rulegrid .rule{padding:1.6vh 1.4vw;border-radius:1.4vw}
+.rulegrid .rule i{font-size:max(2.6vw,26px)}.rulegrid .rule b{font-size:max(1.8vw,17px)}.rulegrid .rule p{font-size:max(1.35vw,13px);margin-top:.4vh}
+.ackbar{display:flex;flex-wrap:wrap;gap:1vw;justify-content:center;margin:2vh 0}.ack{background:var(--card);border-radius:3em;padding:.4em 1.2em;font-size:max(1.6vw,15px);border:2px solid var(--line)}
+.ack.ok{border-color:var(--ok);background:#5ee6a01a}.ack.A.ok{border-color:var(--ok)}
+.tip{margin-top:3vh;max-width:42vw;min-height:5.5em;font-size:max(1.5vw,14px);color:var(--mute);line-height:1.4}.tip b{color:var(--fg)}.tip.swap{animation:rise .6s both}
+@media(max-width:800px){.rulegrid{grid-template-columns:1fr}.tip{max-width:none}}
