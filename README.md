@@ -2,7 +2,7 @@
 
 Song guessing game for the Christmas party. Web app, phones join via QR code, hosted on Firebase.
 
-> Status: rebuilt on Firebase (hosting + realtime database). Tests: `npm test`. Not deployed until a Firebase project is configured.
+> Status: rebuilt on Firebase (hosting + realtime database). Tests: `npm test` (logic + texts, seconds), `npm run e2e` (real pages in headless Chrome with a fake database and YouTube, ~2 min; needs `NODE_ENV=development npm install` once). `deploy.sh` runs both first. Not deployed until a Firebase project is configured.
 
 ## Flow
 
@@ -71,3 +71,10 @@ Charts now, 80s, 90s, 2000s, Christmas, movie/TV themes, intro-only, speed (play
 ## Credits
 
 - `public/sounds/applause.ogg`: "Applause ii.ogg" from Wikimedia Commons, public domain.
+
+## Rules added 2026-11-04
+- Speaking time 10 s after a buzz, then the judge has 20 s more (may talk it over); no ruling = wrong.
+- Title and artist score once per song; the other team can only win what is open. Judge button "pressed by mistake" undoes a buzz without lock.
+- Host can skip a song (two taps); a finished or broken video skips by itself. Idle reset only in lobby/howto/pickfront/end.
+- Speed/intro time counts song time, not time since the last resume.
+- Texts live in `public/i18n.js` (German default, EN switch per device).

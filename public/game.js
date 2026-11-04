@@ -1,6 +1,7 @@
 // Pure game state machine. No I/O: server.js feeds it actions and ticks.
 // Phases: lobby -> howto -> pickfront (first song only) -> countdown -> playing <-> verify -> reveal -> (countdown | end)
-export const T = { countdown: 3000, reveal: 10000, idle: 180000, prompt: 15000, introMs: 5000, speedMs: 5000 };
+export const T = { countdown: 3000, reveal: 10000, idle: 180000, prompt: 15000, introMs: 5000, speedMs: 5000, answer: 10000, judge: 20000 }; // answer: time to speak after a buzz, judge: extra time for the judge to decide (may talk it over) before it counts as wrong
+const IDLE_PHASES = ['lobby', 'howto', 'pickfront', 'end']; // the idle reset never fires while a song is running
 const other = (t) => (t === 'A' ? 'B' : 'A');
 const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -13,7 +14,7 @@ export function createSession(hostName, now, hostId) {
     players: { [host.id]: host },
     teams: { A: { score: 0, front: null, ready: false, rot: 0 }, B: { score: 0, front: null, ready: false, rot: 0 } },
     settings: { list: null, mode: 'normal', length: 10 },
-    songs: [], idx: 0, locked: [], buzz: null, startedAt: 0, until: 0,
+    songs: [], idx: 0, locked: [], buzz: null, startedAt: 0, playMs: 0, got: { title: null, artist: null }, until: 0, // playMs: song time before the current stretch (a wrong answer pauses the song)
     lastActivity: now, promptUntil: 0,
     gameNo: 0, ack: {}, stats: {}, timeline: [{ A: 0, B: 0 }], // per-player buzz stats and the score after every song
   };
@@ -74,32 +75,29 @@ export function act(s, pid, a, now) {
     case 'ready': {
       if (s.phase !== 'pickfront' || !p.team || s.teams[p.team].front !== pid) return 'front only';
       s.teams[p.team].ready = true;
-      if (s.teams.A.ready && s.teams.B.ready) { s.phase = 'countdown'; s.until = now + T.countdown; s.judge = pickJudge(s); }
+      if (s.teams.A.ready && s.teams.B.ready) startCountdown(s, now);
       return null;
     }
     case 'buzz': {
       if (s.phase !== 'playing' || !p.team || s.teams[p.team].front !== pid || s.locked.includes(p.team)) return 'cannot buzz';
-      s.buzz = { team: p.team, at: now - s.startedAt, pid };
+      s.buzz = { team: p.team, at: s.playMs + now - s.startedAt, pid, until: now + T.answer, expire: now + T.answer + T.judge }; // at = song time in ms, until = end of speaking time, expire = auto-wrong
       s.phase = 'verify';
       return null;
     }
     case 'verify': { // the judge sees the answer; without a spare player the opposing team judges and is locked out afterwards
       if (s.phase !== 'verify') return 'not now';
       if (s.judge ? pid !== s.judge : p.team !== other(s.buzz.team)) return 'judge only';
-      const pts = (a.title ? 1 : 0) + (a.artist ? 1 : 0);
-      const fast = s.settings.mode === 'speed' && s.buzz.at < T.speedMs;
-      s.teams[s.buzz.team].score += pts + (fast ? pts : 0);
-      s.lastResult = { team: s.buzz.team, title: !!a.title, artist: !!a.artist, pts: pts + (fast ? pts : 0) };
-      const st = (s.stats[s.buzz.pid] ||= { buzzes: 0, right: 0, wrong: 0, pts: 0, times: [] }); // who buzzed, how fast, right or wrong
-      st.buzzes++; st.times.push(s.buzz.at); st.pts += s.lastResult.pts; if (pts) st.right++; else st.wrong++;
-      if (a.title && a.artist) return reveal(s, now);
-      for (const t of s.judge ? [s.buzz.team] : ['A', 'B']) if (!s.locked.includes(t)) s.locked.push(t);
-      s.buzz = null;
-      if (s.locked.length === 2) return reveal(s, now);
-      s.phase = 'playing';
-      s.startedAt = now; // resume
-      return null;
+      return judged(s, now, !!a.title, !!a.artist);
     }
+    case 'misfire': // the buzz was a slip: back to the song, nobody is locked, nothing counts
+      if (s.phase !== 'verify') return 'not now';
+      if (s.judge ? pid !== s.judge : p.team !== other(s.buzz.team)) return 'judge only';
+      return resume(s, now);
+    case 'skip': // host moves on when something is stuck (dead phone, broken video, nobody knows the song)
+      if (pid !== s.hostId) return 'host only';
+      if (s.phase === 'pickfront') return startCountdown(s, now);
+      if (!['countdown', 'playing', 'verify'].includes(s.phase)) return 'not now';
+      return reveal(s, now);
     case 'again':
       if (pid !== s.hostId || s.phase !== 'end') return 'host only';
       s.phase = 'lobby';
@@ -114,7 +112,38 @@ export function act(s, pid, a, now) {
 function pickJudge(s) {
   const fronts = [s.teams.A.front, s.teams.B.front];
   const c = Object.values(s.players).filter((p) => p.team && !fronts.includes(p.id));
-  return c.length ? c[Math.floor(Math.random() * c.length)].id : null;
+  return choose(s, c);
+}
+
+// Random pick, but not the previous judge twice in a row (when there is a choice).
+function choose(s, c) {
+  const f = c.filter((p) => p.id !== s.judge), l = f.length ? f : c;
+  return l.length ? l[Math.floor(Math.random() * l.length)].id : null;
+}
+
+function startCountdown(s, now) {
+  s.teams.A.ready = s.teams.B.ready = true;
+  s.phase = 'countdown'; s.until = now + T.countdown; s.judge = pickJudge(s); s.got = { title: null, artist: null };
+  return null;
+}
+
+function resume(s, now) { s.playMs = s.buzz.at; s.buzz = null; s.phase = 'playing'; s.startedAt = now; return null; }
+
+// The judge rules on a buzz. Title and artist score once per song, so the other team can only win what is still open.
+function judged(s, now, title, artist) {
+  const b = s.buzz, g = s.got, nt = title && !g.title, na = artist && !g.artist, pts = (nt ? 1 : 0) + (na ? 1 : 0);
+  const fast = s.settings.mode === 'speed' && b.at < T.speedMs;
+  const gain = pts + (fast ? pts : 0);
+  if (nt) g.title = b.team;
+  if (na) g.artist = b.team;
+  s.teams[b.team].score += gain;
+  s.lastResult = { team: b.team, title: !!nt, artist: !!na, pts: gain };
+  const st = (s.stats[b.pid] ||= { buzzes: 0, right: 0, wrong: 0, pts: 0, times: [] }); // who buzzed, how fast, right or wrong
+  st.buzzes++; st.times.push(b.at); st.pts += gain; if (pts) st.right++; else st.wrong++;
+  if (g.title && g.artist) return reveal(s, now);
+  for (const t of s.judge ? [b.team] : ['A', 'B']) if (!s.locked.includes(t)) s.locked.push(t);
+  if (s.locked.length === 2) return reveal(s, now);
+  return resume(s, now);
 }
 
 function pickFront(s) {
@@ -123,7 +152,7 @@ function pickFront(s) {
     s.teams[t].front = m[s.teams[t].rot++ % m.length].id; // default rotation, teammates may override
     s.teams[t].ready = false;
   }
-  s.locked = []; s.buzz = null; s.lastResult = null; s.judge = null;
+  s.locked = []; s.buzz = null; s.lastResult = null; s.judge = null; s.playMs = 0; s.got = { title: null, artist: null };
   s.phase = 'pickfront';
   return null;
 }
@@ -140,23 +169,25 @@ function planNext(s) {
   const front = {};
   for (const t of ['A', 'B']) { const m = members(s, t); front[t] = m[s.teams[t].rot % m.length].id; }
   const c = Object.values(s.players).filter((p) => p.team && p.id !== front.A && p.id !== front.B);
-  return { A: front.A, B: front.B, judge: c.length ? c[Math.floor(Math.random() * c.length)].id : null };
+  return { A: front.A, B: front.B, judge: choose(s, c) };
 }
 
 // Time-driven transitions. Returns 'reset' when the session should be dropped.
 export function tick(s, now) {
-  if (s.phase === 'countdown' && now >= s.until) { s.phase = 'playing'; s.startedAt = now; }
-  else if (s.phase === 'playing' && s.settings.mode === 'intro' && now - s.startedAt >= T.introMs) reveal(s, now);
+  if (s.phase === 'countdown' && now >= s.until) { s.phase = 'playing'; s.startedAt = now; s.playMs = 0; }
+  else if (s.phase === 'playing' && s.settings.mode === 'intro' && s.playMs + now - s.startedAt >= T.introMs) reveal(s, now);
+  else if (s.phase === 'verify' && now >= s.buzz.expire) judged(s, now, false, false); // nobody ruled in time counts as wrong
   else if (s.phase === 'reveal' && now >= s.until) {
     s.idx++;
     if (s.idx >= s.songs.length) s.phase = 'end';
     else { // next song right away with the planned front-persons and judge
       const n = s.next || planNext(s);
       for (const t of ['A', 'B']) { s.teams[t].front = n[t]; s.teams[t].rot++; s.teams[t].ready = true; }
-      s.locked = []; s.buzz = null; s.lastResult = null; s.judge = n.judge; s.next = null;
+      s.locked = []; s.buzz = null; s.lastResult = null; s.judge = n.judge; s.next = null; s.playMs = 0; s.got = { title: null, artist: null };
       s.phase = 'countdown'; s.until = now + T.countdown;
     }
   }
+  if (!IDLE_PHASES.includes(s.phase)) { s.promptUntil = 0; return null; }
   if (s.promptUntil && now >= s.promptUntil) return 'reset';
   if (!s.promptUntil && now - s.lastActivity >= T.idle) s.promptUntil = now + T.prompt;
   return null;
@@ -174,7 +205,7 @@ export function view(s, pid, now) {
     ack: s.phase === 'howto' ? Object.keys(s.ack || {}) : null, game: s.gameNo, stats: s.phase === 'end' ? playerStats(s) : null, timeline: s.phase === 'end' ? s.timeline : null,
     judge: s.judge, judgeName: s.judge ? s.players[s.judge]?.name : null,
     teams: s.teams, settings: s.settings, idx: s.idx, total: s.songs.length, locked: s.locked, buzz: s.buzz,
-    lastResult: s.lastResult, until: s.until, promptUntil: s.promptUntil,
+    lastResult: s.lastResult, got: s.got, until: s.until, promptUntil: s.promptUntil,
     videoId: pid === 'tv' ? song?.id : undefined,
     answer: showAnswer && song ? { title: song.title, artist: song.artist } : undefined,
   };
@@ -196,15 +227,15 @@ function playerStats(s) {
   });
 }
 
-// Awards from playerStats(): {playerId: ['🏆 Most points', ...]}
+// Awards from playerStats(): {playerId: ['pts' | 'fast' | 'sharp', ...]} (the pages translate the codes)
 export function awards(stats) {
-  const out = {}, add = (ids, label) => ids.forEach((id) => (out[id] ||= []).push(label));
+  const out = {}, add = (ids, code) => ids.forEach((id) => (out[id] ||= []).push(code));
   const top = (list, key, better) => { const v = list.map(key); const m = better(...v); return list.filter((p) => key(p) === m).map((p) => p.id); };
   const scored = stats.filter((p) => p.pts > 0);
-  if (scored.length) add(top(scored, (p) => p.pts, Math.max), '🏆 Most points');
+  if (scored.length) add(top(scored, (p) => p.pts, Math.max), 'pts');
   const timed = stats.filter((p) => p.avgMs != null);
-  if (timed.length) add(top(timed, (p) => p.avgMs, Math.min), '⚡ Fastest buzzer');
+  if (timed.length) add(top(timed, (p) => p.avgMs, Math.min), 'fast');
   const sharp = stats.filter((p) => p.buzzes >= 2 && p.right > 0);
-  if (sharp.length) add(top(sharp, (p) => Math.round(100 * p.right / p.buzzes), Math.max), '🎯 Sharpest');
+  if (sharp.length) add(top(sharp, (p) => Math.round(100 * p.right / p.buzzes), Math.max), 'sharp');
   return out;
 }

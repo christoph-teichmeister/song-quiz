@@ -114,3 +114,111 @@ test('custom length is clamped to 1..50 and works with 1 song', () => {
   s.phase = 'lobby'; act(s, s.hostId, { type: 'start', list: 'x', songs, length: 999 }, 0);
   assert.equal(s.settings.length, 50);
 });
+
+// 2 teams of 2: A = host+jo, B = ben+jay; returns the session in 'playing' (everyone ready, countdown over)
+function four(mode = 'normal', length = 2) {
+  let now = 0;
+  const s = createSession('hanna', now);
+  const h = s.hostId, jo = join(s, 'jo', now).id, b = join(s, 'ben', now).id, jay = join(s, 'jay', now).id;
+  for (const [id, t] of [[h, 'A'], [jo, 'A'], [b, 'B'], [jay, 'B']]) act(s, id, { type: 'team', team: t }, now);
+  act(s, h, { type: 'start', list: 'x', songs, length, mode }, now);
+  act(s, h, { type: 'skiphowto' }, now);
+  const fa = s.teams.A.front, fb = s.teams.B.front;
+  act(s, fa, { type: 'ready' }, now); act(s, fb, { type: 'ready' }, now);
+  now += T.countdown; tick(s, now);
+  return { s, h, fa, fb, now };
+}
+
+test('speed mode: double points count from the song start, not from the resume after a wrong answer', () => {
+  let { s, fa, fb, now } = four('speed');
+  act(s, fa, { type: 'buzz' }, now + 2000);
+  act(s, s.judge, { type: 'verify', title: false, artist: false }, now + 2500);  // A wrong
+  now += 60000;                                                                   // song is a minute in
+  act(s, fb, { type: 'buzz' }, now + 1000);
+  assert.ok(s.buzz.at > T.speedMs);
+  act(s, s.judge, { type: 'verify', title: true, artist: true }, now + 1500);
+  assert.equal(s.teams.B.score, 2);                                               // not 4
+});
+
+test('title and artist score once: the other team can only win what is still open', () => {
+  let { s, fa, fb, now } = four();
+  act(s, fa, { type: 'buzz' }, now);
+  act(s, s.judge, { type: 'verify', title: true, artist: false }, now);           // A: title
+  assert.deepEqual(view(s, fa, now).got, { title: 'A', artist: null });
+  act(s, fb, { type: 'buzz' }, now);
+  act(s, s.judge, { type: 'verify', title: true, artist: true }, now);            // judge ticks both, title is already gone
+  assert.equal(s.teams.A.score, 1);
+  assert.equal(s.teams.B.score, 1);
+  assert.equal(s.phase, 'reveal');                                                // both parts are won
+});
+
+test('the judge gets extra time after the speaking time; a ruling in that window still counts', () => {
+  const { s, fa, now } = four();
+  act(s, fa, { type: 'buzz' }, now);
+  tick(s, now + T.answer + T.judge - 1);
+  assert.equal(s.phase, 'verify');                                                // speaking time over, judge may still decide
+  assert.equal(act(s, s.judge, { type: 'verify', title: true, artist: true }, now + T.answer + 5000), null);
+  assert.equal(s.teams[s.players[fa].team].score, 2);
+});
+
+test('nobody rules in time: counts as wrong and locks the buzzer', () => {
+  const { s, fa, now } = four();
+  act(s, fa, { type: 'buzz' }, now);
+  tick(s, now + T.answer + T.judge);
+  assert.equal(s.phase, 'playing');
+  assert.deepEqual(s.locked, [s.players[fa].team]);
+});
+
+test('misfire: back to the song, nobody locked, no stats', () => {
+  const { s, fa, now } = four();
+  act(s, fa, { type: 'buzz' }, now + 1000);
+  assert.equal(act(s, fa, { type: 'misfire' }, now), 'judge only');
+  act(s, s.judge, { type: 'misfire' }, now + 1200);
+  assert.equal(s.phase, 'playing');
+  assert.deepEqual(s.locked, []);
+  assert.deepEqual(s.stats, {});
+  act(s, fa, { type: 'buzz' }, now + 3000);                                        // may buzz again
+  assert.equal(s.phase, 'verify');
+});
+
+test('host skip: ends a stuck song, others cannot', () => {
+  const { s, h, fa, now } = four();
+  assert.equal(act(s, fa === h ? s.teams.B.front : fa, { type: 'skip' }, now), 'host only');
+  assert.equal(act(s, h, { type: 'skip' }, now), null);
+  assert.equal(s.phase, 'reveal');
+  assert.equal(act(s, h, { type: 'skip' }, now), 'not now');
+});
+
+test('host skip in pickfront starts the countdown', () => {
+  let now = 0;
+  const s = createSession('hanna', now), b = join(s, 'ben', now).id;
+  act(s, s.hostId, { type: 'team', team: 'A' }, now); act(s, b, { type: 'team', team: 'B' }, now);
+  act(s, s.hostId, { type: 'start', list: 'x', songs, length: 1 }, now); act(s, s.hostId, { type: 'skiphowto' }, now);
+  assert.equal(s.phase, 'pickfront');
+  act(s, s.hostId, { type: 'skip' }, now);
+  assert.equal(s.phase, 'countdown');
+});
+
+test('idle reset never fires while a song is running', () => {
+  const { s, now } = four();
+  assert.equal(tick(s, now + T.idle * 3), null);
+  assert.equal(s.promptUntil, 0);
+});
+
+test('the judge is not the same person twice in a row when there is a choice', () => {
+  for (let i = 0; i < 30; i++) {
+    const { s, h, fa, now } = four('normal', 2);
+    const first = s.judge;
+    act(s, fa, { type: 'buzz' }, now); act(s, first, { type: 'verify', title: true, artist: true }, now);
+    tick(s, now + T.reveal);
+    assert.equal(s.phase, 'countdown');
+    assert.notEqual(s.judge, first);
+  }
+});
+
+test('someone who joins mid-game has no team and cannot take one', () => {
+  const { s, now } = four();
+  const late = join(s, 'late', now).id;
+  assert.equal(act(s, late, { type: 'team', team: 'A' }, now), 'bad');
+  assert.equal(view(s, late, now).me.team, null);
+});

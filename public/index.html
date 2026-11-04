@@ -6,15 +6,17 @@
 <div class=tv id=main></div>
 <canvas id=confetti></canvas>
 <div id=prog><div id=progt></div><div id=progb><i id=progf></i></div></div>
-<div id=np><button id=npb title='Music on/off' onclick='toggleMusic()'></button><span id=npt></span></div>
-<div id=snd><div class=gate><div class=gate-note>🎵</div><h1>Song Quiz</h1><button class=gate-btn onclick=unlock()>▶ Tap to start</button><p>Turns on the sound for tonight</p></div></div>
-<div id=prompt onclick="keepAlive()">Still there? Resetting in <b id=pc></b> s — tap anywhere to keep playing</div>
+<div id=np><button id=npb onclick='toggleMusic()'></button><span id=npt></span></div>
+<div id=snd><div class=gate><div class=gate-note>🎵</div><h1>Song Quiz</h1><button class=gate-btn id=gate-b onclick=unlock()></button><p id=gate-p></p></div></div>
+<button id=lang class=lang onclick="toggleLang()" aria-label=Language></button>
+<div id=prompt onclick="keepAlive()"></div>
 <script src="https://www.youtube.com/iframe_api"></script>
 <script type=module>
 import { createSession, join, act, tick, view, awards, T } from './game.js';
 import { D, rr, ROOM, db } from './db.js';
 import { qrSvg } from './qr.js';
 import { RULES, rulesFor } from './rules.js';
+import { t, getLang, setLang } from './i18n.js';
 const REPO = 'https://github.com/christoph-teichmeister/song-quiz';
 
 // The TV page is the game server: it owns the state, phones only send actions and show their own view.
@@ -61,11 +63,25 @@ function drawFx() { // a draw: equal numbers of blue and orange bubbles drift up
     if (t - t0 < 7000) requestAnimationFrame(frame); else g.clearRect(0, 0, cv.width, cv.height);
   })(t0);
 }
-window.onYouTubeIframeAPIReady = () => { yt = new YT.Player('yt', { width: 320, height: 200, playerVars: { playsinline: 1, controls: 0 }, events: { onReady: () => { ytReady = true; audio(); }, onStateChange: (e) => { if (e.data === 0 && idleOn) ambient(); setNp(idleOn ? ({ 1: '♪ ' + (yt.getVideoData?.().title || ''), 3: '♪ loading…', '-1': '♪ starting…', 2: '♪ paused (click the page)' }[e.data] ?? '') : ''); }, onError: (e) => { if (idleOn) return ambient(); $('cover-t').textContent = `Video unavailable (YouTube error ${e.data})`; console.error('SQ yt error', e.data); } } }); };
+window.onYouTubeIframeAPIReady = () => { yt = new YT.Player('yt', { width: 320, height: 200, playerVars: { playsinline: 1, controls: 0 }, events: { onReady: () => { ytReady = true; audio(); }, onStateChange: (e) => { if (e.data === 0 && idleOn) ambient(); if (e.data === 0 && !idleOn) songOver(); setNp(idleOn ? ({ 1: '♪ ' + (yt.getVideoData?.().title || ''), 3: t('tv.loading'), '-1': t('tv.starting'), 2: t('tv.paused') }[e.data] ?? '') : ''); }, onError: (e) => { if (idleOn) return ambient(); console.error('SQ yt error', e.data); songOver(e.data); } } }); };
 
-window.unlock = () => { if (unlocked) return; unlocked = true; document.documentElement.classList.remove('gated'); $('snd').classList.add('out'); setTimeout(() => { $('snd').style.display = 'none'; }, 700); try { ac().resume(); audio(); } catch {} };
+// The song ran out or the video is broken while nobody buzzed: the host's skip moves the game on to the reveal.
+let videoErr = ''; // shown on the cover for a moment before the game moves on
+function songOver(err) {
+  if (!session || session.phase !== 'playing') return;
+  if (err != null) { videoErr = t('tv.videoErr', { n: err }); setTimeout(() => { videoErr = ''; skipNow(); }, 2500); } else skipNow();
+}
+function skipNow() { if (session?.phase === 'playing') handle({ pid: session.hostId, act: { type: 'skip' } }); }
+
+window.unlock = () => { if (unlocked) return; unlocked = true; document.documentElement.classList.remove('gated'); $('snd').classList.add('out'); setTimeout(() => { $('snd').style.display = 'none'; }, 700); try { ac().resume(); audio(); } catch {} wakeLock(); };
+let wl = null; // keep the TV screen on for the whole evening
+async function wakeLock() { try { if (!wl && navigator.wakeLock) { wl = await navigator.wakeLock.request('screen'); wl.addEventListener('release', () => { wl = null; }); } } catch {} }
+document.addEventListener('visibilitychange', () => { if (!document.hidden && unlocked) wakeLock(); });
+window.toggleLang = () => { setLang(getLang() === 'de' ? 'en' : 'de'); lastHtml = ''; $('main').dataset.k = ''; texts(); render(); };
+function texts() { $('gate-b').textContent = t('tv.gate'); $('gate-p').textContent = t('tv.gateP'); $('npb').title = t('tv.musicTitle'); $('lang').innerHTML = getLang() === 'de' ? '<b>DE</b> · EN' : 'DE · <b>EN</b>'; }
 addEventListener('click', () => { if (!unlocked) window.unlock(); }); addEventListener('keydown', () => { if (!unlocked) window.unlock(); });
 if (window.YT?.Player) window.onYouTubeIframeAPIReady(); // the API script may have loaded before this module ran
+if (new URLSearchParams(location.search).has('fast')) Object.assign(T, { countdown: 300, reveal: 1500 }); // browser tests: short pauses
 if (new URLSearchParams(location.search).has('new')) localStorage.sqState = ''; // /?new starts clean
 try { const saved = JSON.parse(localStorage.sqState || 'null'); if (saved) session = saved; } catch {} // resume after a TV reload
 
@@ -76,7 +92,7 @@ if (seen) {
   await new Promise((ok) => setTimeout(ok, 2500)); // a live host rewrites its heartbeat every second
   const again = (await D.get(rr('host'))).val();
   if (again && again.ts !== seen.ts) {
-    document.body.innerHTML = '<div class=tv><h1>Another TV page is already running</h1><p>Close the other one, then reload this page.</p></div>';
+    document.body.innerHTML = `<div class=tv><h1>${t('tv.another')}</h1><p>${t('tv.anotherP')}</p></div>`;
     throw new Error('second TV page');
   }
 }
@@ -93,6 +109,7 @@ D.onValue(rr('admin/epoch'), (sn) => {
   publish();
 });
 
+texts();
 const catalog = await (await fetch('songs/index.json')).json(); // [{id, name, emoji}], in display order
 for (const c of catalog) lists[c.id] = await (await fetch(`songs/${c.id}.json`)).json();
 await D.remove(rr('actions')); // stale phone actions from before this page load
@@ -152,8 +169,9 @@ window.keepAlive = () => { if (session) { session.lastActivity = now(); session.
 const q = (url) => `<div class=qrsvg>${qrSvg(url)}</div>`;
 const base = location.origin, rq = ROOM === 'main' ? '' : 'room=' + ROOM;
 const fr = (t) => esc(S.players.find((p) => p.id === S.teams[t].front)?.name) || '–';
-const matchup = () => `<div class=matchup><div class="mu A"><small>Team A</small><b>${fr('A')}</b><span>🎤 at the buzzer</span></div><div class=vs>vs</div><div class="mu B"><small>Team B</small><b>${fr('B')}</b><span>🎤 at the buzzer</span></div></div>`;
-const cd = () => { const left = Math.max(0, S.until - now()); return `<div class=cd><span>Next song in ${Math.ceil(left / 1000)} s</span><div><i style="animation-duration:${T.reveal}ms;animation-delay:-${T.reveal - left}ms"></i></div></div>`; };
+const matchup = () => `<div class=matchup><div class="mu A"><small>Team A</small><b>${fr('A')}</b><span>${t('tv.atBuzzer')}</span></div><div class=vs>vs</div><div class="mu B"><small>Team B</small><b>${fr('B')}</b><span>${t('tv.atBuzzer')}</span></div></div>`;
+const cd = () => { const left = Math.max(0, S.until - now()); return `<div class=cd><span>${t('tv.nextIn', { n: Math.ceil(left / 1000) })}</span><div><i style="animation-duration:${T.reveal}ms;animation-delay:-${T.reveal - left}ms"></i></div></div>`; };
+const AW = { pts: '🏆', fast: '⚡', sharp: '🎯' };
 const sec = (ms) => (ms == null ? '–' : (ms / 1000).toFixed(1) + ' s');
 function chart(tl) { // score after every song, one line per team
   const W = 620, H = 280, P = 40, n = Math.max(1, tl.length - 1), max = Math.max(1, ...tl.flatMap((p) => [p.A, p.B]));
@@ -161,29 +179,30 @@ function chart(tl) { // score after every song, one line per team
   const line = (k, c) => `<polyline fill=none stroke="${c}" stroke-width=4 stroke-linejoin=round points="${tl.map((p, i) => `${x(i)},${y(p[k])}`).join(' ')}"/>${tl.map((p, i) => `<circle cx=${x(i)} cy=${y(p[k])} r=5 fill="${c}"/>`).join('')}`;
   return `<svg viewBox="0 0 ${W} ${H}" class=chart><line x1=${P} y1=${y(0)} x2=${W - P} y2=${y(0)} stroke="#3a3348"/><line x1=${P} y1=${y(max)} x2=${W - P} y2=${y(max)} stroke="#3a3348" stroke-dasharray="4 6"/>
     <text x=${P - 8} y=${y(max) + 5} text-anchor=end fill="#a79fb8" font-size=16>${max}</text><text x=${P - 8} y=${y(0) + 5} text-anchor=end fill="#a79fb8" font-size=16>0</text>
-    <text x=${P} y=${H - 10} fill="#a79fb8" font-size=16>start</text><text x=${W - P} y=${H - 10} text-anchor=end fill="#a79fb8" font-size=16>song ${n}</text>${line('A', '#52d1ff')}${line('B', '#ffb347')}</svg>`;
+    <text x=${P} y=${H - 10} fill="#a79fb8" font-size=16>${t('tv.start')}</text><text x=${W - P} y=${H - 10} text-anchor=end fill="#a79fb8" font-size=16>${t('tv.song', { n })}</text>${line('A', '#52d1ff')}${line('B', '#ffb347')}</svg>`;
 }
 function statsTable() {
   const aw = awards(S.stats), rows = [...S.stats].sort((a, b) => b.pts - a.pts || a.name.localeCompare(b.name));
-  return `<table class=stats><tr><th></th><th>Buzzes</th><th>Right</th><th>Wrong</th><th>Points</th><th>Avg</th><th>Best</th></tr>${rows.map((p) => `<tr><td class=${p.team}>${esc(p.name)} ${(aw[p.id] || []).map((l) => l.split(' ')[0]).join('')}</td><td>${p.buzzes}</td><td>${p.right}</td><td>${p.wrong}</td><td><b>${p.pts}</b></td><td>${sec(p.avgMs)}</td><td>${sec(p.bestMs)}</td></tr>`).join('')}</table>
-    <p class=legend>🏆 most points · ⚡ fastest buzzer · 🎯 sharpest (2+ buzzes)</p>`;
+  return `<table class=stats><tr><th></th><th>${t('buzzes')}</th><th>${t('right')}</th><th>${t('wrong')}</th><th>${t('points')}</th><th>Ø</th><th>${t('fastest')}</th></tr>${rows.map((p) => `<tr><td class=${p.team}>${esc(p.name)} ${(aw[p.id] || []).map((c) => AW[c]).join('')}</td><td>${p.buzzes}</td><td>${p.right}</td><td>${p.wrong}</td><td><b>${p.pts}</b></td><td>${sec(p.avgMs)}</td><td>${sec(p.bestMs)}</td></tr>`).join('')}</table>
+    <p class=legend>${t('tv.legend')}</p>`;
 }
 function names(t) { return S.players.filter((p) => p.team === t).map((p) => esc(p.name) + (S.teams[t].front === p.id && S.phase !== 'lobby' ? ' 🎤' : '')).join(', ') || '–'; }
 
 function render() {
   setNp($('npt').textContent);
   const prompt = S && S.promptUntil; $('prompt').style.display = prompt ? 'flex' : 'none';
-  if (prompt) $('pc').textContent = Math.max(0, Math.ceil((S.promptUntil - now()) / 1000));
+  if (prompt) $('prompt').innerHTML = t('tv.prompt', { n: Math.max(0, Math.ceil((S.promptUntil - now()) / 1000)) });
   const inGame = S && ['pickfront', 'countdown', 'playing', 'verify', 'reveal'].includes(S.phase) && S.total;
   $('prog').style.display = inGame ? 'block' : 'none';
-  if (inGame) { const left = S.total - S.idx - 1; $('progt').textContent = `Song ${S.idx + 1} of ${S.total} · ${left ? left + ' to go' : 'last song'}`; $('progf').style.width = (100 * (S.idx + (S.phase === 'reveal' ? 1 : 0)) / S.total) + '%'; }
-  const cover = S && ['playing', 'verify'].includes(S.phase); // not during the countdown: its number and the judge note live in #main $('cover').style.display = cover ? 'flex' : 'none';
+  if (inGame) { const left = S.total - S.idx - 1; $('progt').textContent = `${t('songOf', { n: S.idx + 1, m: S.total })} · ${left ? t('toGo', { n: left }) : t('lastSong')}`; $('progf').style.width = (100 * (S.idx + (S.phase === 'reveal' ? 1 : 0)) / S.total) + '%'; }
+  const cover = S && ['playing', 'verify'].includes(S.phase); // not during the countdown: its number and the judge note live in #main
+  $('cover').style.display = cover ? 'flex' : 'none';
   if (!S) { // idle: stays up, nothing to do until someone scans
     const key = 'idle'; if ($('main').dataset.k === key) return; $('main').dataset.k = key; lastHtml = '';
     $('main').innerHTML = `<div class=idle><div class=notes>${'♪♫♬♩♪♫'.split('').map((n, i) => `<em style="left:${5 + i * 17}%;animation-delay:${i * 1.1}s">${n}</em>`).join('')}</div>
   <div class=hero><div class=rings><i></i><i></i><i></i><span>🎵</span></div><h1>Song Quiz</h1>
-  <ol class=steps><li><b>1</b><span>Scan the QR code with your phone</span></li><li><b>2</b><span>Create a game or join one</span></li><li><b>3</b><span>Pick a team and play</span></li></ol><div class=tip id=tip></div></div>
-  <div class=scan><div class=qrcard>${q(base + '/play' + (rq ? '?' + rq : ''))}</div><p>📱 Scan to play</p></div>
+  <ol class=steps><li><b>1</b><span>${t('tv.step1')}</span></li><li><b>2</b><span>${t('tv.step2')}</span></li><li><b>3</b><span>${t('tv.step3')}</span></li></ol><div class=tip id=tip></div></div>
+  <div class=scan><div class=qrcard>${q(base + '/play' + (rq ? '?' + rq : ''))}</div><p>${t('tv.scan')}</p></div>
   <a class=repo href="${REPO}" target=_blank><div class=qrsvg>${qrSvg(REPO)}</div><span>GitHub</span></a></div>`;
     tipTick();
     return;
@@ -191,14 +210,14 @@ function render() {
   $('main').dataset.k = '';
   const sc = `<div class=row><div class="tcard A"><div class=A>Team A</div><div class=score>${S.teams.A.score}</div>${names('A')}</div><div class="tcard B"><div class=B>Team B</div><div class=score>${S.teams.B.score}</div>${names('B')}</div></div>`;
   const ph = S.phase; let h = '';
-  if (ph === 'lobby') h = `<h1>Join with code <b>${S.code}</b></h1><div class=qrcard style="width:min(30vw,380px);margin:auto">${q(base + '/play?code=' + S.code + (rq ? '&' + rq : ''))}</div>${sc}<p>Host picks the list and starts.</p>`;
-  else if (ph === 'howto') { const need = S.players.filter((p) => p.team), ok = S.ack || []; h = `<h1>How to play</h1><div class=rulegrid>${rulesFor(S.settings.mode).map((x) => `<div class=rule><i>${x.icon}</i><div><b>${x.title}</b><p>${x.text}</p></div></div>`).join('')}</div><div class=ackbar>${need.map((p) => `<span class="ack ${p.team}${ok.includes(p.id) ? ' ok' : ''}">${ok.includes(p.id) ? '✓' : '⏳'} ${esc(p.name)}</span>`).join('')}</div><h2>${ok.length} of ${need.length} ready · everyone taps “Got it” on their phone</h2>`; }
-  else if (ph === 'pickfront') h = `<h1>Song ${S.idx + 1}/${S.total}: pick your front-person</h1>${sc}<p>🎤 Front-persons tap Ready on their phone.</p>`;
-  else if (ph === 'countdown') h = `<h2>Song ${S.idx + 1} of ${S.total}</h2>${matchup()}<div class="big sm">${Math.max(1, Math.ceil((S.until - now()) / 1000))}</div>${S.judgeName ? `<div class=judge-pill>🎧 Judge: <b>${esc(S.judgeName)}</b></div>` : ''}`;
-  else if (ph === 'playing') { $('cover-t').textContent = `Song ${S.idx + 1}/${S.total}${S.locked.length ? ' — ' + S.locked.join(',') + ' locked' : ''}`; $('cover-s').innerHTML = matchup(); }
-  else if (ph === 'verify') { $('cover-t').innerHTML = `<span class=${S.buzz.team}>Team ${S.buzz.team}</span> buzzed!${S.judgeName ? `<br><small>🎧 ${esc(S.judgeName)} judges</small>` : ''}`; $('cover-s').innerHTML = matchup(); }
-  else if (ph === 'reveal') h = `${S.next ? cd() : ''}<h1>${S.answer.title}</h1><h2>${S.answer.artist}</h2>${S.lastResult ? `<p>Team ${S.lastResult.team}: +${S.lastResult.pts}</p>` : ''}${S.next ? `<h2>Next up: <span class=A>${esc(S.next.names.A)}</span> (A) · <span class=B>${esc(S.next.names.B)}</span> (B)${S.next.names.judge ? ` · 🎧 ${esc(S.next.names.judge)} judges` : ''}</h2>` : ''}${sc}`;
-  else if (ph === 'end') { const w = S.teams.A.score === S.teams.B.score ? '🤝 It\'s a draw!' : 'Team ' + (S.teams.A.score > S.teams.B.score ? 'A' : 'B') + ' wins!'; h = `<h1>${w}</h1><div class=endscore><span class=A>Team A <b>${S.teams.A.score}</b></span> : <span class=B><b>${S.teams.B.score}</b> Team B</span></div><div class=endgrid><div class=panel><h3>Score over time</h3>${S.timeline ? chart(S.timeline) : ''}</div><div class=panel><h3>Players</h3>${S.stats ? statsTable() : ''}</div></div><p class=again>🎤 Ready for another round? The host taps “Play again” on their phone.</p>`; }
+  if (ph === 'lobby') h = `<h1>${t('tv.join', { code: S.code })}</h1><div class=qrcard style="width:min(30vw,380px);margin:auto">${q(base + '/play?code=' + S.code + (rq ? '&' + rq : ''))}</div>${sc}<p>${t('tv.hostPicks')}</p>`;
+  else if (ph === 'howto') { const need = S.players.filter((p) => p.team), ok = S.ack || []; h = `<h1>${t('tv.howto')}</h1><div class=rulegrid>${rulesFor(S.settings.mode).map((x) => `<div class=rule><i>${x.icon}</i><div><b>${x.title}</b><p>${x.text}</p></div></div>`).join('')}</div><div class=ackbar>${need.map((p) => `<span class="ack ${p.team}${ok.includes(p.id) ? ' ok' : ''}">${ok.includes(p.id) ? '✓' : '⏳'} ${esc(p.name)}</span>`).join('')}</div><h2>${t('tv.allReady', { n: ok.length, m: need.length })}</h2>`; }
+  else if (ph === 'pickfront') h = `<h1>${t('tv.pickFront', { n: S.idx + 1, m: S.total })}</h1>${sc}<p>${t('tv.frontReady')}</p>`;
+  else if (ph === 'countdown') h = `<h2>${t('tv.songOf', { n: S.idx + 1, m: S.total })}</h2>${matchup()}<div class="big sm">${Math.max(1, Math.ceil((S.until - now()) / 1000))}</div>${S.judgeName ? `<div class=judge-pill>${t('tv.judge', { name: esc(S.judgeName) })}</div>` : ''}`;
+  else if (ph === 'playing') { $('cover-t').textContent = videoErr || `${t('tv.songOf', { n: S.idx + 1, m: S.total })}${S.locked.length ? ' — ' + t('tv.locked', { teams: S.locked.map((x) => t('team') + ' ' + x).join(', ') }) : ''}`; $('cover-s').innerHTML = matchup(); }
+  else if (ph === 'verify') { const left = Math.max(0, Math.ceil((S.buzz.until - now()) / 1000)); $('cover-t').innerHTML = `<span class=${S.buzz.team}>${t('team')} ${S.buzz.team}</span> ${t('tv.buzzed')}${S.judgeName ? `<br><small>${t('tv.judges', { name: esc(S.judgeName) })}</small>` : ''}<br><small>${left ? t('tv.answerTime', { n: left }) : t('talkOver')}</small>`; $('cover-s').innerHTML = matchup(); }
+  else if (ph === 'reveal') h = `${S.next ? cd() : ''}<h1>${S.answer.title}</h1><h2>${S.answer.artist}</h2>${S.lastResult ? `<p>${t('team')} ${S.lastResult.team}: +${S.lastResult.pts}</p>` : `<p>${t('tv.nobodyGotIt')}</p>`}${S.next ? `<h2>${t('tv.nextUp')}: <span class=A>${esc(S.next.names.A)}</span> (A) · <span class=B>${esc(S.next.names.B)}</span> (B)${S.next.names.judge ? ` · ${t('tv.judges', { name: esc(S.next.names.judge) })}` : ''}</h2>` : ''}${sc}`;
+  else if (ph === 'end') { const w = S.teams.A.score === S.teams.B.score ? t('tv.draw') : t('tv.wins', { team: S.teams.A.score > S.teams.B.score ? 'A' : 'B' }); h = `<h1>${w}</h1><div class=endscore><span class=A>Team A <b>${S.teams.A.score}</b></span> : <span class=B><b>${S.teams.B.score}</b> Team B</span></div><div class=endgrid><div class=panel><h3>${t('tv.scoreTime')}</h3>${S.timeline ? chart(S.timeline) : ''}</div><div class=panel><h3>${t('tv.players')}</h3>${S.stats ? statsTable() : ''}</div></div><p class=again>${t('tv.again')}</p>`; }
   if (lastHtml !== h) { lastHtml = h; $('main').innerHTML = h; } // only touch the DOM on change so animations do not restart every tick
   if (ph === 'end' && !confettiDone) { confettiDone = true; const draw = S.teams.A.score === S.teams.B.score; if (unlocked) try { draw ? sadTrombone() : applause(); } catch {} draw ? drawFx() : confetti(); } else if (ph !== 'end') confettiDone = false;
 }
@@ -207,7 +226,7 @@ let lastHtml = '', confettiDone = false, tipI = Math.floor(Math.random() * 5);
 function tipTick(next) { // the start page cycles through the rules, one short card at a time
   const el = $('tip'); if (!el) return;
   if (next) tipI++;
-  const x = RULES[tipI % RULES.length]; el.innerHTML = `<b>${x.icon} ${x.title}</b> ${x.text}`; el.classList.remove('swap'); void el.offsetWidth; el.classList.add('swap');
+  const R = RULES(), x = R[tipI % R.length]; el.innerHTML = `<b>${x.icon} ${x.title}</b> ${x.text}`; el.classList.remove('swap'); void el.offsetWidth; el.classList.add('swap');
 }
 setInterval(() => tipTick(true), 8000);
 function confetti() { // one short burst at the end of a game
@@ -226,14 +245,14 @@ function setNp(txt) { $('npt').textContent = txt; $('npb').textContent = musicOn
 window.toggleMusic = () => {
   musicOn = !musicOn; localStorage.sqMusic = musicOn ? 'on' : 'off';
   if (!musicOn && idleOn) { idleOn = false; yt.stopVideo(); }
-  setNp(musicOn ? '' : 'Music off'); if (musicOn) audio();
+  setNp(musicOn ? '' : t('tv.musicOff')); if (musicOn) audio();
 };
 let idleOn = false; // quiet background music on the start page and in the lobby
 function ambient() {
   const all = Object.values(lists).flat();
   if (!musicOn) return;
   if (!all.length) return;
-  setNp('♪ starting…'); yt.setVolume(25); yt.loadVideoById(all[Math.floor(Math.random() * all.length)].id); idleOn = true;
+  setNp(t('tv.starting')); yt.setVolume(25); yt.loadVideoById(all[Math.floor(Math.random() * all.length)].id); idleOn = true;
 }
 function audio() {
   if (!ytReady) return;

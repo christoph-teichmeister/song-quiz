@@ -1,0 +1,128 @@
+// Texts in German (default) and English. t('key', {n: 3}) fills {n}. Every device keeps its own choice (DE | EN switch).
+const TXT = {
+  de: {
+    // rules
+    'r.teams': 'Zwei Teams', 'r.teams.t': 'Wählt Team A oder B. Pro Song steht aus jedem Team eine Person am Buzzer. Das wechselt bei jedem Song.',
+    'r.listen': 'Zuhören und buzzern', 'r.listen.t': 'Ein Song läuft. Kennt ihn die Buzzer-Person, drückt sie den Buzzer auf dem Handy. Die Musik stoppt.',
+    'r.say': 'Laut antworten', 'r.say.t': 'Sag Titel und Interpret laut, du hast 10 Sekunden. Ein Schiri aus dem Publikum sieht die Lösung und tippt, was stimmt: 1 Punkt für den Titel, 1 für den Interpreten.',
+    'r.wrong': 'Falsch?', 'r.wrong.t': 'Dann ist dein Team für diesen Song gesperrt. Die Musik läuft weiter und das andere Team darf buzzern.',
+    'r.win': 'Gewinnen', 'r.win.t': 'Nach dem letzten Song gewinnt das Team mit den meisten Punkten. Am Ende bekommt jeder seine eigenen Zahlen.',
+    'r.intro': 'Modus: Nur Intro', 'r.intro.t': 'Jeder Song stoppt nach 5 Sekunden. Wenn niemand rechtzeitig buzzert, gibt es keine Punkte. Sei schnell!',
+    'r.speed': 'Modus: Speed', 'r.speed.t': 'Buzzerst du in den ersten 5 Sekunden, zählen die Punkte doppelt.',
+    // modes
+    'm.normal': 'Normal', 'm.normal.t': 'Der Song läuft, bis jemand buzzert.',
+    'm.intro': 'Nur Intro', 'm.intro.t': 'Jeder Song stoppt nach 5 Sekunden. Nur das Intro zählt, also schnell buzzern.',
+    'm.speed': 'Speed', 'm.speed.t': 'Buzzer in den ersten 5 Sekunden, dann zählen die Punkte doppelt.',
+    // entry
+    'tagline': 'Bildet Teams, drückt den Buzzer, erratet den Song.', 'yourName': 'Dein Name', 'gameCode': 'Spielcode', 'join': 'Spiel beitreten', 'create': 'Neues Spiel starten',
+    'howToPlay': 'Spielregeln', 'signIn': 'Anmelden', 'running': 'Ein Spiel läuft schon. Du kannst beitreten und zuschauen, in der nächsten Runde spielst du mit.', 'account': 'Konto',
+    // sheets
+    'signInH': 'Anmelden', 'signInP': 'Mit einem kostenlosen Konto kannst du zu Hause eigene Spiele leiten und deine Statistik behalten.', 'google': 'Weiter mit Google', 'orEmail': 'oder mit E-Mail',
+    'email': 'E-Mail', 'password': 'Passwort', 'signInBtn': 'Anmelden', 'createAcc': 'Konto erstellen', 'forgot': 'Passwort vergessen?', 'privacy': 'Wir speichern deine E-Mail, deinen Namen und deine Spielstatistik. Du kannst das Konto jederzeit löschen.',
+    'yourAccount': 'Dein Konto', 'hostHome': '🏠 Spiel zu Hause leiten', 'myStats': '📊 Meine Statistik', 'signOut': 'Abmelden', 'delAsk': 'Konto und alle gespeicherten Statistiken löschen?', 'delYes': 'Ja, alles löschen', 'cancel': 'Abbrechen', 'delBtn': 'Konto löschen', 'close': 'Schließen',
+    'resetSent': 'E-Mail zum Zurücksetzen verschickt. Schau in dein Postfach.', 'copied': 'Link kopiert.',
+    'iosHint': 'iPhone: Teilen-Symbol tippen, dann „Zum Home-Bildschirm“. Android: Browser-Menü, dann „App installieren“.',
+    'homeH': 'Dein Zuhause-Raum', 'homeP': 'Öffne diesen Link im Browser des Fernsehers oder eines Laptops. Starte dann das Spiel auf deinem Handy: Freunde scannen den QR-Code, der im Fernseher erscheint.',
+    'copyLink': 'TV-Link kopieren', 'share': 'Link teilen', 'openRoom': 'Meinen Raum auf diesem Handy öffnen', 'shareText': 'Öffne das auf dem Fernseher:',
+    'statsH': 'Meine Statistik', 'loading': 'Lädt …', 'noGames': 'Noch keine Spiele gespeichert. Spiel eins, während du angemeldet bist, dann erscheint es hier.',
+    'games': 'Spiele', 'wins': 'Siege', 'points': 'Punkte', 'right': 'Richtig', 'wrong': 'Falsch', 'buzzes': 'Buzzer', 'avgBuzz': 'Ø Buzz', 'fastest': 'Schnellster', 'recent': 'Letzte Spiele', 'win': 'Sieg', 'loss': 'Niederlage', 'draw': 'Unentschieden', 'pts': 'Pkt',
+    // lobby
+    'team': 'Team', 'noTeam': 'noch kein Team', 'code': 'Spielcode', 'step1': 'Wähle dein Team', 'tapCard': 'Karte antippen', 'nobody': 'noch niemand', 'youIn': '✓ Du bist dabei', 'tapSwitch': 'Antippen zum Wechseln', 'tapJoin': 'Antippen zum Beitreten',
+    'step2': 'Wähle eine Playlist', 'tapOne': 'eine antippen', 'songsN': '{n} Songs', 'step3': 'Wähle den Modus', 'tapChange': 'antippen zum Ändern', 'step4': 'Anzahl der Songs', 'custom': 'Eigene', 'fewer': 'weniger', 'more': 'mehr',
+    'start': 'Spiel starten', 'needTeams': 'Jedes Team braucht eine Person', 'hostStarts': 'Der Host startet gleich das Spiel', 'pickTeam': 'Wähle ein Team. ',
+    // howto
+    'howItWorks': 'So funktioniert es', 'nReady': '{n} von {m} bereit', 'gotIt': 'Verstanden', 'waitOthers': 'Warten auf die anderen …', 'startAnyway': 'Trotzdem starten',
+    // pickfront
+    'whoFront': 'Wer steht am Buzzer?', 'ready': 'Bereit', 'waitOtherTeam': 'Warten auf das andere Team …',
+    // song
+    'songOf': 'Song {n} von {m}', 'toGo': 'noch {n}', 'lastSong': 'letzter Song',
+    'judgeBanner': '🎧 <b>Du bist Schiri bei diesem Song.</b> Hör mit und behalte die Lösung für dich.',
+    'getReady': 'Mach dich bereit', 'youFront': 'Du bist am Buzzer. Drück ihn, sobald du den Song kennst.',
+    'buzz': 'BUZZER', 'locked': 'GESPERRT', 'teamLocked': 'Dein Team ist gesperrt', 'otherTry': 'Das andere Team darf es versuchen.', 'listening': 'Zuhören …', 'frontBuzzes': 'Deine Buzzer-Person drückt, wenn sie den Song kennt.',
+    'judgeNow': '🎧 <b>Du bist Schiri.</b> Team {team} hat gebuzzert. Hör zu, was gesagt wird, dann tippe das Ergebnis.',
+    'bothRight': '✓ Titel und Interpret richtig', 'onlyTitle': 'Nur Titel richtig', 'onlyArtist': 'Nur Interpret richtig', 'titleRight': 'Titel richtig', 'artistRight': 'Interpret richtig', 'allWrong': '✗ Falsch',
+    'taken': 'Schon vergeben: {what} ({team})', 'wTitle': 'Titel', 'wArtist': 'Interpret', 'wBoth': 'Titel und Interpret',
+    'talkOver': 'Sprechzeit vorbei. Besprecht euch kurz und tippe dann das Ergebnis.', 'misfire': 'Versehentlich gedrückt, weiter ohne Sperre', 'timeLeft': 'Antwortzeit',
+    'buzzed': 'hat gebuzzert', 'youBuzzed': 'Du hast gebuzzert! Sag jetzt laut Titel UND Interpret.', 'quiet': 'Psst, nicht reinrufen.', 'isJudging': '{name} ist Schiri', 'sayOut': 'Sagt eure Antwort laut',
+    'skip': 'Song überspringen', 'skipAsk': 'Wirklich überspringen?',
+    // reveal
+    'nextGuesser': '🎤 <b>Du bist als Nächstes am Buzzer.</b> Geh nach vorne und buzzere für Team {team}.', 'nextJudge': '🎧 <b>Du bist beim nächsten Song Schiri.</b> Du siehst die Lösung, behalte sie für dich.',
+    'nextSoon': 'Der nächste Song startet gleich', 'noPoints': 'keine Punkte', 'lastOne': 'Das war der letzte Song …', 'nobody': 'noch niemand',
+    // end
+    'draw2': 'Unentschieden', 'winsT': 'Team {team} gewinnt', 'yourGame': 'Dein Spiel', 'noStats': 'Du hast diesmal zugeschaut, keine Zahlen für dich.', 'saved': '✓ Deine Statistik ist in deinem Konto gespeichert.',
+    'liked': 'Hat es dir gefallen?', 'likedP': 'Installiere die App und erstelle ein kostenloses Konto: Leite eigene Spiele zu Hause, schicke Freunden den TV-Link und behalte deine Statistik.', 'install': 'App installieren', 'createFree': 'Kostenloses Konto erstellen', 'again': 'Nochmal spielen',
+    'spectator': 'Das Spiel läuft schon. Du schaust zu, in der nächsten Runde bist du dabei.',
+    'aw.pts': '🏆 Meiste Punkte', 'aw.fast': '⚡ Schnellster Buzzer', 'aw.sharp': '🎯 Treffsicherste',
+    'tvHidden': '📺 <b>Der TV-Tab ist im Hintergrund.</b> Hol ihn nach vorne, sonst kann das Spiel einfrieren.',
+    // errors from the game
+    'e.host only': 'Nur der Host darf das.', 'e.both teams need a player': 'Jedes Team braucht eine Person.', 'e.not now': 'Gerade nicht möglich.', 'e.judge only': 'Das darf nur der Schiri.', 'e.cannot buzz': 'Du kannst gerade nicht buzzern.', 'e.front only': 'Das darf nur die Buzzer-Person.', 'e.bad': 'Gerade nicht möglich.', 'e.no songs': 'Keine Songs gefunden.',
+    // TV
+    'tv.step1': 'Scanne den QR-Code mit dem Handy', 'tv.step2': 'Starte ein Spiel oder tritt einem bei', 'tv.step3': 'Wähle ein Team und spiel mit', 'tv.scan': '📱 Zum Spielen scannen',
+    'tv.join': 'Tritt mit dem Code <b>{code}</b> bei', 'tv.hostPicks': 'Der Host wählt die Playlist und startet.', 'tv.howto': 'Spielregeln', 'tv.allReady': '{n} von {m} bereit · alle tippen auf dem Handy „Verstanden“',
+    'tv.pickFront': 'Song {n}/{m}: Wer steht am Buzzer?', 'tv.frontReady': '🎤 Die Buzzer-Personen tippen auf dem Handy „Bereit“.', 'tv.atBuzzer': '🎤 am Buzzer', 'tv.judge': '🎧 Schiri: <b>{name}</b>', 'tv.songOf': 'Song {n} von {m}',
+    'tv.locked': '{teams} gesperrt', 'tv.buzzed': 'hat gebuzzert!', 'tv.judges': '🎧 {name} ist Schiri', 'tv.answerTime': 'Antwortzeit: {n} s', 'tv.nextIn': 'Nächster Song in {n} s', 'tv.nextUp': 'Als Nächstes', 'tv.nobodyGotIt': 'Niemand hatte es.', 'tv.draw': '🤝 Unentschieden!', 'tv.wins': 'Team {team} gewinnt!',
+    'tv.scoreTime': 'Punkte im Verlauf', 'tv.players': 'Spieler', 'tv.start': 'Start', 'tv.song': 'Song {n}', 'tv.again': '🎤 Noch eine Runde? Der Host tippt auf dem Handy „Nochmal spielen“.', 'tv.legend': '🏆 meiste Punkte · ⚡ schnellster Buzzer · 🎯 treffsicherste (ab 2 Buzzern)',
+    'tv.prompt': 'Noch da? Zurücksetzen in <b>{n}</b> s, tippe irgendwo, um weiterzuspielen', 'tv.gate': '▶ Zum Starten tippen', 'tv.gateP': 'Schaltet den Ton für heute Abend ein', 'tv.musicOff': 'Musik aus', 'tv.loading': '♪ lädt …', 'tv.starting': '♪ startet …', 'tv.paused': '♪ pausiert (auf die Seite klicken)',
+    'tv.another': 'Es läuft schon eine andere TV-Seite', 'tv.anotherP': 'Schließe die andere und lade diese Seite neu.', 'tv.videoErr': 'Video nicht verfügbar (YouTube-Fehler {n}), weiter zum nächsten Song', 'tv.musicTitle': 'Musik an/aus',
+  },
+  en: {
+    'r.teams': 'Two teams', 'r.teams.t': 'Join Team A or Team B. In every song one person per team stands at the front with the buzzer, and the front-person changes each song.',
+    'r.listen': 'Listen and buzz', 'r.listen.t': 'A song plays. If the front-person knows it, they buzz on their phone and the music stops.',
+    'r.say': 'Say it out loud', 'r.say.t': 'Call the title and the artist, you have 10 seconds. A random judge from the audience sees the answer and taps what was right: 1 point for the title, 1 for the artist.',
+    'r.wrong': 'Wrong answer', 'r.wrong.t': 'That team is locked for this song. The music goes on and the other team may buzz.',
+    'r.win': 'Win it', 'r.win.t': 'After the last song the team with the most points wins. Everyone gets their own stats at the end.',
+    'r.intro': 'Mode: Intro only', 'r.intro.t': 'Every song stops after 5 seconds. If nobody buzzes in time, nobody scores. Be quick.',
+    'r.speed': 'Mode: Speed', 'r.speed.t': 'Buzz within the first 5 seconds and the points for that answer count double.',
+    'm.normal': 'Normal', 'm.normal.t': 'The song plays until someone buzzes.',
+    'm.intro': 'Intro only', 'm.intro.t': 'Every song stops after 5 seconds. Only the intro counts, so buzz fast.',
+    'm.speed': 'Speed', 'm.speed.t': 'Buzz within the first 5 seconds and the points for that answer count double.',
+    'tagline': 'Team up, buzz in, guess the song.', 'yourName': 'Your name', 'gameCode': 'Game code', 'join': 'Join game', 'create': 'Create a new game',
+    'howToPlay': 'How to play', 'signIn': 'Sign in', 'running': 'A game is already running. You can join and watch, and you play from the next round.', 'account': 'Account',
+    'signInH': 'Sign in', 'signInP': 'A free account lets you host your own games at home and keeps your stats.', 'google': 'Continue with Google', 'orEmail': 'or with email',
+    'email': 'Email', 'password': 'Password', 'signInBtn': 'Sign in', 'createAcc': 'Create account', 'forgot': 'Forgot password?', 'privacy': 'We store your email, name and your game stats. You can delete the account any time.',
+    'yourAccount': 'Your account', 'hostHome': '🏠 Host a game at home', 'myStats': '📊 My stats', 'signOut': 'Sign out', 'delAsk': 'Delete your account and all saved stats?', 'delYes': 'Yes, delete everything', 'cancel': 'Cancel', 'delBtn': 'Delete my account', 'close': 'Close',
+    'resetSent': 'Reset email sent. Check your inbox.', 'copied': 'Link copied.',
+    'iosHint': 'On iPhone: tap Share, then “Add to Home Screen”. On Android: browser menu, then “Install app”.',
+    'homeH': 'Your home room', 'homeP': 'Open this link in the browser of the TV or a laptop at home. Then create the game on your phone: friends scan the QR code that shows up on the TV.',
+    'copyLink': 'Copy TV link', 'share': 'Share link', 'openRoom': 'Open my room on this phone', 'shareText': 'Open this on the TV:',
+    'statsH': 'My stats', 'loading': 'Loading…', 'noGames': 'No games saved yet. Play one while signed in and it shows up here.',
+    'games': 'games', 'wins': 'wins', 'points': 'points', 'right': 'right', 'wrong': 'wrong', 'buzzes': 'buzzes', 'avgBuzz': 'avg buzz', 'fastest': 'fastest', 'recent': 'Recent games', 'win': 'win', 'loss': 'loss', 'draw': 'draw', 'pts': 'pts',
+    'team': 'Team', 'noTeam': 'no team yet', 'code': 'Game code', 'step1': 'Pick your team', 'tapCard': 'tap a card', 'nobody': 'nobody yet', 'youIn': '✓ You are in', 'tapSwitch': 'Tap to switch', 'tapJoin': 'Tap to join',
+    'step2': 'Choose a playlist', 'tapOne': 'tap one', 'songsN': '{n} songs', 'step3': 'Pick a mode', 'tapChange': 'tap to change', 'step4': 'Number of songs', 'custom': 'Custom', 'fewer': 'fewer', 'more': 'more',
+    'start': 'Start game', 'needTeams': 'Each team needs a player', 'hostStarts': 'The host starts the game', 'pickTeam': 'Pick a team. ',
+    'howItWorks': 'How it works', 'nReady': '{n} of {m} ready', 'gotIt': 'Got it, I understand', 'waitOthers': 'Waiting for the others…', 'startAnyway': 'Start anyway',
+    'whoFront': 'Who stands at the buzzer?', 'ready': 'Ready', 'waitOtherTeam': 'Waiting for the other team…',
+    'songOf': 'Song {n} of {m}', 'toGo': '{n} to go', 'lastSong': 'last song',
+    'judgeBanner': '🎧 <b>You are the judge this song.</b> Listen along and keep the answer to yourself.',
+    'getReady': 'Get ready', 'youFront': 'You are the front-person. Buzz when you know it.',
+    'buzz': 'BUZZ', 'locked': 'LOCKED', 'teamLocked': 'Your team is locked', 'otherTry': 'The other team gets a try.', 'listening': 'Listening…', 'frontBuzzes': 'Your front-person buzzes.',
+    'judgeNow': '🎧 <b>You are the judge.</b> Team {team} buzzed. Listen to what they say, then tap the result.',
+    'bothRight': '✓ Title and artist right', 'onlyTitle': 'Only title right', 'onlyArtist': 'Only artist right', 'titleRight': 'Title right', 'artistRight': 'Artist right', 'allWrong': '✗ Wrong',
+    'taken': 'Already scored: {what} ({team})', 'wTitle': 'title', 'wArtist': 'artist', 'wBoth': 'title and artist',
+    'talkOver': 'Speaking time is over. Talk it over, then tap the result.', 'misfire': 'Pressed by mistake, go on without lock', 'timeLeft': 'Time to answer',
+    'buzzed': 'buzzed', 'youBuzzed': 'You buzzed! Say the title AND the artist out loud now.', 'quiet': 'Shh, no shouting in.', 'isJudging': '{name} is judging', 'sayOut': 'Say your answer out loud',
+    'skip': 'Skip song', 'skipAsk': 'Really skip?',
+    'nextGuesser': '🎤 <b>You are the next guesser.</b> Get to the front and buzz for Team {team}.', 'nextJudge': '🎧 <b>You are the next judge.</b> You will see the answer, keep it to yourself.',
+    'nextSoon': 'Next song starts soon', 'noPoints': 'no points', 'lastOne': 'That was the last song…',
+    'draw2': 'It\'s a draw', 'winsT': 'Team {team} wins', 'yourGame': 'Your game', 'noStats': 'You only watched this time, no stats for you.', 'saved': '✓ Your stats are saved to your account.',
+    'liked': 'Liked it?', 'likedP': 'Install the app and create a free account: host your own games at home, send the TV link to friends and keep your stats.', 'install': 'Install the app', 'createFree': 'Create a free account', 'again': 'Play again',
+    'spectator': 'A game is running. You are watching and join in the next round.',
+    'aw.pts': '🏆 Most points', 'aw.fast': '⚡ Fastest buzzer', 'aw.sharp': '🎯 Sharpest',
+    'tvHidden': '📺 <b>The TV tab is in the background.</b> Bring it to the front, otherwise the game can freeze.',
+    'e.host only': 'Only the host can do that.', 'e.both teams need a player': 'Each team needs a player.', 'e.not now': 'Not possible right now.', 'e.judge only': 'Only the judge can do that.', 'e.cannot buzz': 'You cannot buzz right now.', 'e.front only': 'Only the front-person can do that.', 'e.bad': 'Not possible right now.', 'e.no songs': 'No songs found.',
+    'tv.step1': 'Scan the QR code with your phone', 'tv.step2': 'Create a game or join one', 'tv.step3': 'Pick a team and play', 'tv.scan': '📱 Scan to play',
+    'tv.join': 'Join with code <b>{code}</b>', 'tv.hostPicks': 'Host picks the list and starts.', 'tv.howto': 'How to play', 'tv.allReady': '{n} of {m} ready · everyone taps “Got it” on their phone',
+    'tv.pickFront': 'Song {n}/{m}: pick your front-person', 'tv.frontReady': '🎤 Front-persons tap Ready on their phone.', 'tv.atBuzzer': '🎤 at the buzzer', 'tv.judge': '🎧 Judge: <b>{name}</b>', 'tv.songOf': 'Song {n} of {m}',
+    'tv.locked': '{teams} locked', 'tv.buzzed': 'buzzed!', 'tv.judges': '🎧 {name} judges', 'tv.answerTime': 'Time to answer: {n} s', 'tv.nextIn': 'Next song in {n} s', 'tv.nextUp': 'Next up', 'tv.nobodyGotIt': 'Nobody got it.', 'tv.draw': '🤝 It\'s a draw!', 'tv.wins': 'Team {team} wins!',
+    'tv.scoreTime': 'Score over time', 'tv.players': 'Players', 'tv.start': 'start', 'tv.song': 'song {n}', 'tv.again': '🎤 Ready for another round? The host taps “Play again” on their phone.', 'tv.legend': '🏆 most points · ⚡ fastest buzzer · 🎯 sharpest (2+ buzzes)',
+    'tv.prompt': 'Still there? Resetting in <b>{n}</b> s — tap anywhere to keep playing', 'tv.gate': '▶ Tap to start', 'tv.gateP': 'Turns on the sound for tonight', 'tv.musicOff': 'Music off', 'tv.loading': '♪ loading…', 'tv.starting': '♪ starting…', 'tv.paused': '♪ paused (click the page)',
+    'tv.another': 'Another TV page is already running', 'tv.anotherP': 'Close the other one, then reload this page.', 'tv.videoErr': 'Video unavailable (YouTube error {n}), moving on to the next song', 'tv.musicTitle': 'Music on/off',
+  },
+};
+let lang = 'de';
+try { lang = localStorage.sqLang === 'en' ? 'en' : 'de'; } catch {}
+export const getLang = () => lang;
+export const setLang = (l) => { lang = l === 'en' ? 'en' : 'de'; try { localStorage.sqLang = lang; } catch {} if (typeof document !== 'undefined') document.documentElement.lang = lang; };
+if (typeof document !== 'undefined') document.documentElement.lang = lang;
+export const t = (k, v) => String(TXT[lang][k] ?? TXT.en[k] ?? k).replace(/\{(\w+)\}/g, (_, n) => v?.[n] ?? '');
+export const TEXT_KEYS = { de: Object.keys(TXT.de), en: Object.keys(TXT.en) }; // for the key-parity test
