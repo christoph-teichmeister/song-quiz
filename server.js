@@ -21,6 +21,15 @@ const clients = new Map(); // ws -> player id | 'tv'
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, BASE);
+  if (url.pathname === '/wifi-qr') { // Wi-Fi join QR incl. password: only for the laptop itself (the TV page), never for phones
+    if (!['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress)) return res.writeHead(403).end();
+    const name = ssid(); let pw = '';
+    try { pw = execFileSync('nmcli', ['-s', '-g', '802-11-wireless-security.psk', 'connection', 'show', name], { encoding: 'utf8', timeout: 2000 }).trim(); } catch {}
+    const esc = (x) => x.replace(/([\\;,:"])/g, '\\$1');
+    if (!name) return res.writeHead(404).end();
+    res.setHeader('content-type', 'image/svg+xml'); res.setHeader('cache-control', 'no-store');
+    return res.end(await QRCode.toString(`WIFI:T:${pw ? 'WPA' : 'nopass'};S:${esc(name)};${pw ? `P:${esc(pw)};` : ''};`, { type: 'svg', margin: 1 }));
+  }
   if (url.pathname === '/qr') {
     res.setHeader('content-type', 'image/svg+xml');
     return res.end(await QRCode.toString(url.searchParams.get('u') || BASE, { type: 'svg', margin: 1 }));

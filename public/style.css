@@ -18,10 +18,10 @@ body:has(.idle){background:radial-gradient(ellipse at 30% 40%,#2d1b4e,#12121c 70
 .idle>*{position:relative;z-index:1}.idle>.notes{position:absolute;inset:0;z-index:0;pointer-events:none}
 .hero{text-align:left}.hero h1{font-size:max(7vw,48px);margin:.1em 0 .4em;letter-spacing:.02em}
 .rings{position:relative;width:11vw;height:11vw;display:flex;align-items:center;justify-content:center;font-size:5.5vw;margin-left:2vw}
-.rings span{filter:drop-shadow(0 0 1.5vw #e0457b)}
-.rings i{position:absolute;inset:0;border:3px solid #e0457b;border-radius:50%;opacity:0;animation:ring 3.6s infinite ease-out}
-.rings i:nth-child(2){animation-delay:1.2s}.rings i:nth-child(3){animation-delay:2.4s}
-@keyframes ring{0%{transform:scale(.5);opacity:.9}100%{transform:scale(2.2);opacity:0}}
+.rings span{filter:drop-shadow(0 0 1.5vw #e0457b);animation:bob 4s infinite ease-in-out}@keyframes bob{50%{transform:translateY(-.6vw)}}
+.rings i{position:absolute;inset:0;border:2px solid #e0457b55;border-radius:50%;opacity:0;animation:ring 9s infinite ease-out}
+.rings i:nth-child(2){animation-delay:3s}.rings i:nth-child(3){animation-delay:6s}
+@keyframes ring{0%{transform:scale(.7);opacity:.7}100%{transform:scale(2.2);opacity:0}}
 .steps{list-style:none;padding:0;margin:0;font-size:max(2.2vw,18px)}.steps li{display:flex;align-items:center;gap:1vw;margin:1.2vh 0}
 .steps b{flex:none;width:2.2em;height:2.2em;border-radius:50%;background:#e0457b;display:flex;align-items:center;justify-content:center}
 .steps u{text-decoration:none;color:#ffb74d;font-weight:700}
@@ -31,3 +31,6 @@ body:has(.idle){background:radial-gradient(ellipse at 30% 40%,#2d1b4e,#12121c 70
 .notes em{position:absolute;bottom:-12%;font-style:normal;font-size:6vw;color:#e0457b55;animation:rise 9s infinite linear}
 @keyframes rise{0%{transform:translateY(0) rotate(-10deg);opacity:0}15%{opacity:1}100%{transform:translateY(-110vh) rotate(15deg);opacity:0}}
 @media(max-width:800px){.idle{grid-template-columns:1fr}.qrcard{width:60vw}}
+
+#wifiqr{position:fixed;inset:0;background:#000e;z-index:20;display:none;align-items:center;justify-content:center;flex-direction:column;font-size:max(2vw,18px);text-align:center}
+#wifiqr .qrcard{width:min(40vh,60vw);animation:none}.key{opacity:.5;font-size:max(1.3vw,14px)!important}kbd{background:#2e2e48;padding:.1em .5em;border-radius:.3em}
