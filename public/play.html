@@ -53,7 +53,7 @@ Object.assign(window, {
   doSignOut: async () => { await signOut(); sheet = null; render(); },
   askDelete: (v) => { delConfirm = v; render(); },
   doDelete: async () => { try { await D.remove(r(`users/${user.uid}`)); await removeAccount(); sheet = null; } catch (e) { authMsg = authError(e); } render(); },
-  hostHome: () => { homeRoom = Math.random().toString(36).slice(2, 8); D.set(r(`users/${user.uid}/rooms/${homeRoom}`), { created: Date.now() }); sheet = 'home'; render(); },
+  hostHome: () => { homeRoom = Array.from(crypto.getRandomValues(new Uint8Array(10)), (b) => b.toString(16).padStart(2, '0')).join(''); // 20 hex chars: not guessable D.set(r(`users/${user.uid}/rooms/${homeRoom}`), { created: Date.now() }); sheet = 'home'; render(); },
   copyLink: () => { navigator.clipboard?.writeText(location.origin + '/?room=' + homeRoom).then(() => { authMsg = 'Link copied.'; render(); }).catch(() => {}); },
   shareLink: () => { const url = location.origin + '/?room=' + homeRoom; if (navigator.share) navigator.share({ title: 'Song Quiz', text: 'Open this on the TV:', url }).catch(() => {}); else window.copyLink(); },
   goRoom: () => { location.href = '/play?room=' + homeRoom; },
