@@ -6,10 +6,11 @@
 <script type=module>
 import { D, r } from './db.js';
 const $ = (id) => document.getElementById(id);
-const pid = localStorage.sqPid ||= Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6);
 const qs = new URLSearchParams(location.search);
+const sim = qs.get('p'); // /sim opens several fake phones: ?p=Anna gives a fixed player id and name
+const pid = sim ? 'sim-' + sim : (localStorage.sqPid ||= Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6));
 let S = null, pub = { session: false, catalog: [] };
-let cfg = { list: null, mode: 'normal', length: 10 }, modal = null, nameV = localStorage.sqName || '', codeV = qs.get('code') || '';
+let cfg = { list: null, mode: 'normal', length: 10 }, modal = null, nameV = sim || localStorage.sqName || '', codeV = qs.get('code') || '';
 let jt = false, ja = false, lastKey = '', lastVerify = '';
 
 const send = (o) => D.push(r('actions'), { pid, ...o });
@@ -24,10 +25,10 @@ const MODES = {
 // handlers for inline onclick
 Object.assign(window, {
   act, send,
-  setName: (v) => { nameV = v; localStorage.sqName = v; },
+  setName: (v) => { nameV = v; if (!sim) localStorage.sqName = v; },
   setCode: (v) => { codeV = v; },
   create: () => send({ create: nameV.trim() || 'Player' }),
-  joinGame: () => send({ join: { code: codeV.trim(), name: nameV.trim() || 'Player' } }),
+  joinGame: () => send({ join: { code: (codeV || pub.code || '').trim(), name: nameV.trim() || 'Player' } }),
   pickList: (id) => { cfg.list = id; render(); },
   pickLen: (n) => { cfg.length = n; render(); },
   pickMode: (m) => { cfg.mode = m; modal = m === 'normal' ? null : m; render(); },
@@ -45,7 +46,7 @@ const live = () => S && S.me && pub.session && S.code === pub.code; // a view fr
 function entry() {
   return { key: 'entry', body: `<h1>🎵 Song Quiz</h1><p class=hint style="text-align:left">Team up, buzz in, guess the song.</p>
     <div class=stack><input class=input id=name placeholder="Your name" maxlength=20 value="${esc(nameV)}" oninput="setName(this.value)" autocomplete=nickname>
-    ${pub.session ? `<input class=input id=code placeholder="Game code" inputmode=numeric value="${esc(codeV)}" oninput="setCode(this.value)"><button class=btn onclick="joinGame()">Join game</button>`
+    ${pub.session ? `<input class=input id=code placeholder="Game code" inputmode=numeric value="${esc(codeV || pub.code || '')}" oninput="setCode(this.value)"><button class=btn onclick="joinGame()">Join game</button>`
       : `<button class=btn onclick="create()">Create a new game</button>`}</div>`, sticky: '' };
 }
 
