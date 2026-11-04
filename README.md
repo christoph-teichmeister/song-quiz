@@ -2,7 +2,7 @@
 
 Song guessing game for the Christmas party. Web app, runs on a laptop at the venue, phones join via QR code.
 
-> Status: planning. Open questions are in [Open questions](#open-questions).
+> Status: first playable. Run `npm i && npm start`, TV: `http://<laptop-ip>:3000/`, phones scan the QR. Tests: `npm test`.
 
 ## Flow
 

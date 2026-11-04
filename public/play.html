@@ -1,0 +1,39 @@
+<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Song Quiz</title>
+<link rel=stylesheet href=style.css><div class=wrap id=main>Connecting…</div>
+<script>
+const $=id=>document.getElementById(id);let S=null,info={lists:{}},err='';
+const ws=new WebSocket(`ws://${location.host}`);const send=o=>ws.send(JSON.stringify(o));const act=a=>send({act:a});
+const tok=()=>localStorage.sqToken,qs=new URLSearchParams(location.search);
+fetch('/info').then(r=>r.json()).then(i=>{info=i;render()});
+ws.onopen=()=>{if(tok())send({resume:tok()});render()};
+ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.token)localStorage.sqToken=m.token;if(m.error){err=m.error;setTimeout(()=>{err='';render()},2500)}
+  if('state'in m){S=m.state;if(!S||!S.me){}}render()};
+const nm=()=>($('name')?.value||localStorage.sqName||'').trim()||'Player';
+function entry(){const code=qs.get('code')||'';return`<h1>🎵 Song Quiz</h1><input id=name placeholder="Your name" value="${localStorage.sqName||''}" oninput="localStorage.sqName=this.value">`+
+  (S?`<input id=code placeholder="Code" value="${code}" inputmode=numeric><button onclick="send({join:{code:$('code').value,name:nm()}})">Join game</button>`
+    :`<button onclick="send({create:nm()})">Create a new game</button>`)}
+function render(){
+  const e=err?`<p style="color:#f66">${err}</p>`:'';
+  if(!S||!S.me){$('main').innerHTML=entry()+e;return}
+  const me=S.me,t=me.team,ph=S.phase,tm=x=>S.players.filter(p=>p.team===x);let h=`<p>${me.name} · ${t?`<b class=${t}>Team ${t}</b>`:'no team'} · A ${S.teams.A.score} : ${S.teams.B.score} B</p>`;
+  if(ph==='lobby'){
+    h+=`<div class=row><button class=alt onclick="act({type:'team',team:'A'})">Join A (${tm('A').length})</button><button class=alt onclick="act({type:'team',team:'B'})">Join B (${tm('B').length})</button></div><p>Code: <b>${S.code}</b></p>`;
+    if(S.host)h+=`<select id=list>${Object.entries(info.lists).map(([k,n])=>`<option value="${k}">${k} (${n})</option>`).join('')}</select>
+      <select id=mode><option value=normal>Normal</option><option value=intro>Intro only (5 s)</option><option value=speed>Speed (fast = double)</option></select>
+      <select id=len><option value=5>Quick: 5 songs</option><option value=10 selected>Normal: 10 songs</option></select>
+      <button onclick="act({type:'start',list:$('list').value,mode:$('mode').value,length:+$('len').value})">Start game</button>`;
+  }else if(ph==='pickfront'&&t){
+    const fr=S.teams[t].front;h+=`<p>Who stands at the front?</p>`+tm(t).map(p=>`<button class="${p.id===fr?'':'alt'}" onclick="act({type:'front',id:'${p.id}'})">${p.name}${p.id===fr?' 🎤':''}</button>`).join('<br>');
+    h+=fr===me.id?`<button onclick="act({type:'ready'})" ${S.teams[t].ready?'disabled':''}>${S.teams[t].ready?'Waiting for the other team…':'Ready'}</button>`:'';
+  }else if(ph==='countdown')h+=`<div class=big>…</div>`;
+  else if(ph==='playing'){const front=S.teams[t]?.front===me.id,lk=S.locked.includes(t);
+    h+=front?`<button id=buzz ${lk?'disabled':''} onclick="act({type:'buzz'})">${lk?'LOCKED':'BUZZ!'}</button>`:`<p>${lk?'Your team is locked.':'Listening… your front-person buzzes.'}</p>`}
+  else if(ph==='verify'){
+    if(t&&t!==S.buzz.team)h+=`<h2>Team ${S.buzz.team} buzzed. Is it right?</h2><p><b>${S.answer.title}</b><br>${S.answer.artist}</p>
+      <label><input type=checkbox id=ct style="width:2em;height:2em"> Title correct</label><br><label><input type=checkbox id=ca style="width:2em;height:2em"> Artist correct</label><br><button onclick="act({type:'verify',title:$('ct').checked,artist:$('ca').checked})">Confirm</button>`;
+    else h+=`<h2>Team ${S.buzz.team} buzzed — say your answer out loud!</h2>`}
+  else if(ph==='reveal')h+=`<h2>${S.answer.title}</h2><p>${S.answer.artist}</p>`;
+  else if(ph==='end'){h+=`<h2>Game over</h2>`+(S.host?`<button onclick="act({type:'again'})">Play again</button>`:'')}
+  $('main').innerHTML=h+e;
+}
+</script>
