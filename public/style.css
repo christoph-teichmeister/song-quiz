@@ -37,3 +37,4 @@ body:has(.idle){background:radial-gradient(ellipse at 30% 40%,#2d1b4e,#12121c 70
 #wq{width:100%;aspect-ratio:1;display:block}
 .qrsvg svg{width:100%;height:auto;display:block}
 #snd{position:fixed;top:1vh;left:50%;transform:translateX(-50%);z-index:30;background:#e0457b;padding:.6em 1.4em;border-radius:2em;font-size:max(1.6vw,16px);animation:glow 2s infinite}
+#np{position:fixed;bottom:1vh;left:2vw;z-index:30;opacity:.55;font-size:max(1.2vw,13px)}

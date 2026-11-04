@@ -2,6 +2,7 @@
 <link rel=stylesheet href=style.css>
 <div id=yt></div><div id=cover style="display:none"><div class=bars><i></i><i style="animation-delay:.2s"></i><i style="animation-delay:.4s"></i><i style="animation-delay:.1s"></i><i style="animation-delay:.3s"></i></div><h1 id=cover-t></h1></div>
 <div class=tv id=main></div>
+<div id=np></div>
 <div id=snd>🔊 Click once anywhere to enable sound</div>
 <div id=prompt onclick="keepAlive()">Still there? Resetting in <b id=pc></b> s — tap anywhere to keep playing</div>
 <script src="https://www.youtube.com/iframe_api"></script>
@@ -14,8 +15,11 @@ import { qrSvg } from './qr.js';
 const $ = (id) => document.getElementById(id);
 let session = null, S = null, lists = {}, errs = {}, last = {}, yt = null, ytReady = false, unlocked = false, lastIdx = -1;
 const now = () => Date.now();
-window.onYouTubeIframeAPIReady = () => { yt = new YT.Player('yt', { width: 320, height: 200, playerVars: { playsinline: 1, controls: 0 }, events: { onReady: () => { ytReady = true; audio(); }, onStateChange: (e) => { if (e.data === 0 && idleOn) ambient(); }, onError: (e) => { if (idleOn) return ambient(); $('cover-t').textContent = `Video unavailable (YouTube error ${e.data})`; console.error('SQ yt error', e.data); } } }); };
+window.onYouTubeIframeAPIReady = () => { yt = new YT.Player('yt', { width: 320, height: 200, playerVars: { playsinline: 1, controls: 0 }, events: { onReady: () => { ytReady = true; audio(); }, onStateChange: (e) => { if (e.data === 0 && idleOn) ambient(); $('np').textContent = idleOn ? ({ 1: '♪ ' + (yt.getVideoData?.().title || ''), 3: '♪ loading…', '-1': '♪ starting…', 2: '♪ paused (click the page)' }[e.data] ?? '') : ''; }, onError: (e) => { if (idleOn) return ambient(); $('cover-t').textContent = `Video unavailable (YouTube error ${e.data})`; console.error('SQ yt error', e.data); } } }); };
 
+window.unlock = () => { unlocked = true; $('snd').style.display = 'none'; try { audio(); } catch {} };
+addEventListener('click', () => { if (!unlocked) window.unlock(); }); addEventListener('keydown', () => { if (!unlocked) window.unlock(); });
+if (window.YT?.Player) window.onYouTubeIframeAPIReady(); // the API script may have loaded before this module ran
 if (new URLSearchParams(location.search).has('new')) localStorage.sqState = ''; // /?new starts clean
 try { const saved = JSON.parse(localStorage.sqState || 'null'); if (saved) session = saved; } catch {} // resume after a TV reload
 
@@ -77,9 +81,7 @@ setInterval(() => {
   publish();
 }, 500);
 
-addEventListener('click', () => { if (!unlocked) window.unlock(); }); addEventListener('keydown', () => { if (!unlocked) window.unlock(); });
 window.keepAlive = () => { if (session) { session.lastActivity = now(); session.promptUntil = 0; publish(); } };
-window.unlock = () => { unlocked = true; $('snd').style.display = 'none'; render(); audio(); };
 
 const q = (url) => `<div class=qrsvg>${qrSvg(url)}</div>`;
 const base = location.origin;
@@ -114,7 +116,7 @@ let idleOn = false; // quiet background music on the start page and in the lobby
 function ambient() {
   const all = Object.values(lists).flat();
   if (!all.length) return;
-  yt.setVolume(25); yt.loadVideoById(all[Math.floor(Math.random() * all.length)].id); idleOn = true;
+  $('np').textContent = '♪ starting…'; yt.setVolume(25); yt.loadVideoById(all[Math.floor(Math.random() * all.length)].id); idleOn = true;
 }
 function audio() {
   if (!ytReady) return;
