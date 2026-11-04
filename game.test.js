@@ -67,3 +67,19 @@ test('start needs both teams', () => {
   act(s, s.hostId, { type: 'team', team: 'A' }, 0);
   assert.equal(act(s, s.hostId, { type: 'start', songs, list: 'x' }, 0), 'both teams need a player');
 });
+
+test('after a reveal the next song starts with a countdown, fronts rotate', () => {
+  let now = 0;
+  const s = createSession('hanna', now);
+  const h = s.hostId, b = join(s, 'ben', now).id, h2 = join(s, 'hugo', now).id;
+  for (const [id, t] of [[h, 'A'], [h2, 'A'], [b, 'B']]) act(s, id, { type: 'team', team: t }, now);
+  act(s, h, { type: 'start', list: 'x', songs, length: 2 }, now);
+  const first = s.teams.A.front;
+  act(s, first, { type: 'ready' }, now); act(s, b, { type: 'ready' }, now);
+  now += T.countdown; tick(s, now);
+  act(s, first, { type: 'buzz' }, now);
+  act(s, b, { type: 'verify', title: true, artist: true }, now);
+  now += T.reveal; tick(s, now);
+  assert.equal(s.phase, 'countdown');
+  assert.notEqual(s.teams.A.front, first);
+});

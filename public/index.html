@@ -95,7 +95,7 @@ function names(t) { return S.players.filter((p) => p.team === t).map((p) => p.na
 function render() {
   const prompt = S && S.promptUntil; $('prompt').style.display = prompt ? 'flex' : 'none';
   if (prompt) $('pc').textContent = Math.max(0, Math.ceil((S.promptUntil - now()) / 1000));
-  const cover = S && ['playing', 'verify', 'countdown'].includes(S.phase); $('cover').style.display = cover ? 'flex' : 'none';
+  const cover = S && ['playing', 'verify'].includes(S.phase); // not during the countdown: its number and the judge note live in #main $('cover').style.display = cover ? 'flex' : 'none';
   if (!S) { // idle: stays up, nothing to do until someone scans
     const key = 'idle'; if ($('main').dataset.k === key) return; $('main').dataset.k = key;
     $('main').innerHTML = `<div class=idle><div class=notes>${'♪♫♬♩♪♫'.split('').map((n, i) => `<em style="left:${5 + i * 17}%;animation-delay:${i * 1.1}s">${n}</em>`).join('')}</div>

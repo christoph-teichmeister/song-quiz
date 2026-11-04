@@ -1,5 +1,5 @@
 // Pure game state machine. No I/O: server.js feeds it actions and ticks.
-// Phases: lobby -> pickfront -> countdown -> playing <-> verify -> reveal -> (pickfront | end)
+// Phases: lobby -> pickfront (first song only) -> countdown -> playing <-> verify -> reveal -> (countdown | end)
 export const T = { countdown: 3000, reveal: 6000, idle: 180000, prompt: 15000, introMs: 5000, speedMs: 5000 };
 const other = (t) => (t === 'A' ? 'B' : 'A');
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -124,7 +124,8 @@ export function tick(s, now) {
   else if (s.phase === 'playing' && s.settings.mode === 'intro' && now - s.startedAt >= T.introMs) reveal(s, now);
   else if (s.phase === 'reveal' && now >= s.until) {
     s.idx++;
-    if (s.idx >= s.songs.length) s.phase = 'end'; else pickFront(s);
+    if (s.idx >= s.songs.length) s.phase = 'end';
+    else { pickFront(s); s.teams.A.ready = s.teams.B.ready = true; s.phase = 'countdown'; s.until = now + T.countdown; s.judge = pickJudge(s); } // next song right away, fronts rotate
   }
   if (s.promptUntil && now >= s.promptUntil) return 'reset';
   if (!s.promptUntil && now - s.lastActivity >= T.idle) s.promptUntil = now + T.prompt;
