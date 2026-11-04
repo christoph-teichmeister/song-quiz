@@ -22,13 +22,9 @@
           ".write": true
         },
         "admin": {
-          "key": {
-            ".read": false,
-            ".write": true
-          },
           "epoch": {
             ".read": true,
-            ".write": "(auth != null && auth.uid === '__ADMIN_UID__') || newData.parent().child('key').val() === '__ADMIN_KEY__'"
+            ".write": "auth != null && auth.uid === '__ADMIN_UID__'"
           }
         }
       }

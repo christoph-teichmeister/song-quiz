@@ -32,9 +32,9 @@ Charts now, 80s, 90s, 2000s, Christmas, movie/TV themes, intro-only, speed (play
 - TV state is mirrored in the TV browser's localStorage, so a page reload resumes the game.
 - Trade-off: DB rules are open (party game). Anyone who knows the DB URL could write; delete the project afterwards.
 - Songs: `public/songs/<list>.json`, listed in `public/songs/index.json`.
-- Setup/deploy: `firebase login`, project + web app + Realtime Database, config in `public/firebase-config.js`. Deploy with `./deploy.sh` (injects the admin key from `~/.config/song-quiz/admin-key` into `database.rules.json`, which is gitignored; the template is committed).
+- Setup/deploy: `firebase login`, project + web app + Realtime Database, config in `public/firebase-config.js`. Deploy with `./deploy.sh` (injects the admin user id from `~/.config/song-quiz/admin-uid` into `database.rules.json`, which is gitignored; the template is committed).
 - PWA: `/play` has a manifest and a pass-through service worker, so phones can install it ("Add to Home screen").
-- Admin: `/admin` shows the running session and can kill it for everyone. It writes the key plus an epoch in one update; the rules only accept the epoch when the key matches, and the TV resets on every epoch change.
+- Admin: `/admin` lists all rooms and can kill a session for everyone. Sign in with the admin Google account; the rules only accept the kill (`rooms/<room>/admin/epoch`) from the user id in `~/.config/song-quiz/admin-uid`, the TV of that room resets on every change.
 - `/sim` opens four fake phones for solo testing.
 
 ## Song source: YouTube

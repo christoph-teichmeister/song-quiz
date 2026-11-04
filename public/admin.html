@@ -8,8 +8,7 @@ import { D, r } from './db.js';
 import { onUser, google, signIn, signOut, authError } from './auth.js';
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-if (location.hash.length > 1) { localStorage.sqAdminKey = decodeURIComponent(location.hash.slice(1)); history.replaceState(null, '', location.pathname); } // /admin#<key> saves the key, then hides it
-let user = null, emailV = '', pwV = '', authMsg = '', key = localStorage.sqAdminKey || '', confirming = null, msg = '', lastHtml = '';
+let user = null, emailV = '', pwV = '', authMsg = '', confirming = null, msg = '', lastHtml = '';
 const rooms = {}; // room -> { ts, seenAt, pub }
 D.onValue(r('roomIndex'), (s) => {
   const v = s.val() || {};
@@ -26,22 +25,19 @@ window.doGoogle = async () => { try { await google(); } catch (e) { authMsg = au
 window.doSignIn = async () => { try { await signIn(emailV.trim(), pwV); } catch (e) { authMsg = authError(e); render(); } };
 window.doSignOut = () => signOut();
 setInterval(render, 1000);
-window.setKey = (v) => { key = v.trim(); localStorage.sqAdminKey = key; };
 window.ask = (room) => { confirming = room; render(); };
 window.cancel = () => { confirming = null; render(); };
 window.forget = (room) => D.remove(r(`roomIndex/${room}`));
-window.kill = async (room) => { // key + epoch in one atomic update; the rules compare the key, the TV of that room reacts to the epoch
+window.kill = async (room) => { // the TV of that room reacts to the epoch
   confirming = null;
   try {
-    try { await D.set(r(`rooms/${room}/admin/epoch`), Date.now()); } // signed in as admin: the rules check the user id
-    catch { await D.update(r(''), { [`rooms/${room}/admin/key`]: key, [`rooms/${room}/admin/epoch`]: Date.now() }); } // fallback: admin key
+    await D.set(r(`rooms/${room}/admin/epoch`), Date.now()); // the rules only accept this from the admin's user id
     msg = `Room ${room}: session killed, the TV and all phones are reset.`;
-  } catch (e) { msg = 'Refused: sign in as the admin or enter the admin key.'; }
-  D.remove(r(`rooms/${room}/admin/key`)).catch(() => {});
+  } catch (e) { msg = 'Refused: this account is not the admin.'; }
   render();
 };
 function render() {
-  if (['keyin', 'keyin2', 'keyin3'].includes(document.activeElement?.id)) return; // do not rebuild the page while the key is typed
+  if (['keyin2', 'keyin3'].includes(document.activeElement?.id)) return; // do not rebuild the page while the key is typed
   const list = Object.entries(rooms).sort(([a], [b]) => a.localeCompare(b));
   const card = ([room, o]) => {
     const alive = o.seenAt && Date.now() - o.seenAt < 4000, p = o.pub, s = p?.summary, run = p?.session && s;
@@ -55,8 +51,7 @@ function render() {
   };
   const who = user ? `<div class=card><div class=label style="margin:0 0 4px">Signed in</div>${esc(user.email || user.displayName || '')}<div class=hint style="text-align:left;margin-top:6px;word-break:break-all">User id: ${esc(user.uid)}</div><button class="btn ghost" style="margin-top:10px" onclick="doSignOut()">Sign out</button></div>`
     : `<div class=card><div class=label style="margin:0 0 8px">Admin sign-in</div><div class=stack><button class=btn onclick="doGoogle()">Continue with Google</button><input class=input id=keyin2 type=email placeholder=Email value="${esc(emailV)}" oninput="setEmail(this.value)"><input class=input id=keyin3 type=password placeholder=Password value="${esc(pwV)}" oninput="setPw(this.value)"><button class="btn ghost" onclick="doSignIn()">Sign in</button>${authMsg ? `<p class=err style="margin:0">${esc(authMsg)}</p>` : ''}</div></div>`;
-  const html = `<h1>Admin</h1>${who}<div class=label>Rooms (${list.length})</div>${list.map(card).join('') || '<div class=card><p class=hint style="margin:0">No room has been opened yet.</p></div>'}
-  <div class=label>Admin key</div><input class=input id=keyin type=password placeholder="Admin key" value="${esc(key)}" oninput="setKey(this.value)" autocomplete=off>${msg ? `<p class=hint>${esc(msg)}</p>` : ''}`;
+  const html = `<h1>Admin</h1>${who}<div class=label>Rooms (${list.length})</div>${list.map(card).join('') || '<div class=card><p class=hint style="margin:0">No room has been opened yet.</p></div>'}${msg ? `<p class=hint>${esc(msg)}</p>` : ''}`;
   if (html !== lastHtml) { lastHtml = html; $('main').innerHTML = html; }
 }
 render();
