@@ -79,7 +79,9 @@ test('after a reveal the next song starts with a countdown, fronts rotate', () =
   now += T.countdown; tick(s, now);
   act(s, first, { type: 'buzz' }, now);
   act(s, s.judge, { type: 'verify', title: true, artist: true }, now);
+  const planned = s.next.A;                                // announced during the reveal
   now += T.reveal; tick(s, now);
   assert.equal(s.phase, 'countdown');
   assert.notEqual(s.teams.A.front, first);
+  assert.equal(s.teams.A.front, planned);
 });

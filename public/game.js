@@ -115,7 +115,16 @@ function pickFront(s) {
 
 function reveal(s, now) {
   s.phase = 'reveal'; s.until = now + T.reveal; s.buzz = null;
+  s.next = s.idx + 1 < s.songs.length ? planNext(s) : null; // decided now so the phones can announce who is up
   return null;
+}
+
+// Next song: the next player in each team's rotation buzzes, a random other player judges.
+function planNext(s) {
+  const front = {};
+  for (const t of ['A', 'B']) { const m = members(s, t); front[t] = m[s.teams[t].rot % m.length].id; }
+  const c = Object.values(s.players).filter((p) => p.team && p.id !== front.A && p.id !== front.B);
+  return { A: front.A, B: front.B, judge: c.length ? c[Math.floor(Math.random() * c.length)].id : null };
 }
 
 // Time-driven transitions. Returns 'reset' when the session should be dropped.
@@ -125,7 +134,12 @@ export function tick(s, now) {
   else if (s.phase === 'reveal' && now >= s.until) {
     s.idx++;
     if (s.idx >= s.songs.length) s.phase = 'end';
-    else { pickFront(s); s.teams.A.ready = s.teams.B.ready = true; s.phase = 'countdown'; s.until = now + T.countdown; s.judge = pickJudge(s); } // next song right away, fronts rotate
+    else { // next song right away with the planned front-persons and judge
+      const n = s.next || planNext(s);
+      for (const t of ['A', 'B']) { s.teams[t].front = n[t]; s.teams[t].rot++; s.teams[t].ready = true; }
+      s.locked = []; s.buzz = null; s.lastResult = null; s.judge = n.judge; s.next = null;
+      s.phase = 'countdown'; s.until = now + T.countdown;
+    }
   }
   if (s.promptUntil && now >= s.promptUntil) return 'reset';
   if (!s.promptUntil && now - s.lastActivity >= T.idle) s.promptUntil = now + T.prompt;
@@ -140,6 +154,7 @@ export function view(s, pid, now) {
   return {
     code: s.code, phase: s.phase, host: pid === s.hostId, me: me && { id: me.id, team: me.team, name: me.name },
     players: Object.values(s.players).map((p) => ({ id: p.id, name: p.name, team: p.team })),
+    next: s.next ? { A: s.next.A, B: s.next.B, judge: s.next.judge, names: { A: s.players[s.next.A]?.name, B: s.players[s.next.B]?.name, judge: s.players[s.next.judge]?.name } } : null,
     judge: s.judge, judgeName: s.judge ? s.players[s.judge]?.name : null,
     teams: s.teams, settings: s.settings, idx: s.idx, total: s.songs.length, locked: s.locked, buzz: s.buzz,
     lastResult: s.lastResult, until: s.until, promptUntil: s.promptUntil,

@@ -101,7 +101,9 @@ function game() {
     key = 'verify' + vk;
   } else if (ph === 'reveal') {
     const lr = S.lastResult;
-    body = `${hdr}<div class=card><div class=answer>${esc(S.answer.title)}<small>${esc(S.answer.artist)}</small></div></div>${lr ? `<p class=hint><b class=${lr.team}>Team ${lr.team}</b> ${lr.pts ? `+${lr.pts}` : 'no points'}</p>` : ''}<p class=hint>Next song starts in a moment…</p>`;
+    const nx = S.next, upNext = nx && (nx.A === me.id || nx.B === me.id), judgeNext = nx && nx.judge === me.id;
+    const nextNote = upNext ? `<div class=judge-banner>🎤 <b>You are the next guesser.</b> Get to the front and buzz for Team ${t}.</div>` : judgeNext ? `<div class=judge-banner>🎧 <b>You are the next judge.</b> You will see the answer, keep it to yourself.</div>` : '';
+    body = `${hdr}${nextNote}<div class=card><div class=answer>${esc(S.answer.title)}<small>${esc(S.answer.artist)}</small></div></div>${lr ? `<p class=hint><b class=${lr.team}>Team ${lr.team}</b> ${lr.pts ? `+${lr.pts}` : 'no points'}</p>` : ''}<p class=hint>${nx ? 'Next song starts in a moment…' : 'That was the last song…'}</p>`;
   } else if (ph === 'end') {
     const w = S.teams.A.score === S.teams.B.score ? 'It\'s a draw' : `Team ${S.teams.A.score > S.teams.B.score ? 'A' : 'B'} wins`;
     body = `${hdr}<h1>${w} 🎉</h1><div class=card><b class=A>Team A</b> ${S.teams.A.score} · <b class=B>Team B</b> ${S.teams.B.score}</div>`;

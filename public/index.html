@@ -127,7 +127,7 @@ function render() {
   else if (ph === 'countdown') h = `<div class=big>${Math.max(1, Math.ceil((S.until - now()) / 1000))}</div>${S.judgeName ? `<p>🎧 Judge this song: ${S.judgeName}</p>` : ''}`;
   else if (ph === 'playing') { $('cover-t').textContent = `Song ${S.idx + 1}/${S.total}${S.locked.length ? ' — ' + S.locked.join(',') + ' locked' : ''}`; }
   else if (ph === 'verify') { $('cover-t').innerHTML = `<span class=${S.buzz.team}>Team ${S.buzz.team}</span> buzzed!${S.judgeName ? `<br><small>🎧 ${S.judgeName} judges</small>` : ''}`; }
-  else if (ph === 'reveal') h = `<h1>${S.answer.title}</h1><h2>${S.answer.artist}</h2>${S.lastResult ? `<p>Team ${S.lastResult.team}: +${S.lastResult.pts}</p>` : ''}${sc}`;
+  else if (ph === 'reveal') h = `<h1>${S.answer.title}</h1><h2>${S.answer.artist}</h2>${S.lastResult ? `<p>Team ${S.lastResult.team}: +${S.lastResult.pts}</p>` : ''}${S.next ? `<h2>Next up: <span class=A>${S.next.names.A}</span> (A) · <span class=B>${S.next.names.B}</span> (B)${S.next.names.judge ? ` · 🎧 ${S.next.names.judge} judges` : ''}</h2>` : ''}${sc}`;
   else if (ph === 'end') { const w = S.teams.A.score === S.teams.B.score ? 'Draw!' : 'Team ' + (S.teams.A.score > S.teams.B.score ? 'A' : 'B') + ' wins!'; h = `<h1>${w}</h1>${sc}`; }
   if (lastHtml !== h) { lastHtml = h; $('main').innerHTML = h; } // only touch the DOM on change so animations do not restart every tick
   if (ph === 'end' && !confettiDone) { confettiDone = true; confetti(); } else if (ph !== 'end') confettiDone = false;
