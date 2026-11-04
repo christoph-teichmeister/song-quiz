@@ -6,7 +6,7 @@
 <div class=tv id=main></div>
 <canvas id=confetti></canvas>
 <div id=np><button id=npb title='Music on/off' onclick='toggleMusic()'></button><span id=npt></span></div>
-<div id=snd>🔊 Click once anywhere to enable sound</div>
+<div id=snd><div class=gate><div class=gate-note>🎵</div><h1>Song Quiz</h1><button class=gate-btn onclick=unlock()>▶ Tap to start</button><p>Turns on the sound for tonight</p></div></div>
 <div id=prompt onclick="keepAlive()">Still there? Resetting in <b id=pc></b> s — tap anywhere to keep playing</div>
 <script src="https://www.youtube.com/iframe_api"></script>
 <script type=module>

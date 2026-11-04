@@ -88,8 +88,15 @@ body:has(.idle){background:radial-gradient(ellipse at 30% 40%,#2d1b4e,var(--bg) 
 .qrsvg svg{width:100%;height:auto;display:block}
 .notes em{position:absolute;bottom:-12%;font-style:normal;font-size:6vw;color:#ff4f8b55;animation:rise2 9s infinite linear}
 @keyframes rise2{0%{transform:translateY(0) rotate(-10deg);opacity:0}15%{opacity:1}100%{transform:translateY(-110vh) rotate(15deg);opacity:0}}
-#snd{position:fixed;top:1.5vh;left:50%;transform:translateX(-50%);z-index:30;background:var(--hot);padding:.6em 1.4em;border-radius:2em;font-size:max(1.6vw,16px);cursor:pointer;animation:glow 2s infinite}
 #np{position:fixed;bottom:1.5vh;left:2vw;z-index:30;opacity:.75;font-size:max(1.2vw,13px);display:none;align-items:center;gap:.6em;background:#0008;padding:.3em 1em .3em .4em;border-radius:2em}
 #np:hover{opacity:1}#np button{background:none;padding:.2em .4em;margin:0;font-size:1.4em}
 @media(max-width:800px){.idle{grid-template-columns:1fr}.qrcard{width:60vw}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* entry gate: nothing is shown until the first click, which also unlocks audio */
+#snd{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 40%,#2d1b4e,var(--bg) 70%);cursor:pointer}
+.gate{text-align:center;display:flex;flex-direction:column;align-items:center;gap:1.4vh;animation:rise .5s both}
+.gate h1{font-size:max(7vw,44px);margin:0;line-height:1}.gate p{margin:0;color:var(--mute);font-size:max(1.4vw,15px)}
+.gate-note{font-size:max(6vw,48px);animation:bob 4s infinite ease-in-out}
+.gate-btn{margin-top:2vh;background:var(--hot);color:#fff;font:800 max(2.2vw,20px) var(--display);padding:.7em 1.8em;border-radius:3em;transition:transform .15s}
+.gate-btn:hover{transform:scale(1.05)}.gate-btn:active{transform:scale(.97)}
