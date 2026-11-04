@@ -68,15 +68,15 @@ function game() {
 
   if (ph === 'lobby') {
     const ready = mem('A').length > 0 && mem('B').length > 0;
-    const card = (x) => `<button class="team-card ${x}${t === x ? ' on' : ''}" onclick="act({type:'team',team:'${x}'})"><h3 class=${x}>Team ${x}</h3><div class=chips>${mem(x).map((p) => `<span class=chip>${esc(p.name)}</span>`).join('') || '<span class=hint>empty</span>'}</div></button>`;
-    body = `${hdr}<div class=label>Game code ${esc(S.code)}</div><div class=team-cards>${card('A')}${card('B')}</div>`;
+    const card = (x) => `<button class="team-card ${x}${t === x ? ' on' : ''}" onclick="act({type:'team',team:'${x}'})"><h3 class=${x}>Team ${x}</h3><div class=chips>${mem(x).map((p) => `<span class=chip>${esc(p.name)}</span>`).join('') || '<span class=hint>nobody yet</span>'}</div><span class=join-pill>${t === x ? '✓ You are in' : t ? 'Tap to switch' : 'Tap to join'}</span></button>`;
+    body = `${hdr}<div class=label>Game code ${esc(S.code)}</div><div class="step${t ? ' done' : ''}"><b>${t ? '✓' : 1}</b>Pick your team<small>tap a card</small></div><div class=team-cards>${card('A')}${card('B')}</div>`;
     if (S.host) {
       const cat = pub.catalog || [], sel = cfg.list || cat[0]?.id;
-      body += `<div class=label>Playlist</div><div class=tiles>${cat.map((c) => `<button class="tile${c.id === sel ? ' on' : ''}" onclick="pickList('${c.id}')"><i>${c.emoji || '🎵'}</i><b>${esc(c.name)}</b><span>${c.count} songs</span></button>`).join('')}</div>
-        <div class=label>Mode</div><div class=seg>${Object.entries(MODES).map(([k, m]) => `<button class="${cfg.mode === k ? 'on' : ''}" onclick="pickMode('${k}')">${m[0].split(' ')[0]}</button>`).join('')}</div>
-        <div class=label>Length</div><div class=seg>${[5, 10, 15].map((n) => `<button class="${cfg.length === n ? 'on' : ''}" onclick="pickLen(${n})">${n} songs</button>`).join('')}</div>`;
-      sticky = `<button class=btn onclick="start()" ${ready ? '' : 'disabled'}>${ready ? 'Start game' : 'Each team needs a player'}</button>`;
-    } else body += `<p class=hint>Pick a team. The host starts the game <span class=dots><i></i><i></i><i></i></span></p>`;
+      body += `<div class=step><b>2</b>Choose a playlist<small>tap one</small></div><div class=tiles>${cat.map((c) => `<button class="tile${c.id === sel ? ' on' : ''}" onclick="pickList('${c.id}')"><i>${c.emoji || '🎵'}</i><b>${esc(c.name)}</b><span>${c.count} songs</span></button>`).join('')}</div>
+        <div class=step><b>3</b>Pick a mode<small>tap to change</small></div><div class=seg>${Object.entries(MODES).map(([k, m]) => `<button class="${cfg.mode === k ? 'on' : ''}" onclick="pickMode('${k}')">${m[0].split(' ')[0]}</button>`).join('')}</div>
+        <div class=step><b>4</b>Game length<small>tap to change</small></div><div class=seg>${[5, 10, 15].map((n) => `<button class="${cfg.length === n ? 'on' : ''}" onclick="pickLen(${n})">${n} songs</button>`).join('')}</div>`;
+      sticky = `<button class=btn onclick="start()" ${t && ready ? '' : 'disabled'}>${!t ? 'Pick a team first' : ready ? 'Start game' : 'Each team needs a player'}</button>`;
+    } else body += `<p class=hint>${t ? '' : 'Pick a team. '}The host starts the game <span class=dots><i></i><i></i><i></i></span></p>`;
   } else if (ph === 'pickfront' && t) {
     const fr = S.teams[t].front;
     body = `${hdr}<h2>Who stands at the front?</h2><div class=stack>${mem(t).map((p) => `<button class="btn ghost${p.id === fr ? ' on' : ''}" onclick="act({type:'front',id:'${p.id}'})">${esc(p.name)}${p.id === fr ? ' 🎤' : ''}</button>`).join('')}</div>`;
