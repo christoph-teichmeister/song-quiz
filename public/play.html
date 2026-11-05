@@ -61,7 +61,6 @@ Object.assign(window, {
   hostHome: () => { homeRoom = Array.from(crypto.getRandomValues(new Uint8Array(10)), (b) => b.toString(16).padStart(2, '0')).join(''); D.set(r(`users/${user.uid}/rooms/${homeRoom}`), { created: Date.now() }); sheet = 'home'; render(); },
   copyLink: () => { navigator.clipboard?.writeText(location.origin + '/?room=' + homeRoom).then(() => { authMsg = t('copied'); render(); }).catch(() => {}); },
   shareLink: () => { const url = location.origin + '/?room=' + homeRoom; if (navigator.share) navigator.share({ title: 'Song Quiz', text: t('shareText'), url }).catch(() => {}); else window.copyLink(); },
-  goRoom: () => { location.href = '/play?room=' + homeRoom; },
   installApp: async () => { if (deferredInstall) { deferredInstall.prompt(); await deferredInstall.userChoice; deferredInstall = null; } else installHint = t('iosHint'); render(); },
 });
 
@@ -73,7 +72,7 @@ D.onValue(D.ref(db, '.info/connected'), (s) => {
 D.onValue(rr('public'), (s) => { pub = s.val() || { session: false, catalog: [] }; render(); });
 D.onValue(rr(`views/${pid}`), (s) => { S = s.val(); maybeSave(); render(); });
 addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; });
-onUser((u) => { user = u; if (u) nameV = (u.displayName || (u.email || '').split('@')[0] || nameV).trim().split(' ')[0].slice(0, 20); else nameV = sim || localStorage.sqName || ''; maybeSave(); render(); });
+onUser((u) => { user = u; if (u && !sim && !localStorage.sqName) nameV = (u.displayName || (u.email || '').split('@')[0] || '').trim().split(' ')[0].slice(0, 20); /* account name is only the default: changing it sticks */ maybeSave(); render(); });
 // Is a TV page hosting this room? Its heartbeat arrives every second; without one, "new game" would go nowhere.
 let hostSeen = 0, tvWas = true; const t0 = Date.now();
 const tvUp = () => hostSeen ? Date.now() - hostSeen < 5000 : Date.now() - t0 < 3000;
@@ -95,7 +94,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) awak
 function entry() {
   const running = pub.session && ['howto', 'pickfront', 'countdown', 'playing', 'verify', 'reveal'].includes(pub.summary?.phase);
   return { key: 'entry', body: `<div class=hdr>${langPill()}<button class=score-pill style="border:0;color:inherit;cursor:pointer" onclick="openSheet('account')">${user ? '👤 ' + esc((user.displayName || user.email || t('account')).split(' ')[0]) : t('signIn')}</button></div><div class=entry-disc>${disc()}</div><h1 class=ink data-t="Song Quiz">Song Quiz</h1><p class=hint style="text-align:left">${t('tagline')}</p>
-    <div class=stack>${user ? `<p class=hint style="text-align:left;font-size:1.1em">${t('hello', { name: esc(nameV) })}</p>` : `<input class=input id=name placeholder="${t('yourName')}" maxlength=20 value="${esc(nameV)}" oninput="setName(this.value)" autocomplete=nickname>`}
+    <div class=stack><input class=input id=name placeholder="${t('yourName')}" maxlength=20 value="${esc(nameV)}" oninput="setName(this.value)" autocomplete=nickname>
     ${pub.session ? `<input class=input id=code placeholder="${t('gameCode')}" inputmode=numeric value="${esc(codeV || pub.code || '')}" oninput="setCode(this.value)">${running ? `<p class=hint style="text-align:left">${t('running')}</p>` : ''}<button class=btn onclick="joinGame()">${t('join')}</button>`
       : tvUp() ? `<button class=btn onclick="create()">${t('create')}</button>` : `<p class=hint style="text-align:left">${t('noTv')}</p><button class=btn disabled>${t('create')}</button>`}</div><p class=admin-link><a href="#" onclick="openSheet('rules');return false">${t('howToPlay')}</a></p>`, sticky: '' };
 }
@@ -118,7 +117,7 @@ function sheetHtml() {
   else if (sheet === 'rules') inner = `<h2>${t('howToPlay')}</h2>${ruleCards([...RULES(), MODE_RULE('intro'), MODE_RULE('speed')])}${close}`;
   else if (sheet === 'home') { const link = location.origin + '/?room=' + homeRoom; inner = `<h2>${t('homeH')}</h2><p>${t('homeP')}</p>
     <div class=card style="word-break:break-all;font-size:.9rem">${esc(link)}</div><div class=qrsvg style="width:150px;background:#fff;padding:8px;border-radius:12px;margin:auto">${qrSvg(link)}</div>
-    <button class=btn onclick="copyLink()">${t('copyLink')}</button><button class="btn ghost" onclick="shareLink()">${t('share')}</button><button class="btn ghost" onclick="goRoom()">${t('openRoom')}</button>${msg}${close}`; }
+    <button class=btn onclick="copyLink()">${t('copyLink')}</button><button class="btn ghost" onclick="shareLink()">${t('share')}</button>${msg}${close}`; }
   else if (sheet === 'stats') {
     if (!games) inner = `<h2>${t('statsH')}</h2><p>${t('loading')}</p>${close}`;
     else if (!games.length) inner = `<h2>${t('statsH')}</h2><p>${t('noGames')}</p>${close}`;

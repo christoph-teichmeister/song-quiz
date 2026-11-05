@@ -14,7 +14,7 @@ const TXT = {
     'm.intro': 'Nur Intro', 'm.intro.t': 'Jeder Song stoppt nach 5 Sekunden. Nur das Intro zählt, also schnell buzzern.',
     'm.speed': 'Speed', 'm.speed.t': 'Buzzer in den ersten 5 Sekunden, dann zählen die Punkte doppelt.',
     // entry
-    'tagline': 'Bildet Teams, drückt den Buzzer, erratet den Song.', 'yourName': 'Dein Name', 'hello': 'Hallo, {name}!', 'noTv': 'Hier läuft noch kein Fernseher. Öffne zuerst den Link deines Zuhause-Raums im Browser des Fernsehers oder Laptops, dann kannst du hier starten.', 'gameCode': 'Spielcode', 'join': 'Spiel beitreten', 'create': 'Neues Spiel starten',
+    'tagline': 'Bildet Teams, drückt den Buzzer, erratet den Song.', 'yourName': 'Dein Name', 'noTv': 'Hier läuft noch kein Fernseher. Öffne zuerst den Link deines Zuhause-Raums im Browser des Fernsehers oder Laptops, dann kannst du hier starten.', 'gameCode': 'Spielcode', 'join': 'Spiel beitreten', 'create': 'Neues Spiel starten',
     'howToPlay': 'Spielregeln', 'signIn': 'Anmelden', 'running': 'Ein Spiel läuft schon. Du kannst beitreten und zuschauen, in der nächsten Runde spielst du mit.', 'account': 'Konto',
     // sheets
     'signInH': 'Anmelden', 'signInP': 'Mit einem kostenlosen Konto kannst du zu Hause eigene Spiele leiten und deine Statistik behalten.', 'google': 'Weiter mit Google', 'orEmail': 'oder mit E-Mail',
@@ -23,7 +23,7 @@ const TXT = {
     'resetSent': 'E-Mail zum Zurücksetzen verschickt. Schau in dein Postfach.', 'copied': 'Link kopiert.',
     'iosHint': 'iPhone: Teilen-Symbol tippen, dann „Zum Home-Bildschirm“. Android: Browser-Menü, dann „App installieren“.',
     'homeH': 'Dein Zuhause-Raum', 'homeP': 'Öffne diesen Link im Browser des Fernsehers oder eines Laptops. Starte dann das Spiel auf deinem Handy: Freunde scannen den QR-Code, der im Fernseher erscheint.',
-    'copyLink': 'TV-Link kopieren', 'share': 'Link teilen', 'openRoom': 'Meinen Raum auf diesem Handy öffnen', 'shareText': 'Öffne das auf dem Fernseher:',
+    'copyLink': 'TV-Link kopieren', 'share': 'Link teilen', 'shareText': 'Öffne das auf dem Fernseher:',
     'statsH': 'Meine Statistik', 'loading': 'Lädt …', 'noGames': 'Noch keine Spiele gespeichert. Spiel eins, während du angemeldet bist, dann erscheint es hier.',
     'games': 'Spiele', 'wins': 'Siege', 'points': 'Punkte', 'right': 'Richtig', 'wrong': 'Falsch', 'buzzes': 'Buzzer', 'avgBuzz': 'Ø Buzz', 'fastest': 'Schnellster', 'recent': 'Letzte Spiele', 'win': 'Sieg', 'loss': 'Niederlage', 'draw': 'Unentschieden', 'pts': 'Pkt',
     // lobby
@@ -76,7 +76,7 @@ const TXT = {
     'm.normal': 'Normal', 'm.normal.t': 'The song plays until someone buzzes.',
     'm.intro': 'Intro only', 'm.intro.t': 'Every song stops after 5 seconds. Only the intro counts, so buzz fast.',
     'm.speed': 'Speed', 'm.speed.t': 'Buzz within the first 5 seconds and the points for that answer count double.',
-    'tagline': 'Team up, buzz in, guess the song.', 'yourName': 'Your name', 'hello': 'Hi, {name}!', 'noTv': 'No TV is running here yet. Open the link of your home room in the browser of the TV or laptop first, then you can start here.', 'gameCode': 'Game code', 'join': 'Join game', 'create': 'Create a new game',
+    'tagline': 'Team up, buzz in, guess the song.', 'yourName': 'Your name', 'noTv': 'No TV is running here yet. Open the link of your home room in the browser of the TV or laptop first, then you can start here.', 'gameCode': 'Game code', 'join': 'Join game', 'create': 'Create a new game',
     'howToPlay': 'How to play', 'signIn': 'Sign in', 'running': 'A game is already running. You can join and watch, and you play from the next round.', 'account': 'Account',
     'signInH': 'Sign in', 'signInP': 'A free account lets you host your own games at home and keeps your stats.', 'google': 'Continue with Google', 'orEmail': 'or with email',
     'email': 'Email', 'password': 'Password', 'signInBtn': 'Sign in', 'createAcc': 'Create account', 'forgot': 'Forgot password?', 'privacy': 'We store your email, name and your game stats. You can delete the account any time.',
@@ -84,7 +84,7 @@ const TXT = {
     'resetSent': 'Reset email sent. Check your inbox.', 'copied': 'Link copied.',
     'iosHint': 'On iPhone: tap Share, then “Add to Home Screen”. On Android: browser menu, then “Install app”.',
     'homeH': 'Your home room', 'homeP': 'Open this link in the browser of the TV or a laptop at home. Then create the game on your phone: friends scan the QR code that shows up on the TV.',
-    'copyLink': 'Copy TV link', 'share': 'Share link', 'openRoom': 'Open my room on this phone', 'shareText': 'Open this on the TV:',
+    'copyLink': 'Copy TV link', 'share': 'Share link', 'shareText': 'Open this on the TV:',
     'statsH': 'My stats', 'loading': 'Loading…', 'noGames': 'No games saved yet. Play one while signed in and it shows up here.',
     'games': 'games', 'wins': 'wins', 'points': 'points', 'right': 'right', 'wrong': 'wrong', 'buzzes': 'buzzes', 'avgBuzz': 'avg buzz', 'fastest': 'fastest', 'recent': 'Recent games', 'win': 'win', 'loss': 'loss', 'draw': 'draw', 'pts': 'pts',
     'team': 'Team', 'noTeam': 'no team yet', 'code': 'Game code', 'step1': 'Pick your team', 'tapCard': 'tap a card', 'nobody': 'nobody yet', 'youIn': '✓ You are in', 'tapSwitch': 'Tap to switch', 'tapJoin': 'Tap to join',
