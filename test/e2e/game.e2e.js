@@ -371,3 +371,23 @@ test('a phone in a room without a TV says so instead of a dead "new game" button
   assert.deepEqual(world.errors, []);
   await world.close();
 });
+
+test('phones ping and vibrate for the judge, once per buzz', async () => {
+  const world = await newWorld(browser, srv.url);
+  await world.ctx.addInitScript(() => { // count oscillators and vibrations on every page
+    window.__osc = 0; window.__vib = 0; const o = AudioContext.prototype.createOscillator;
+    AudioContext.prototype.createOscillator = function () { window.__osc++; return o.call(this); };
+    navigator.vibrate = () => { window.__vib++; return true; };
+  });
+  const { ph } = await startGame(world);
+  await ready(ph);
+  const { fronts, judge } = await playing(ph);
+  const other = Object.keys(ph).find((n) => n !== judge && n !== fronts.A && n !== fronts.B);
+  const before = await ph[judge].evaluate(() => [window.__osc, window.__vib]);
+  await ph[fronts.A].locator('.buzz').click();
+  await until(() => btn(ph[judge], RIGHT.wrong).count(), 'judge screen');
+  await until(async () => (await ph[judge].evaluate(() => window.__osc)) > before[0], 'judge ping');
+  assert.ok((await ph[judge].evaluate(() => window.__vib)) > before[1], 'judge phone vibrated');
+  assert.equal(await ph[other].evaluate(() => window.__osc), 0, 'a bystander phone stays silent');
+  await world.close();
+});

@@ -5,6 +5,7 @@ import { pictos } from './pictos.js';
 import { t, getLang, setLang } from './i18n.js';
 import { qrSvg } from './qr.js';
 import { disc } from './disc.js';
+import { SFX, ac } from './sfx.js';
 import { auth, onUser, google, signIn, signUp, resetPw, signOut, removeAccount, authError } from './auth.js';
 const $ = (id) => document.getElementById(id);
 const qs = new URLSearchParams(location.search);
@@ -20,6 +21,18 @@ const seenAt = {}; // when each reveal / answer window was first seen, so the co
 const send = (o) => D.push(rr('actions'), { pid, ...o });
 const act = (a) => send({ act: a });
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+// Quiet cues on the phone: a ping + buzz when it is this player's turn. Audio unlocks with the first tap; each cue plays once.
+addEventListener('pointerdown', () => { try { ac().resume(); } catch {} }, { passive: true });
+const cued = new Set();
+function cue() {
+  if (!S || !S.me || S.paused) return;
+  const me = S.me, tm = me.team, ph = S.phase, nx = S.next, lr = S.lastResult;
+  const once = (k, sound, vib) => { if (cued.has(k)) return; cued.add(k); try { sound(ac()); } catch {} navigator.vibrate?.(vib); };
+  if (ph === 'verify' && S.buzz && (S.judge === me.id || (!S.judge && tm && tm !== S.buzz.team))) once('j' + S.idx + S.buzz.at, SFX.join, [60, 50, 60]);
+  else if (ph === 'reveal' && nx && (nx.A === me.id || nx.B === me.id || nx.judge === me.id)) once('n' + S.idx, SFX.ack, 80);
+  else if (ph === 'reveal' && lr && lr.team === tm) once('r' + S.idx, lr.title && lr.artist ? SFX.both : lr.pts ? SFX.right : SFX.wrong, lr.pts ? 50 : [120, 60, 120]);
+  else if (ph === 'lobby') cued.clear();
+}
 const buzzNow = (el) => { navigator.vibrate?.(40); el.classList.add('fire'); act({ type: 'buzz' }); };
 const MODES = ['normal', 'intro', 'speed'];
 const firstList = () => (pub.catalog || []).find((c) => c.id !== 'random')?.id; // Random is the first tile but not the default
@@ -133,6 +146,7 @@ function render() {
   const mh = sheet ? sheetHtml() : modal ? `<div class=modal onclick="closeModal()"><div onclick="event.stopPropagation()"><h2>${t('m.' + modal)}</h2><p>${t('m.' + modal + '.t')}</p><button class=btn onclick="closeModal()">OK</button></div></div>` : '';
   const typing = document.activeElement?.tagName === 'INPUT' && $('modal').contains(document.activeElement); // only a focused input inside the sheet blocks the rebuild, buttons must be able to close it
   if (mh !== lastModal && !typing) { lastModal = mh; $('modal').innerHTML = mh; }
+  cue();
   awake();
 }
 
