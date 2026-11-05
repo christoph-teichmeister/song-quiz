@@ -38,6 +38,9 @@ Mark = pink circle with white note on a dark rounded square (`favicon.svg`, app 
 ## Poster look (about 75% strength)
 Painted colour washes behind the page (two big soft radial tints, `body` in `style.css`), light paper grain (`body::before`, 20%), misprint title (`.ink`: pink and blue copies offset 3-4 px), painted buzzer disc (`public/disc.js`, wobble scale 9 vs 14 on the share image), tilted number stickers on the TV start page. QR codes, text blocks and forms stay crisp: no filters on them. The share image uses the full-strength version.
 
+## Rule pictograms
+Five painted pictograms (teams, buzz, say, wrong, win) in `public/pictos.js`, same poster look as the disc. Each rule = pictogram + coloured headline (a few words) + one short sentence (max about 12 words), texts `r.*` in `i18n.js`. Used on the TV start page (one card at a time with progress dots), the pre-game rules screen and the phone rules sheet. No emoji as rule icon; mode rules (intro, speed) still use an emoji until they get a picture.
+
 ## Motion
 `rise` (.32 s, staggered) for screen changes, `pop` (.35 s) for chips/numbers/points, ripple on buzz, TV flash in team colour (700 ms, no blur), confetti (win), bubbles (draw). No glow: depth through plain shadows. `prefers-reduced-motion` switches animations off.
 

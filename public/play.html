@@ -6,7 +6,8 @@
 <script type=module>
 import { D, r, rr, ROOM, db } from './db.js';
 import { awards, T } from './game.js';
-import { RULES, MODE_RULE, rulesFor } from './rules.js';
+import { RULES, MODE_RULE, rulesFor, PICTO } from './rules.js';
+import { pictos } from './pictos.js';
 import { t, getLang, setLang } from './i18n.js';
 import { qrSvg } from './qr.js';
 import { disc } from './disc.js';
@@ -94,7 +95,7 @@ function entry() {
       : `<button class=btn onclick="create()">${t('create')}</button>`}</div><p class=admin-link><a href="#" onclick="openSheet('rules');return false">${t('howToPlay')}</a></p>`, sticky: '' };
 }
 
-const ruleCards = (list) => `<div class=rules>${list.map((x) => `<div class=rule><i>${x.icon}</i><div><b>${x.title}</b><p>${x.text}</p></div></div>`).join('')}</div>`;
+const ruleCards = (list) => `<div class=rules>${list.map((x) => `<div class=rule><i>${x.key && PICTO[x.key] ? pictos[PICTO[x.key]] : x.icon}</i><div><b>${x.title}</b><p>${x.text}</p></div></div>`).join('')}</div>`;
 function sheetHtml() {
   const close = `<button class="btn ghost" onclick="closeSheet()">${t('close')}</button>`, msg = authMsg ? `<p class=hint>${esc(authMsg)}</p>` : '';
   const sec = (ms) => (ms == null ? '–' : (ms / 1000).toFixed(1) + ' s');

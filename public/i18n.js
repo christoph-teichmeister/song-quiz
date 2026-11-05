@@ -2,11 +2,11 @@
 const TXT = {
   de: {
     // rules
-    'r.teams': 'Zwei Teams', 'r.teams.t': 'Wählt Team A oder B. Pro Song steht aus jedem Team eine Person am Buzzer. Das wechselt bei jedem Song.',
-    'r.listen': 'Zuhören und buzzern', 'r.listen.t': 'Ein Song läuft. Kennt ihn die Buzzer-Person, drückt sie den Buzzer auf dem Handy. Die Musik stoppt.',
-    'r.say': 'Laut antworten', 'r.say.t': 'Sag Titel und Interpret laut, du hast 10 Sekunden. Ein Schiri aus dem Publikum sieht die Lösung und tippt, was stimmt: 1 Punkt für den Titel, 1 für den Interpreten.',
-    'r.wrong': 'Falsch?', 'r.wrong.t': 'Dann ist dein Team für diesen Song gesperrt. Die Musik läuft weiter und das andere Team darf buzzern.',
-    'r.win': 'Gewinnen', 'r.win.t': 'Nach dem letzten Song gewinnt das Team mit den meisten Punkten. Am Ende bekommt jeder seine eigenen Zahlen.',
+    'r.teams': 'Zwei Teams.', 'r.teams.t': 'Wählt Team A oder B.',
+    'r.listen': 'Buzzern!', 'r.listen.t': 'Wer den Song kennt, drückt den Buzzer.',
+    'r.say': 'Laut sagen.', 'r.say.t': 'Titel und Interpret, 10 Sekunden. Der Schiri hat die Lösung.',
+    'r.wrong': 'Falsch?', 'r.wrong.t': 'Dann ist euer Team für den Song gesperrt.',
+    'r.win': 'Gewinnen.', 'r.win.t': 'Die meisten Punkte nach dem letzten Song.',
     'r.intro': 'Modus: Nur Intro', 'r.intro.t': 'Jeder Song stoppt nach 5 Sekunden. Wenn niemand rechtzeitig buzzert, gibt es keine Punkte. Sei schnell!',
     'r.speed': 'Modus: Speed', 'r.speed.t': 'Buzzerst du in den ersten 5 Sekunden, zählen die Punkte doppelt.',
     // modes
@@ -66,11 +66,11 @@ const TXT = {
     'tv.another': 'Es läuft schon eine andere TV-Seite', 'tv.anotherP': 'Schließe die andere und lade diese Seite neu.', 'tv.videoErr': 'Video nicht verfügbar (YouTube-Fehler {n}), weiter zum nächsten Song', 'tv.musicTitle': 'Musik an/aus',
   },
   en: {
-    'r.teams': 'Two teams', 'r.teams.t': 'Join Team A or Team B. In every song one person per team stands at the front with the buzzer, and the front-person changes each song.',
-    'r.listen': 'Listen and buzz', 'r.listen.t': 'A song plays. If the front-person knows it, they buzz on their phone and the music stops.',
-    'r.say': 'Say it out loud', 'r.say.t': 'Call the title and the artist, you have 10 seconds. A random judge from the audience sees the answer and taps what was right: 1 point for the title, 1 for the artist.',
-    'r.wrong': 'Wrong answer', 'r.wrong.t': 'That team is locked for this song. The music goes on and the other team may buzz.',
-    'r.win': 'Win it', 'r.win.t': 'After the last song the team with the most points wins. Everyone gets their own stats at the end.',
+    'r.teams': 'Two teams.', 'r.teams.t': 'Pick Team A or B.',
+    'r.listen': 'Buzz!', 'r.listen.t': 'Know the song? Hit the buzzer.',
+    'r.say': 'Say it out loud.', 'r.say.t': 'Title and artist, 10 seconds. The judge has the answer.',
+    'r.wrong': 'Wrong?', 'r.wrong.t': 'Then your team is locked for this song.',
+    'r.win': 'Win.', 'r.win.t': 'Most points after the last song.',
     'r.intro': 'Mode: Intro only', 'r.intro.t': 'Every song stops after 5 seconds. If nobody buzzes in time, nobody scores. Be quick.',
     'r.speed': 'Mode: Speed', 'r.speed.t': 'Buzz within the first 5 seconds and the points for that answer count double.',
     'm.normal': 'Normal', 'm.normal.t': 'The song plays until someone buzzes.',
