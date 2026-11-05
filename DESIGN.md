@@ -1,6 +1,6 @@
 # Song Quiz design system
 
-Live version with real components: `/brandbook` (public/brandbook.html). Source of truth for all tokens: `public/style.css` (`:root`). Texts: `public/i18n.js`.
+Live version with real components: `/brandbook` (public/brandbook.html). Source of truth for all tokens: `public/style.css` (`:root`). Texts: `public/js/i18n.js`.
 
 ## Idea
 Party show, not office software. The TV is the stage (big, dark, colour carries meaning). Phones are buzzer and cards (big targets, one thing per screen). Everyone must get it at first glance, grandmother and eleven-year-old included.
@@ -36,10 +36,10 @@ Rules: team colours only for teams; pink only for actions; a wrong answer is "lo
 Mark = pink circle with white note on a dark rounded square (`favicon.svg`, app icons). Wordmark "Song Quiz" in Bricolage Grotesque 800 as paths: `public/brand/*.svg` (rebuild: `uvx --from fonttools python scripts/make-brand.py`). White on dark, dark on light; never recolour or stretch; pink mark never on a team colour. Share image `public/og.png` 1200x630, poster/risograph look drawn in code (`scripts/og-card.html`, render with `node scripts/render-og.mjs`; wobbly edges via SVG displacement, paper grain, offset colour layers), Open Graph tags in index/play/brandbook; the image URL points at https://songs.teichmeister.lu/og.png.
 
 ## Poster look (about 75% strength)
-Painted colour washes behind the page (two big soft radial tints, `body` in `style.css`), light paper grain (`body::before`, 20%), misprint title (`.ink`: pink and blue copies offset 3-4 px), painted buzzer disc (`public/disc.js`, wobble scale 9 vs 14 on the share image), tilted number stickers on the TV start page. QR codes, text blocks and forms stay crisp: no filters on them. The share image uses the full-strength version.
+Painted colour washes behind the page (two big soft radial tints, `body` in `style.css`), light paper grain (`body::before`, 20%), misprint title (`.ink`: pink and blue copies offset 3-4 px), painted buzzer disc (`public/js/disc.js`, wobble scale 9 vs 14 on the share image), tilted number stickers on the TV start page. QR codes, text blocks and forms stay crisp: no filters on them. The share image uses the full-strength version.
 
 ## Rule pictograms
-Five painted pictograms (teams, buzz, say, wrong, win) in `public/pictos.js`, same poster look as the disc. Each rule = pictogram + coloured headline (a few words) + one short sentence (max about 12 words), texts `r.*` in `i18n.js`. Used on the TV start page (one card at a time with progress dots), the pre-game rules screen and the phone rules sheet. No emoji as rule icon; mode rules (intro, speed) still use an emoji until they get a picture.
+Five painted pictograms (teams, buzz, say, wrong, win) in `public/js/pictos.js`, same poster look as the disc. Each rule = pictogram + coloured headline (a few words) + one short sentence (max about 12 words), texts `r.*` in `i18n.js`. Used on the TV start page (one card at a time with progress dots), the pre-game rules screen and the phone rules sheet. No emoji as rule icon; mode rules (intro, speed) still use an emoji until they get a picture.
 
 ## Motion
 `rise` (.32 s, staggered) for screen changes, `pop` (.35 s) for chips/numbers/points, ripple on buzz, TV flash in team colour (700 ms, no blur), confetti (win), bubbles (draw). No glow: depth through plain shadows. `prefers-reduced-motion` switches animations off.
@@ -50,6 +50,6 @@ German first (default), English via DE/EN switch, du-form, short sentences, ever
 ## Rules for new screens
 1. Colours/fonts only from the tokens; a new one needs an entry here and in `/brandbook`.
 2. One main action per phone screen; every state visible (waiting, locked, paused, offline).
-3. Texts in `i18n.js`, both languages (`i18n.test.js` enforces it).
+3. Texts in `i18n.js`, both languages (`test/i18n.test.js` enforces it).
 4. Never show an answer to someone who may not see it yet (only the judge, then the reveal).
 5. No `//` comment in the middle of a line in an inline script; run `npm test` and `npm run e2e`.

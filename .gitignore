@@ -1,3 +1,4 @@
 node_modules
 .firebase/
 database.rules.json
+.impeccable/

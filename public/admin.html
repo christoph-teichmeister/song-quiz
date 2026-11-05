@@ -4,8 +4,8 @@
 <link rel=stylesheet href=style.css>
 <div class=app id=main>Loading…</div>
 <script type=module>
-import { D, r } from './db.js';
-import { onUser, google, signIn, signOut, authError } from './auth.js';
+import { D, r } from './js/db.js';
+import { onUser, google, signIn, signOut, authError } from './js/auth.js';
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 let user = null, emailV = '', pwV = '', authMsg = '', confirming = null, msg = '', lastHtml = '';

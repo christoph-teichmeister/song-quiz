@@ -6,7 +6,7 @@ import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
 
-const PUBLIC = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'public');
+const PUBLIC = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..', 'public');
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.svg': 'image/svg+xml', '.ogg': 'audio/ogg', '.png': 'image/png', '.webmanifest': 'application/json' };
 
 export function serve() {

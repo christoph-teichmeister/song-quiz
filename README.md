@@ -4,6 +4,20 @@ Song guessing game for the Christmas party. Web app, phones join via QR code, ho
 
 > Status: rebuilt on Firebase (hosting + realtime database). Tests: `npm test` (logic + texts, seconds), `npm run e2e` (real pages in headless Chrome with a fake database and YouTube, ~2 min; needs `NODE_ENV=development npm install` once). `deploy.sh` runs both first. Not deployed until a Firebase project is configured.
 
+## Project layout
+
+```
+public/            everything Firebase Hosting serves
+  index.html       TV page = game server       play.html  phone page
+  admin.html sim.html brandbook.html           style.css  sw.js  manifest, icons, og.png
+  js/              game.js (pure state machine), i18n.js (all texts), rules.js, pictos.js, disc.js,
+                   sfx.js (sounds), qr.js, db.js / auth.js / firebase-config.js (Firebase)
+  songs/           playlists (index.json + one json per list)   sounds/  brand/
+scripts/           seed-songs.py + seed/*.txt (playlists), make-brand.py, og-card.html, render-og.mjs
+test/              game / i18n / pages unit tests (npm test); e2e/ = browser tests (npm run e2e)
+deploy.sh  firebase.json  database.rules.template.json   DESIGN.md = look and brand
+```
+
 ## Flow
 
 1. **Lobby (TV/main screen):** runs idle in an empty room, shows "game available" and a QR code.
@@ -32,7 +46,7 @@ Charts now, 80s, 90s, 2000s, Christmas, movie/TV themes, intro-only, speed (play
 - TV state is mirrored in the TV browser's localStorage, so a page reload resumes the game.
 - Trade-off: DB rules are open (party game). Anyone who knows the DB URL could write; delete the project afterwards.
 - Songs: `public/songs/<list>.json`, listed in `public/songs/index.json`.
-- Setup/deploy: `firebase login`, project + web app + Realtime Database, config in `public/firebase-config.js`. Deploy with `./deploy.sh` (injects the admin user id from `~/.config/song-quiz/admin-uid` into `database.rules.json`, which is gitignored; the template is committed).
+- Setup/deploy: `firebase login`, project + web app + Realtime Database, config in `public/js/firebase-config.js`. Deploy with `./deploy.sh` (injects the admin user id from `~/.config/song-quiz/admin-uid` into `database.rules.json`, which is gitignored; the template is committed).
 - PWA: `/play` has a manifest and a pass-through service worker, so phones can install it ("Add to Home screen").
 - Admin: `/admin` lists all rooms and can kill a session for everyone. Sign in with the admin Google account; the rules only accept the kill (`rooms/<room>/admin/epoch`) from the user id in `~/.config/song-quiz/admin-uid`, the TV of that room resets on every change.
 - `/sim` opens four fake phones for solo testing.
@@ -66,7 +80,7 @@ Charts now, 80s, 90s, 2000s, Christmas, movie/TV themes, intro-only, speed (play
 - URL: https://songs.teichmeister.lu (also https://song-quiz-xmas-a414536c.web.app) (TV `/`, phones `/play`), Firebase project `song-quiz-xmas-a414536c`, DB in europe-west1.
 - The device that opens `/` runs the game: keep that tab visible, awake and on power (hidden tabs throttle timers).
 - Gotcha: Firebase Hosting caches `/` for an hour by default; `firebase.json` sets `no-cache` for everything, otherwise redeploys do not show up.
-- Gotcha: `game.js` must live in `public/` (hosting only serves that folder); Firebase rejects `undefined` values, so views are JSON round-tripped before writing.
+- Gotcha: `game.js` must live under `public/` (`public/js/`) (hosting only serves that folder); Firebase rejects `undefined` values, so views are JSON round-tripped before writing.
 
 ## Credits
 
@@ -79,4 +93,4 @@ Charts now, 80s, 90s, 2000s, Christmas, movie/TV themes, intro-only, speed (play
 - Speed/intro time counts song time, not time since the last resume.
 - Judge has no time limit (only the 10 s speaking bar). Host can pause/resume; TV flashes in the team colour on a buzz; red banner when the connection is down (3 s grace).
 - Playlists: `scripts/seed-songs.py` resolves `scripts/seed/<list>.txt` to embeddable YouTube ids; tile "Zufall/Random" mixes all lists (not the ambient music). `index.json` has `de` names.
-- Texts live in `public/i18n.js` (German default, EN switch per device).
+- Texts live in `public/js/i18n.js` (German default, EN switch per device).

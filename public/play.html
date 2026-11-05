@@ -4,14 +4,14 @@
 <link rel=stylesheet href=style.css>
 <div id=off class=offline hidden></div><div class=app id=main>Connecting…</div><div id=sticky></div><div id=modal></div>
 <script type=module>
-import { D, r, rr, ROOM, db } from './db.js';
-import { awards, T } from './game.js';
-import { RULES, MODE_RULE, rulesFor, PICTO } from './rules.js';
-import { pictos } from './pictos.js';
-import { t, getLang, setLang } from './i18n.js';
-import { qrSvg } from './qr.js';
-import { disc } from './disc.js';
-import { auth, onUser, google, signIn, signUp, resetPw, signOut, removeAccount, authError } from './auth.js';
+import { D, r, rr, ROOM, db } from './js/db.js';
+import { awards, T } from './js/game.js';
+import { RULES, MODE_RULE, rulesFor, PICTO } from './js/rules.js';
+import { pictos } from './js/pictos.js';
+import { t, getLang, setLang } from './js/i18n.js';
+import { qrSvg } from './js/qr.js';
+import { disc } from './js/disc.js';
+import { auth, onUser, google, signIn, signUp, resetPw, signOut, removeAccount, authError } from './js/auth.js';
 const $ = (id) => document.getElementById(id);
 const qs = new URLSearchParams(location.search);
 const sim = qs.get('p'); // /sim opens several fake phones: ?p=Anna gives a fixed player id and name

@@ -14,14 +14,14 @@
 <div id=prompt onclick="keepAlive()"></div>
 <script src="https://www.youtube.com/iframe_api"></script>
 <script type=module>
-import { createSession, join, act, tick, view, awards, T } from './game.js';
-import { qrSvg } from './qr.js';
-import { RULES, rulesFor } from './rules.js';
-import { t, getLang, setLang } from './i18n.js';
-import { disc } from './disc.js';
-import { pictos } from './pictos.js';
-import { SFX } from './sfx.js';
-import { PICTO } from './rules.js';
+import { createSession, join, act, tick, view, awards, T } from './js/game.js';
+import { qrSvg } from './js/qr.js';
+import { RULES, rulesFor } from './js/rules.js';
+import { t, getLang, setLang } from './js/i18n.js';
+import { disc } from './js/disc.js';
+import { pictos } from './js/pictos.js';
+import { SFX } from './js/sfx.js';
+import { PICTO } from './js/rules.js';
 const ROOM = (new URLSearchParams(location.search).get('room') || 'main').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24) || 'main';
 let D, rr, db; // Firebase loads in boot(), after the first screen is up
 const REPO = 'https://github.com/christoph-teichmeister/song-quiz';
@@ -108,7 +108,7 @@ async function loadCatalog() { // [{id, name, emoji}] in display order, then all
 }
 async function boot() {
   const loading = loadCatalog();
-  ({ D, rr, db } = await import('./db.js'));
+  ({ D, rr, db } = await import('./js/db.js'));
   const stale = new Set(Object.keys((await D.get(rr('actions'))).val() || {})); // actions left over from before this page load
   // Firebase says false until it has connected: only a gap of 3 s counts as offline
   let offTimer = 0;

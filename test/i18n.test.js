@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { TEXT_KEYS } from './public/i18n.js';
+import { TEXT_KEYS } from '../public/js/i18n.js';
 
 const de = new Set(TEXT_KEYS.de), en = new Set(TEXT_KEYS.en);
 
@@ -12,7 +12,7 @@ test('German and English have exactly the same keys', () => {
 
 test('every t(\'key\') used in the pages exists', () => {
   const missing = [];
-  for (const f of ['public/index.html', 'public/play.html', 'public/rules.js']) {
+  for (const f of ['public/index.html', 'public/play.html', 'public/js/rules.js']) {
     for (const m of readFileSync(f, 'utf8').matchAll(/\bt\('([^']+)'\s*[,)]/g)) if (!de.has(m[1])) missing.push(`${f}: ${m[1]}`);
   }
   assert.deepEqual(missing, []);
