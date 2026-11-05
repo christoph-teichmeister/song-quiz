@@ -219,7 +219,8 @@ export function view(s, pid, now) {
     ack: s.phase === 'howto' ? Object.keys(s.ack || {}) : null, game: s.gameNo, stats: s.phase === 'end' ? playerStats(s) : null, timeline: s.phase === 'end' ? s.timeline : null,
     judge: s.judge, judgeName: s.judge ? s.players[s.judge]?.name : null,
     teams: s.teams, settings: s.settings, idx: s.idx, total: s.songs.length, locked: s.locked, buzz: s.buzz,
-    lastResult: s.lastResult, got: s.got, until: s.until, promptUntil: s.promptUntil, paused: !!s.paused,
+    lastResult: s.lastResult, judged: Object.values(s.stats).reduce((a, p) => a + p.buzzes, 0), // judged: answers so far (the TV plays a sound for each)
+    got: s.got, until: s.until, promptUntil: s.promptUntil, paused: !!s.paused,
     videoId: pid === 'tv' ? song?.id : undefined,
     answer: showAnswer && song ? { title: song.title, artist: song.artist } : undefined,
   };

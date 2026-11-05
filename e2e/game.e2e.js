@@ -299,3 +299,47 @@ test('the entry gate shows its text at once, even while the database is still lo
   assert.match(await page.locator('#gate-b').innerText(), /Tap to start/);
   await world.close();
 });
+
+test('the start page with the QR code appears at once, even if the song lists and the database are slow', async () => {
+  const world = await newWorld(browser, srv.url);
+  const slow = (ms) => async (r) => { await new Promise((ok) => setTimeout(ok, ms)); r.fallback(); };
+  await world.ctx.route(/songs\/.*\.json/, slow(2500));
+  await world.ctx.route(/firebase-database\.js/, slow(1500));
+  const page = await world.ctx.newPage();
+  const t0 = Date.now();
+  await page.goto(srv.url + '/?new&fast', { waitUntil: 'commit' });
+  await page.click('#snd');
+  await page.waitForSelector('.qrcard svg', { timeout: 1500 });
+  assert.ok(Date.now() - t0 < 1500, 'start page drawn before the slow loads finish');
+  // and the game still works once everything has arrived
+  const phone = await world.open('/play?p=Anna');
+  await btn(phone, 'Neues Spiel starten').click();
+  await waitText(page, /Tritt mit dem Code/, 12000);
+  assert.deepEqual(world.errors, []);
+  await world.close();
+});
+
+test('the TV plays sounds: countdown ticks, the go signal, a wrong answer; nothing after a reload', async () => {
+  const world = await newWorld(browser, srv.url);
+  await world.ctx.addInitScript(() => { // count every oscillator the page starts
+    window.__osc = 0; const o = AudioContext.prototype.createOscillator;
+    AudioContext.prototype.createOscillator = function () { window.__osc++; return o.call(this); };
+  });
+  const { tv, ph } = await startGame(world, { length: 2 });
+  const osc = () => tv.evaluate(() => window.__osc);
+  await ready(ph);
+  const r = await playing(ph);
+  assert.ok(await osc() >= 3, 'ticks and go were played');
+  const before = await osc();
+  await ph[r.fronts.B].locator('.buzz').click();
+  await until(() => btn(ph[r.judge], RIGHT.wrong).count(), 'judge screen');
+  await btn(ph[r.judge], RIGHT.wrong).click();
+  await until(async () => (await osc()) >= before + 4, 'buzzer and the wrong-answer sound');
+  await tv.reload();
+  await tv.click('#snd');
+  const after = await osc();
+  await tv.waitForTimeout(1500);
+  assert.equal(await osc(), after, 'no sound just because the page reloaded');
+  assert.deepEqual(world.errors, []);
+  await world.close();
+});

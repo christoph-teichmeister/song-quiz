@@ -15,13 +15,15 @@
 <script src="https://www.youtube.com/iframe_api"></script>
 <script type=module>
 import { createSession, join, act, tick, view, awards, T } from './game.js';
-import { D, rr, ROOM, db } from './db.js';
 import { qrSvg } from './qr.js';
 import { RULES, rulesFor } from './rules.js';
 import { t, getLang, setLang } from './i18n.js';
 import { disc } from './disc.js';
 import { pictos } from './pictos.js';
+import { SFX } from './sfx.js';
 import { PICTO } from './rules.js';
+const ROOM = (new URLSearchParams(location.search).get('room') || 'main').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24) || 'main';
+let D, rr, db; // Firebase loads in boot(), after the first screen is up
 const REPO = 'https://github.com/christoph-teichmeister/song-quiz';
 
 // The TV page is the game server: it owns the state, phones only send actions and show their own view.
@@ -109,42 +111,53 @@ if (new URLSearchParams(location.search).has('fast')) Object.assign(T, { countdo
 if (new URLSearchParams(location.search).has('new')) localStorage.sqState = ''; // /?new starts clean
 try { const saved = JSON.parse(localStorage.sqState || 'null'); if (saved) session = saved; } catch {} // resume after a TV reload
 
-// Only one TV page may host: a second one would run its own game on the same database.
-const myId = Math.random().toString(36).slice(2);
-const seen = (await D.get(rr('host'))).val();
-if (seen) {
-  await new Promise((ok) => setTimeout(ok, 2500)); // a live host rewrites its heartbeat every second
-  const again = (await D.get(rr('host'))).val();
-  if (again && again.ts !== seen.ts) {
-    document.body.innerHTML = `<div class=tv><h1>${t('tv.another')}</h1><p>${t('tv.anotherP')}</p></div>`;
-    throw new Error('second TV page');
-  }
+// The start page is drawn at once (render() at the very end of this script). Everything that needs the network happens in boot(), so
+// the page never waits for the song lists or the host check: they load in parallel while the first screen is already up.
+let myId = Math.random().toString(36).slice(2), catalog = [], booted = false;
+async function loadCatalog() { // [{id, name, emoji}] in display order, then all lists at once (they used to load one after another)
+  catalog = await (await fetch('songs/index.json')).json();
+  await Promise.all(catalog.map(async (c) => { lists[c.id] = await (await fetch(`songs/${c.id}.json`)).json(); }));
 }
-const beat = () => { D.set(rr('host'), { id: myId, ts: Date.now() }); D.set(D.ref(db, `roomIndex/${ROOM}`), { ts: Date.now() }); };
-beat(); setInterval(beat, 1000);
-// Firebase says false until it has connected: only a gap of 3 s counts as offline
-let offTimer = 0;
-D.onValue(D.ref(db, '.info/connected'), (sn) => {
-  if (sn.val()) { clearTimeout(offTimer); offTimer = 0; $('off').hidden = true; }
-  else if (!offTimer) offTimer = setTimeout(() => { $('off').hidden = false; }, 3000);
-});
-D.onValue(rr('host'), (sn) => { if (sn.val() && sn.val().id !== myId) location.reload(); }); // someone took over: show the notice
-let epoch0; // admin kill: /admin/epoch changes only through the admin page (rules check the key)
-D.onValue(rr('admin/epoch'), (sn) => {
-  const v = sn.val() ?? 0;
-  if (epoch0 === undefined) { epoch0 = v; return; }
-  if (v === epoch0) return;
-  epoch0 = v; session = null; localStorage.sqState = ''; errs = {};
-  D.remove(rr('views')); D.remove(rr('actions')); for (const k of Object.keys(last)) if (k.startsWith('views/')) delete last[k];
+async function boot() {
+  const loading = loadCatalog();
+  ({ D, rr, db } = await import('./db.js'));
+  const stale = new Set(Object.keys((await D.get(rr('actions'))).val() || {})); // actions left over from before this page load
+  // Firebase says false until it has connected: only a gap of 3 s counts as offline
+  let offTimer = 0;
+  D.onValue(D.ref(db, '.info/connected'), (sn) => {
+    if (sn.val()) { clearTimeout(offTimer); offTimer = 0; $('off').hidden = true; }
+    else if (!offTimer) offTimer = setTimeout(() => { $('off').hidden = false; }, 3000);
+  });
+  // Only one TV page may host: a second one would run its own game on the same database.
+  const seen = (await D.get(rr('host'))).val();
+  if (seen) {
+    await new Promise((ok) => setTimeout(ok, 2500)); // a live host rewrites its heartbeat every second
+    const again = (await D.get(rr('host'))).val();
+    if (again && again.ts !== seen.ts) {
+      document.body.innerHTML = `<div class=tv><h1>${t('tv.another')}</h1><p>${t('tv.anotherP')}</p></div>`;
+      return;
+    }
+  }
+  const beat = () => { D.set(rr('host'), { id: myId, ts: Date.now() }); D.set(D.ref(db, `roomIndex/${ROOM}`), { ts: Date.now() }); };
+  beat(); setInterval(beat, 1000);
+  D.onValue(rr('host'), (sn) => { if (sn.val() && sn.val().id !== myId) location.reload(); }); // someone took over: show the notice
+  let epoch0; // admin kill: /admin/epoch changes only through the admin page (rules check the key)
+  D.onValue(rr('admin/epoch'), (sn) => {
+    const v = sn.val() ?? 0;
+    if (epoch0 === undefined) { epoch0 = v; return; }
+    if (v === epoch0) return;
+    epoch0 = v; session = null; localStorage.sqState = ''; errs = {};
+    D.remove(rr('views')); D.remove(rr('actions')); for (const k of Object.keys(last)) if (k.startsWith('views/')) delete last[k];
+    publish();
+  });
+  if (!session) await D.remove(rr('views')); // stale views of earlier games
+  // the first screen is already up, so phones may act before the song lists are in: their actions wait for the lists
+  D.onChildAdded(rr('actions'), (snap) => { const m = snap.val(); D.remove(snap.ref); if (!stale.has(snap.key)) loading.then(() => handle(m)); });
+  await loading;
+  booted = true;
+  startTimers();
   publish();
-});
-
-const catalog = await (await fetch('songs/index.json')).json(); // [{id, name, emoji}], in display order
-for (const c of catalog) lists[c.id] = await (await fetch(`songs/${c.id}.json`)).json();
-await D.remove(rr('actions')); // stale phone actions from before this page load
-if (!session) await D.remove(rr('views')); // stale views of earlier games
-
-D.onChildAdded(rr('actions'), (snap) => { D.remove(snap.ref); handle(snap.val()); });
+}
 
 function handle(m) {
   if (!m?.pid) return;
@@ -169,6 +182,7 @@ function put(path, val) { // write only what changed
   D.set(rr(path), JSON.parse(j)).catch((e) => console.error('SQ db write', path, e.message)); // round-trip: Firebase rejects undefined values
 }
 function publish() {
+  if (!booted) return; // nothing is written before the host check is done
   try { publish2(); } catch (e) { console.error('SQ publish', e.stack || e.message); }
 }
 function publish2() {
@@ -189,12 +203,14 @@ const heartbeat = () => {
   if (session && tick(session, now()) === 'reset') session = null;
   publish();
 };
-// A Web Worker keeps ticking at full speed when the tab is in the background (page timers get throttled to once a minute there)
-try {
-  const w = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 500)'], { type: 'text/javascript' })));
-  w.onmessage = heartbeat;
-} catch { setInterval(heartbeat, 500); }
-document.addEventListener('visibilitychange', () => { heartbeat(); }); // catch up and tell the phones whether the TV tab is hidden
+function startTimers() {
+  // A Web Worker keeps ticking at full speed when the tab is in the background (page timers get throttled to once a minute there)
+  try {
+    const w = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 500)'], { type: 'text/javascript' })));
+    w.onmessage = heartbeat;
+  } catch { setInterval(heartbeat, 500); }
+}
+document.addEventListener('visibilitychange', () => { if (booted) heartbeat(); }); // catch up and tell the phones whether the TV tab is hidden
 
 window.keepAlive = () => { if (session) { session.lastActivity = now(); session.promptUntil = 0; publish(); } };
 
@@ -220,7 +236,24 @@ function statsTable() {
 }
 function names(t) { return S.players.filter((p) => p.team === t).map((p) => esc(p.name) + (S.teams[t].front === p.id && S.phase !== 'lobby' ? ' 🎤' : '')).join(', ') || '–'; }
 
+let sx = {}; // what the last render saw, to play an effect when something changes
+function sfx() {
+  if (!S) { sx = {}; return; }
+  const n = S.judged, cd = S.phase === 'countdown' ? Math.ceil((S.until - tvNow()) / 1000) : 0, p = S.players.length;
+  const play = (k) => { if (unlocked && !S.paused) try { SFX[k](ac()); } catch {} };
+  if (sx.ph !== undefined) { // not on the first render after a reload
+    if (S.phase === 'howto' && sx.ph === 'lobby') play('start');
+    else if (S.phase === 'countdown' && sx.ph !== 'countdown') play('whoosh');
+    else if (cd && cd !== sx.cd && cd <= 3) play('tick');
+    else if (S.phase === 'playing' && sx.ph === 'countdown') play('go');
+    else if (S.phase === 'reveal' && sx.ph !== 'reveal' && sx.n === n) play('reveal');
+    if (n > sx.n && S.lastResult) play(S.lastResult.title && S.lastResult.artist ? 'both' : S.lastResult.pts ? 'right' : 'wrong');
+    else if (S.phase === 'lobby' && p > sx.p) play('join');
+  }
+  sx = { ph: S.phase, cd, n, p };
+}
 function render() {
+  sfx();
   if (S) { if (prevPh !== undefined && prevPh !== 'verify' && S.phase === 'verify' && !S.paused) buzzFx(S.buzz.team); prevPh = S.phase; }
   setNp($('npt').textContent); $('off').textContent = t('tv.offline');
   document.body.classList.toggle('paused', !!S?.paused); // freezes the CSS countdown bars
@@ -301,4 +334,8 @@ function audio() {
   else if (p === 'verify' || (p === 'reveal' && S.settings.mode === 'intro')) yt.pauseVideo();
   else if (p === 'end' || p === 'pickfront') { yt.stopVideo(); lastIdx = -1; }
 }
+
+S = session ? view(session, 'tv') : null; // a reload mid-game shows the game, not the start page
+render();
+boot();
 </script>
