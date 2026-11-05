@@ -73,17 +73,17 @@ button{cursor:pointer;border:0}
 #yt{position:fixed;left:0;bottom:0;width:320px;height:200px;opacity:.01;z-index:1}
 #prompt{position:fixed;inset:0;background:#000d;z-index:9;display:none;align-items:center;justify-content:center;flex-direction:column;font-size:3vw;text-align:center;padding:4vw}
 #confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:15}
-.idle{position:relative;overflow:hidden;min-height:92vh;display:grid;grid-template-columns:1.1fr 1fr;align-items:center;gap:4vw;padding:0 4vw}
+.idle{--u:min(1vw,1.8vh);position:relative;overflow:hidden;min-height:92vh;display:grid;grid-template-columns:1.1fr 1fr;align-items:center;gap:4vw;padding:0 4vw}
 .idle>*{position:relative;z-index:1}.idle>.notes{position:absolute;inset:0;z-index:0;pointer-events:none}
-.hero{text-align:left}.hero h1{font-size:max(8vw,48px);margin:.1em 0 .4em;line-height:.95}
-.rings{position:relative;width:11vw;height:11vw;display:flex;align-items:center;justify-content:center;font-size:5.5vw;margin-left:2vw}
+.hero{text-align:left}.hero h1{font-size:max(calc(8*var(--u)),48px);margin:.1em 0 .4em;line-height:.95}
+.rings{position:relative;width:calc(11*var(--u));height:calc(11*var(--u));display:flex;align-items:center;justify-content:center;font-size:calc(5.5*var(--u));margin-left:calc(2*var(--u))}
 .rings span{animation:bob 4s infinite ease-in-out}@keyframes bob{50%{transform:translateY(-.6vw)}}
 .rings i{position:absolute;inset:0;border:2px solid #ff4f8b55;border-radius:50%;opacity:0;animation:ring 9s infinite ease-out}
 .rings i:nth-child(2){animation-delay:3s}.rings i:nth-child(3){animation-delay:6s}
 @keyframes ring{0%{transform:scale(.7);opacity:.7}100%{transform:scale(2.2);opacity:0}}
-.steps{list-style:none;padding:0;margin:0;font-size:max(2.2vw,18px)}.steps li{display:flex;align-items:center;gap:1vw;margin:1.4vh 0}
+.steps{list-style:none;padding:0;margin:0;font-size:max(calc(2.2*var(--u)),18px)}.steps li{display:flex;align-items:center;gap:calc(1*var(--u));margin:1.4vh 0}
 .steps b{flex:none;width:2.2em;height:2.2em;border-radius:50%;background:var(--hot);display:flex;align-items:center;justify-content:center;font-family:var(--display)}
-.scan{text-align:center}.scan p{font-size:max(2vw,16px);opacity:.85}
+.scan{text-align:center}.scan p{font-size:max(calc(2*var(--u)),16px);opacity:.85}
 .qrcard{background:#fff;padding:1.2vw;border-radius:2vw;width:min(32vw,420px);margin:auto;box-shadow:0 1.2vw 3vw #0008}
 .qrsvg svg{width:100%;height:auto;display:block}
 .notes em{position:absolute;bottom:-12%;font-style:normal;font-size:6vw;color:#ff4f8b55;animation:rise2 9s infinite linear}
@@ -163,7 +163,7 @@ html:not(.gated) .idle .hero{animation:rise .8s .25s both}html:not(.gated) .idle
 .rulegrid .rule i{font-size:max(2.6vw,26px)}.rulegrid .rule b{font-size:max(1.8vw,17px)}.rulegrid .rule p{font-size:max(1.35vw,13px);margin-top:.4vh}
 .ackbar{display:flex;flex-wrap:wrap;gap:1vw;justify-content:center;margin:2vh 0}.ack{background:var(--card);border-radius:3em;padding:.4em 1.2em;font-size:max(1.6vw,15px);border:2px solid var(--line)}
 .ack.ok{border-color:var(--ok);background:#5ee6a01a}.ack.A.ok{border-color:var(--ok)}
-.tip{margin-top:3vh;max-width:42vw;min-height:5.5em;font-size:max(1.5vw,14px);color:var(--mute);line-height:1.4}.tip b{color:var(--fg)}.tip.swap{animation:rise .6s both}
+.tip{margin-top:3vh;max-width:calc(42*var(--u));min-height:5.5em;font-size:max(calc(1.5*var(--u)),14px);color:var(--mute);line-height:1.4}.tip b{color:var(--fg)}.tip.swap{animation:rise .6s both}
 @media(max-width:800px){.rulegrid{grid-template-columns:1fr}.tip{max-width:none}}
 
 .stepper{display:flex;gap:10px;align-items:center}.stepper .input{text-align:center;font:800 1.3rem var(--display);padding:0}
@@ -190,7 +190,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;op
 .steps li:nth-child(odd) b{transform:rotate(-5deg)}.steps li:nth-child(even) b{transform:rotate(4deg);background:var(--b);color:#14111c}
 
 /* rules with pictograms (TV tip card, phone and TV rule lists) */
-.tip{min-height:12vw}
+.tip{min-height:calc(12*var(--u))}
 .tipcard{display:grid;grid-template-columns:max(8.5vw,88px) 1fr;gap:1.6vw;align-items:center}
 .tipcard svg,.rule i svg{display:block;width:100%;height:auto}
 .tp{width:100%}.th{font:800 max(3.4vw,28px)/1.05 var(--display)}.tt{font-size:max(1.8vw,15px);color:var(--mute);margin-top:.35em;line-height:1.3}
@@ -198,8 +198,11 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;op
 .rule i svg{width:52px}.rulegrid .rule i svg{width:max(4.6vw,44px)}.rule i:has(svg){line-height:0;flex:none}
 .tip.swap .tipcard{animation:rise .6s both}
 /* the start page has to fit 16:9 with the pictogram card: tighter hero */
-.idle .rings{width:8vw;height:8vw;margin-left:1vw}
+.idle .rings{width:calc(8*var(--u));height:calc(8*var(--u));margin-left:calc(1*var(--u))}
 .idle .hero h1{margin:.05em 0 .25em}
-.idle .steps{font-size:max(1.9vw,17px)}.idle .steps li{margin:.9vh 0}
-.idle .tip{margin-top:2vh;min-height:0}.idle .tipcard{grid-template-columns:max(7vw,76px) 1fr}.idle .th{font-size:max(3vw,26px)}.idle .tt{font-size:max(1.6vw,15px)}
+.idle .steps{font-size:max(calc(1.9*var(--u)),17px)}.idle .steps li{margin:.9vh 0}
+.idle .tip{margin-top:2vh;min-height:0}.idle .tipcard{grid-template-columns:max(calc(7*var(--u)),76px) 1fr}.idle .th{font-size:max(calc(3*var(--u)),26px)}.idle .tt{font-size:max(calc(1.6*var(--u)),15px)}
 .idle{min-height:88vh;padding-bottom:6vh}
+
+.idle .qrcard{width:min(32vw,420px,46vh)}
+.idle{min-height:min(88vh,calc(100vh - 6vw - 4px))}
