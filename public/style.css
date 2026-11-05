@@ -177,3 +177,15 @@ html:not(.gated) .idle .hero{animation:rise .8s .25s both}html:not(.gated) .idle
 #flash[data-team=A]{--c:#52d1ff}#flash[data-team=B]{--c:#ffb347}
 #flash.on{animation:flash .7s ease-out}
 @keyframes flash{0%{opacity:1}100%{opacity:0}}
+
+/* ---------- poster look (about 75% of the share image): painted washes, paper grain, misprint title, painted buzzer disc ---------- */
+body{background:radial-gradient(ellipse 55% 45% at 14% 10%,#3b2270b3,transparent 70%),radial-gradient(ellipse 50% 55% at 90% 80%,#6a2a62a6,transparent 72%),var(--bg);background-attachment:fixed}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.2;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .95 0 0 0 0 .9 0 0 0 .9 -.4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.ink{position:relative;isolation:isolate}
+.ink::before,.ink::after{content:attr(data-t);position:absolute;left:0;top:0;z-index:-1;white-space:nowrap;pointer-events:none}
+.ink::before{color:var(--hot);transform:translate(4px,3px);opacity:.85}.ink::after{color:var(--a);transform:translate(-3px,-2px);opacity:.45}
+.disc{display:block;width:100%;height:auto}
+.rings .disc{animation:bob 4s infinite ease-in-out}
+.entry-disc{width:112px;margin:2px 0 -6px}
+.notes em:nth-child(3n+1){color:#ffb34744}.notes em:nth-child(3n+2){color:#52d1ff38}
+.steps li:nth-child(odd) b{transform:rotate(-5deg)}.steps li:nth-child(even) b{transform:rotate(4deg);background:var(--b);color:#14111c}

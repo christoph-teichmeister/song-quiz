@@ -35,6 +35,9 @@ Rules: team colours only for teams; pink only for actions; a wrong answer is "lo
 ## Logo and share image
 Mark = pink circle with white note on a dark rounded square (`favicon.svg`, app icons). Wordmark "Song Quiz" in Bricolage Grotesque 800 as paths: `public/brand/*.svg` (rebuild: `uvx --from fonttools python scripts/make-brand.py`). White on dark, dark on light; never recolour or stretch; pink mark never on a team colour. Share image `public/og.png` 1200x630, poster/risograph look drawn in code (`scripts/og-card.html`, render with `node scripts/render-og.mjs`; wobbly edges via SVG displacement, paper grain, offset colour layers), Open Graph tags in index/play/brandbook; point the image URL at the custom domain once it is live.
 
+## Poster look (about 75% strength)
+Painted colour washes behind the page (two big soft radial tints, `body` in `style.css`), light paper grain (`body::before`, 20%), misprint title (`.ink`: pink and blue copies offset 3-4 px), painted buzzer disc (`public/disc.js`, wobble scale 9 vs 14 on the share image), tilted number stickers on the TV start page. QR codes, text blocks and forms stay crisp: no filters on them. The share image uses the full-strength version.
+
 ## Motion
 `rise` (.32 s, staggered) for screen changes, `pop` (.35 s) for chips/numbers/points, ripple on buzz, TV flash in team colour (700 ms, no blur), confetti (win), bubbles (draw). No glow: depth through plain shadows. `prefers-reduced-motion` switches animations off.
 

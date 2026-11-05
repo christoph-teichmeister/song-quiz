@@ -84,7 +84,7 @@ window.onYouTubeIframeAPIReady?.();`;
     r.fulfill(js(u.includes('firebase-app') ? 'export const initializeApp = () => ({});' : u.includes('firebase-database') ? FAKE_DB : FAKE_AUTH));
   });
   await ctx.route('https://www.youtube.com/**', (r) => r.fulfill(js(FAKE_YT)));
-  await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.fulfill({ status: 200, contentType: 'text/css', body: '' }));
+  if (!process.env.REAL_FONTS) await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.fulfill({ status: 200, contentType: 'text/css', body: '' }));
 
   const errors = [];
   const open = async (path) => {

@@ -9,6 +9,7 @@ import { awards, T } from './game.js';
 import { RULES, MODE_RULE, rulesFor } from './rules.js';
 import { t, getLang, setLang } from './i18n.js';
 import { qrSvg } from './qr.js';
+import { disc } from './disc.js';
 import { auth, onUser, google, signIn, signUp, resetPw, signOut, removeAccount, authError } from './auth.js';
 const $ = (id) => document.getElementById(id);
 const qs = new URLSearchParams(location.search);
@@ -87,7 +88,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) awak
 
 function entry() {
   const running = pub.session && ['howto', 'pickfront', 'countdown', 'playing', 'verify', 'reveal'].includes(pub.summary?.phase);
-  return { key: 'entry', body: `<div class=hdr>${langPill()}<button class=score-pill style="border:0;color:inherit;cursor:pointer" onclick="openSheet('account')">${user ? '👤 ' + esc((user.displayName || user.email || t('account')).split(' ')[0]) : t('signIn')}</button></div><h1>🎵 Song Quiz</h1><p class=hint style="text-align:left">${t('tagline')}</p>
+  return { key: 'entry', body: `<div class=hdr>${langPill()}<button class=score-pill style="border:0;color:inherit;cursor:pointer" onclick="openSheet('account')">${user ? '👤 ' + esc((user.displayName || user.email || t('account')).split(' ')[0]) : t('signIn')}</button></div><div class=entry-disc>${disc()}</div><h1 class=ink data-t="Song Quiz">Song Quiz</h1><p class=hint style="text-align:left">${t('tagline')}</p>
     <div class=stack><input class=input id=name placeholder="${t('yourName')}" maxlength=20 value="${esc(nameV)}" oninput="setName(this.value)" autocomplete=nickname>
     ${pub.session ? `<input class=input id=code placeholder="${t('gameCode')}" inputmode=numeric value="${esc(codeV || pub.code || '')}" oninput="setCode(this.value)">${running ? `<p class=hint style="text-align:left">${t('running')}</p>` : ''}<button class=btn onclick="joinGame()">${t('join')}</button>`
       : `<button class=btn onclick="create()">${t('create')}</button>`}</div><p class=admin-link><a href="#" onclick="openSheet('rules');return false">${t('howToPlay')}</a></p>`, sticky: '' };

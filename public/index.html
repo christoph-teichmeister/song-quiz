@@ -7,7 +7,7 @@
 <canvas id=confetti></canvas>
 <div id=prog><div id=progt></div><div id=progb><i id=progf></i></div></div>
 <div id=np><button id=npb onclick='toggleMusic()'></button><span id=npt></span></div>
-<div id=snd><div class=gate><div class=gate-note>🎵</div><h1>Song Quiz</h1><button class=gate-btn id=gate-b onclick=unlock()></button><p id=gate-p></p></div></div>
+<div id=snd><div class=gate><div class=gate-note>🎵</div><h1 class=ink data-t="Song Quiz">Song Quiz</h1><button class=gate-btn id=gate-b onclick=unlock()></button><p id=gate-p></p></div></div>
 <button id=lang class=lang onclick="toggleLang()" aria-label=Language></button>
 <div id=flash></div><div id=off class=offline hidden></div>
 <div id=pause style="display:none;position:fixed;inset:0;z-index:99;background:#000b;color:#fff;align-items:center;justify-content:center;font:800 min(16vw,16vh) 'Bricolage Grotesque',sans-serif"></div>
@@ -19,6 +19,7 @@ import { D, rr, ROOM, db } from './db.js';
 import { qrSvg } from './qr.js';
 import { RULES, rulesFor } from './rules.js';
 import { t, getLang, setLang } from './i18n.js';
+import { disc } from './disc.js';
 const REPO = 'https://github.com/christoph-teichmeister/song-quiz';
 
 // The TV page is the game server: it owns the state, phones only send actions and show their own view.
@@ -232,7 +233,7 @@ function render() {
   if (!S) { // idle: stays up, nothing to do until someone scans
     const key = 'idle'; if ($('main').dataset.k === key) return; $('main').dataset.k = key; lastHtml = '';
     $('main').innerHTML = `<div class=idle><div class=notes>${'♪♫♬♩♪♫'.split('').map((n, i) => `<em style="left:${5 + i * 17}%;animation-delay:${i * 1.1}s">${n}</em>`).join('')}</div>
-  <div class=hero><div class=rings><i></i><i></i><i></i><span>🎵</span></div><h1>Song Quiz</h1>
+  <div class=hero><div class=rings><i></i><i></i><i></i>${disc()}</div><h1 class=ink data-t="Song Quiz">Song Quiz</h1>
   <ol class=steps><li><b>1</b><span>${t('tv.step1')}</span></li><li><b>2</b><span>${t('tv.step2')}</span></li><li><b>3</b><span>${t('tv.step3')}</span></li></ol><div class=tip id=tip></div></div>
   <div class=scan><div class=qrcard>${q(base + '/play' + (rq ? '?' + rq : ''))}</div><p>${t('tv.scan')}</p></div>
   <a class=repo href="${REPO}" target=_blank><div class=qrsvg>${qrSvg(REPO)}</div><span>GitHub</span></a></div>`;
