@@ -21,6 +21,7 @@ export const SFX = {
   both: (c) => notes(c, [523, 659, 784, 1047], .1, { type: 'triangle', vol: .2 }), // title and artist
   wrong: (c) => notes(c, [233, 175], .18, { type: 'sawtooth', vol: .1 }), // nothing right
   reveal: (c) => notes(c, [784, 1047], .14, { vol: .14 }),
-  join: (c) => tone(c, c.currentTime + .01, 500, .15, { to: 900, vol: .14 }), // someone joined the lobby
+  join: (c) => notes(c, [587, 880], .09, { vol: .24 }), // someone joined the lobby
+  ack: (c) => tone(c, c.currentTime + .01, 1175, .14, { type: 'triangle', vol: .2 }), // a player confirmed the rules
   start: (c) => notes(c, [392, 523, 659, 784], .12, { type: 'square', vol: .08 }), // game begins
 };

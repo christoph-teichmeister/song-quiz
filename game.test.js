@@ -285,9 +285,20 @@ test('a paused reveal does not move on, and resumes with its full time left', ()
   const { s, h, now } = setup();
   act(s, h, { type: 'skip' }, now);
   assert.equal(s.phase, 'reveal');
+  const until = s.until; // reveal length depends on whether it is the last song
   act(s, h, { type: 'pause' }, now + 1000);
   tick(s, now + T.reveal + 5000);
   assert.equal(s.phase, 'reveal');
   act(s, h, { type: 'resume' }, now + 5000);
-  assert.equal(s.until, now + T.reveal + 4000);
+  assert.equal(s.until, until + 4000);
+});
+
+test('after the last song the final screen comes sooner', () => {
+  const { s, h, now } = setup();
+  s.idx = s.songs.length - 1; // last song
+  act(s, h, { type: 'skip' }, now);
+  assert.equal(s.phase, 'reveal');
+  assert.equal(s.until, now + T.revealLast);
+  tick(s, now + T.revealLast);
+  assert.equal(s.phase, 'end');
 });

@@ -206,3 +206,4 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;op
 
 .idle .qrcard{width:min(32vw,420px,46vh)}
 .idle{min-height:min(88vh,calc(100vh - 6vw - 4px))}
+body.ingame .tv{padding-top:max(9vh,76px)}

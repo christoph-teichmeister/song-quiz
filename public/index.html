@@ -34,21 +34,9 @@ const tvNow = () => session?.paused?.at ?? now(); // a paused screen shows froze
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); // player names go into innerHTML
 let AC; // Web Audio for the end-screen sounds (synthesised, no files)
 const ac = () => (AC ||= new (window.AudioContext || window.webkitAudioContext)());
-function applause() { // a real recording (public domain); the synthesised version below is the fallback
+function applause() { // the real recording only (public domain)
   const a = new Audio('/sounds/applause.ogg'); a.volume = .85;
-  a.play().then(() => setTimeout(() => { const f = setInterval(() => { a.volume = Math.max(0, a.volume - .08); if (a.volume <= 0) { clearInterval(f); a.pause(); } }, 150); }, 8200)).catch(() => applauseSynth());
-}
-function applauseSynth() { // many short filtered noise bursts, densest in the middle
-  const c = ac(), t0 = c.currentTime + .05;
-  for (let i = 0; i < 130; i++) {
-    const t = t0 + (Math.random() + Math.random()) / 2 * 3.8, len = .035 + Math.random() * .03;
-    const buf = c.createBuffer(1, Math.ceil(c.sampleRate * len), c.sampleRate), d = buf.getChannelData(0);
-    for (let k = 0; k < d.length; k++) d[k] = (Math.random() * 2 - 1) * Math.exp(-k / (d.length * .25));
-    const src = c.createBufferSource(); src.buffer = buf;
-    const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1200 + Math.random() * 2600; f.Q.value = .7;
-    const g = c.createGain(); g.gain.value = .35 + Math.random() * .45;
-    src.connect(f); f.connect(g); g.connect(c.destination); src.start(t);
-  }
+  a.play().then(() => setTimeout(() => { const f = setInterval(() => { a.volume = Math.max(0, a.volume - .08); if (a.volume <= 0) { clearInterval(f); a.pause(); } }, 150); }, 8200)).catch((e) => console.error('applause', e.message));
 }
 function sadTrombone() { // wah wah wah wahhh
   const c = ac(); let t = c.currentTime + .05;
@@ -107,7 +95,7 @@ function texts() { $('gate-b').textContent = t('tv.gate'); $('gate-p').textConte
 texts();
 addEventListener('click', () => { if (!unlocked) window.unlock(); }); addEventListener('keydown', () => { if (!unlocked) window.unlock(); });
 if (window.YT?.Player) window.onYouTubeIframeAPIReady(); // the API script may have loaded before this module ran
-if (new URLSearchParams(location.search).has('fast')) Object.assign(T, { countdown: 300, reveal: 1500 }); // browser tests: short pauses
+if (new URLSearchParams(location.search).has('fast')) Object.assign(T, { countdown: 300, reveal: 1500, revealLast: 1500 }); // browser tests: short pauses
 if (new URLSearchParams(location.search).has('new')) localStorage.sqState = ''; // /?new starts clean
 try { const saved = JSON.parse(localStorage.sqState || 'null'); if (saved) session = saved; } catch {} // resume after a TV reload
 
@@ -218,7 +206,7 @@ const q = (url) => `<div class=qrsvg>${qrSvg(url)}</div>`;
 const base = location.origin, rq = ROOM === 'main' ? '' : 'room=' + ROOM;
 const fr = (t) => esc(S.players.find((p) => p.id === S.teams[t].front)?.name) || '–';
 const matchup = () => `<div class=matchup><div class="mu A"><small>Team A</small><b>${fr('A')}</b><span>${t('tv.atBuzzer')}</span></div><div class=vs>vs</div><div class="mu B"><small>Team B</small><b>${fr('B')}</b><span>${t('tv.atBuzzer')}</span></div></div>`;
-const cd = () => { const left = Math.max(0, S.until - tvNow()); return `<div class=cd><span>${t('tv.nextIn', { n: Math.ceil(left / 1000) })}</span><div><i style="animation-duration:${T.reveal}ms;animation-delay:-${T.reveal - left}ms"></i></div></div>`; };
+const cd = () => { const left = Math.max(0, S.until - tvNow()), total = S.idx + 1 >= S.total ? T.revealLast : T.reveal; return `<div class=cd><span>${t('tv.nextIn', { n: Math.ceil(left / 1000) })}</span><div><i style="animation-duration:${total}ms;animation-delay:-${total - left}ms"></i></div></div>`; };
 const AW = { pts: '🏆', fast: '⚡', sharp: '🎯' };
 const sec = (ms) => (ms == null ? '–' : (ms / 1000).toFixed(1) + ' s');
 function chart(tl) { // score after every song, one line per team
@@ -238,10 +226,11 @@ function names(t) { return S.players.filter((p) => p.team === t).map((p) => esc(
 
 let sx = {}; // what the last render saw, to play an effect when something changes
 function sfx() {
-  if (!S) { sx = {}; return; }
-  const n = S.judged, cd = S.phase === 'countdown' ? Math.ceil((S.until - tvNow()) / 1000) : 0, p = S.players.length;
+  if (!S) { sx = { idle: true }; return; }
+  const n = S.judged, cd = S.phase === 'countdown' ? Math.ceil((S.until - tvNow()) / 1000) : 0, p = S.players.length, a = S.ack?.length ?? 0;
   const play = (k) => { if (unlocked && !S.paused) try { SFX[k](ac()); } catch {} };
-  if (sx.ph !== undefined) { // not on the first render after a reload
+  if (sx.idle && S.phase === 'lobby') play('join'); // the host opened a game
+  else if (sx.ph !== undefined) { // not on the first render after a reload
     if (S.phase === 'howto' && sx.ph === 'lobby') play('start');
     else if (S.phase === 'countdown' && sx.ph !== 'countdown') play('whoosh');
     else if (cd && cd !== sx.cd && cd <= 3) play('tick');
@@ -249,17 +238,19 @@ function sfx() {
     else if (S.phase === 'reveal' && sx.ph !== 'reveal' && sx.n === n) play('reveal');
     if (n > sx.n && S.lastResult) play(S.lastResult.title && S.lastResult.artist ? 'both' : S.lastResult.pts ? 'right' : 'wrong');
     else if (S.phase === 'lobby' && p > sx.p) play('join');
+    else if (S.phase === 'howto' && a > (sx.a ?? 99)) play('ack'); // someone tapped "Verstanden"
   }
-  sx = { ph: S.phase, cd, n, p };
+  sx = { ph: S.phase, cd, n, p, a };
 }
 function render() {
   sfx();
   if (S) { if (prevPh !== undefined && prevPh !== 'verify' && S.phase === 'verify' && !S.paused) buzzFx(S.buzz.team); prevPh = S.phase; }
   setNp($('npt').textContent); $('off').textContent = t('tv.offline');
-  document.body.classList.toggle('paused', !!S?.paused); // freezes the CSS countdown bars
+  document.body.classList.toggle('paused', !!S?.paused);
+  document.body.classList.toggle('ingame', !!S && ['pickfront', 'countdown', 'playing', 'verify', 'reveal'].includes(S.phase) && !!S.total); // room for the progress bar on top // freezes the CSS countdown bars
   $('pause').style.display = S?.paused ? 'flex' : 'none'; $('pause').textContent = t('tv.pauseBig');
   const prompt = S && S.promptUntil; $('prompt').style.display = prompt ? 'flex' : 'none';
-  if (prompt) $('prompt').innerHTML = t('tv.prompt', { n: Math.max(0, Math.ceil((S.promptUntil - now()) / 1000)) });
+  if (prompt) $('prompt').innerHTML = '<p>' + t('tv.prompt', { n: Math.max(0, Math.ceil((S.promptUntil - now()) / 1000)) }) + '</p>'; // one block, so the number stays in the sentence
   const inGame = S && ['pickfront', 'countdown', 'playing', 'verify', 'reveal'].includes(S.phase) && S.total;
   $('prog').style.display = inGame ? 'block' : 'none';
   if (inGame) { const left = S.total - S.idx - 1; $('progt').textContent = `${t('songOf', { n: S.idx + 1, m: S.total })} · ${left ? t('toGo', { n: left }) : t('lastSong')}`; $('progf').style.width = (100 * (S.idx + (S.phase === 'reveal' ? 1 : 0)) / S.total) + '%'; }

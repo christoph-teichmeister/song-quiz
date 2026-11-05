@@ -73,7 +73,12 @@ D.onValue(D.ref(db, '.info/connected'), (s) => {
 D.onValue(rr('public'), (s) => { pub = s.val() || { session: false, catalog: [] }; render(); });
 D.onValue(rr(`views/${pid}`), (s) => { S = s.val(); maybeSave(); render(); });
 addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; });
-onUser((u) => { user = u; maybeSave(); render(); });
+onUser((u) => { user = u; if (u) nameV = (u.displayName || (u.email || '').split('@')[0] || nameV).trim().split(' ')[0].slice(0, 20); else nameV = sim || localStorage.sqName || ''; maybeSave(); render(); });
+// Is a TV page hosting this room? Its heartbeat arrives every second; without one, "new game" would go nowhere.
+let hostSeen = 0, tvWas = true; const t0 = Date.now();
+const tvUp = () => hostSeen ? Date.now() - hostSeen < 5000 : Date.now() - t0 < 3000;
+D.onValue(rr('host'), () => { hostSeen = Date.now(); });
+setInterval(() => { if (tvUp() !== tvWas) { tvWas = tvUp(); render(); } }, 1000);
 function maybeSave() { // each phone writes its own stats into its own account when a game ends (the rules only let the owner write)
   if (!user || !S || S.phase !== 'end' || !S.stats) return;
   const id = `${ROOM}-${S.code}-${S.game}`, me2 = S.stats.find((p) => p.id === S.me?.id);
@@ -90,9 +95,9 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) awak
 function entry() {
   const running = pub.session && ['howto', 'pickfront', 'countdown', 'playing', 'verify', 'reveal'].includes(pub.summary?.phase);
   return { key: 'entry', body: `<div class=hdr>${langPill()}<button class=score-pill style="border:0;color:inherit;cursor:pointer" onclick="openSheet('account')">${user ? '👤 ' + esc((user.displayName || user.email || t('account')).split(' ')[0]) : t('signIn')}</button></div><div class=entry-disc>${disc()}</div><h1 class=ink data-t="Song Quiz">Song Quiz</h1><p class=hint style="text-align:left">${t('tagline')}</p>
-    <div class=stack><input class=input id=name placeholder="${t('yourName')}" maxlength=20 value="${esc(nameV)}" oninput="setName(this.value)" autocomplete=nickname>
+    <div class=stack>${user ? `<p class=hint style="text-align:left;font-size:1.1em">${t('hello', { name: esc(nameV) })}</p>` : `<input class=input id=name placeholder="${t('yourName')}" maxlength=20 value="${esc(nameV)}" oninput="setName(this.value)" autocomplete=nickname>`}
     ${pub.session ? `<input class=input id=code placeholder="${t('gameCode')}" inputmode=numeric value="${esc(codeV || pub.code || '')}" oninput="setCode(this.value)">${running ? `<p class=hint style="text-align:left">${t('running')}</p>` : ''}<button class=btn onclick="joinGame()">${t('join')}</button>`
-      : `<button class=btn onclick="create()">${t('create')}</button>`}</div><p class=admin-link><a href="#" onclick="openSheet('rules');return false">${t('howToPlay')}</a></p>`, sticky: '' };
+      : tvUp() ? `<button class=btn onclick="create()">${t('create')}</button>` : `<p class=hint style="text-align:left">${t('noTv')}</p><button class=btn disabled>${t('create')}</button>`}</div><p class=admin-link><a href="#" onclick="openSheet('rules');return false">${t('howToPlay')}</a></p>`, sticky: '' };
 }
 
 const ruleCards = (list) => `<div class=rules>${list.map((x) => `<div class=rule><i>${x.key && PICTO[x.key] ? pictos[PICTO[x.key]] : x.icon}</i><div><b>${x.title}</b><p>${x.text}</p></div></div>`).join('')}</div>`;

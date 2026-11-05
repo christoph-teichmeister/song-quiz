@@ -1,6 +1,6 @@
 // Pure game state machine. No I/O: server.js feeds it actions and ticks.
 // Phases: lobby -> howto -> pickfront (first song only) -> countdown -> playing <-> verify -> reveal -> (countdown | end)
-export const T = { countdown: 3000, reveal: 10000, idle: 180000, prompt: 15000, introMs: 5000, speedMs: 5000, answer: 10000 }; // answer: time to speak after a buzz (a bar on the screens); the judge has no time limit and may talk it over
+export const T = { countdown: 3000, reveal: 10000, revealLast: 4000, idle: 180000, prompt: 15000, introMs: 5000, speedMs: 5000, answer: 10000 }; // answer: time to speak after a buzz (a bar on the screens); the judge has no time limit and may talk it over
 const IDLE_PHASES = ['lobby', 'howto', 'pickfront', 'end']; // the idle reset never fires while a song is running
 const other = (t) => (t === 'A' ? 'B' : 'A');
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -172,7 +172,7 @@ function pickFront(s) {
 }
 
 function reveal(s, now) {
-  s.phase = 'reveal'; s.until = now + T.reveal; s.buzz = null;
+  s.phase = 'reveal'; s.until = now + (s.idx + 1 >= s.songs.length ? T.revealLast : T.reveal); // after the last song the final screen comes sooner s.buzz = null;
   s.timeline.push({ A: s.teams.A.score, B: s.teams.B.score });
   s.next = s.idx + 1 < s.songs.length ? planNext(s) : null; // decided now so the phones can announce who is up
   return null;

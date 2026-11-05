@@ -343,3 +343,31 @@ test('the TV plays sounds: countdown ticks, the go signal, a wrong answer; nothi
   assert.deepEqual(world.errors, []);
   await world.close();
 });
+
+test('the TV plays a sound when someone joins and when someone confirms the rules', async () => {
+  const world = await newWorld(browser, srv.url);
+  await world.ctx.addInitScript(() => {
+    window.__osc = 0; const o = AudioContext.prototype.createOscillator;
+    AudioContext.prototype.createOscillator = function () { window.__osc++; return o.call(this); };
+  });
+  const { tv, ph } = await startGame(world, { howto: false, length: 2 });
+  const osc = () => tv.evaluate(() => window.__osc);
+  await waitText(tv, /Spielregeln/);
+  const before = await osc();
+  await btn(ph.Anna, 'Verstanden').click();
+  await until(async () => (await osc()) > before, 'a sound for the first "Verstanden"');
+  assert.ok(await osc() >= 6, 'join sounds happened before');
+  await world.close();
+});
+
+test('a phone in a room without a TV says so instead of a dead "new game" button', async () => {
+  const world = await newWorld(browser, srv.url);
+  const phone = await world.open('/play?room=nobody&p=Anna');
+  await waitText(phone, /Hier läuft noch kein Fernseher/, 8000);
+  assert.equal(await btn(phone, 'Neues Spiel starten').isDisabled(), true);
+  const tv = await world.open('/?room=nobody&new&fast'); // the TV opens the room: the button works
+  await tv.click('#snd');
+  await until(async () => !(await btn(phone, 'Neues Spiel starten').isDisabled()), 'button enabled once the TV is up', 12000);
+  assert.deepEqual(world.errors, []);
+  await world.close();
+});
