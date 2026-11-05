@@ -7,15 +7,15 @@ svg.art{position:absolute;inset:0}
 .txt{position:absolute;left:70px;top:165px;width:640px}
 h1{font:800 128px/1 "Bricolage Grotesque",sans-serif;margin:0;letter-spacing:-.015em;position:relative;color:#f6ecd8;filter:url(#rough2)}
 h1 span{position:absolute;left:0;top:0;white-space:nowrap}
-h1 .ghost{color:#ff4f8b;transform:translate(6px,5px);mix-blend-mode:screen;opacity:.95}h1 .ghost2{color:#52d1ff;transform:translate(-4px,-3px);mix-blend-mode:screen;opacity:.6}h1 .main{position:relative;mix-blend-mode:normal}
+h1 .ghost{color:#ff4f8b;transform:translate(4.5px,4px);mix-blend-mode:screen;opacity:.8}h1 .ghost2{color:#52d1ff;transform:translate(-3px,-2px);mix-blend-mode:screen;opacity:.4}h1 .main{position:relative;mix-blend-mode:normal}
 p{margin:34px 0 0;font:600 38px/1.25 Figtree,sans-serif;color:#d9cdea;filter:url(#rough2)}p b{color:#ffd9a0;font-weight:600}
 .stick{position:absolute;font:800 30px "Bricolage Grotesque",sans-serif;padding:10px 28px 12px;color:#241545;filter:url(#rough)}
 </style>
 <svg class="art" width="1200" height="630" viewBox="0 0 1200 630">
 <defs>
- <filter id="rough" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".022" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="14" xChannelSelector="R" yChannelSelector="G"/></filter>
- <filter id="rough2" x="-2%" y="-5%" width="104%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".05" numOctaves="2" seed="9" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="4" xChannelSelector="R" yChannelSelector="G"/></filter>
- <filter id="wash" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency=".008" numOctaves="3" seed="2" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="90" xChannelSelector="R" yChannelSelector="B"/><feGaussianBlur stdDeviation="18"/></filter>
+ <filter id="rough" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".022" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="10.5" xChannelSelector="R" yChannelSelector="G"/></filter>
+ <filter id="rough2" x="-2%" y="-5%" width="104%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".05" numOctaves="2" seed="9" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="3" xChannelSelector="R" yChannelSelector="G"/></filter>
+ <filter id="wash" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency=".008" numOctaves="3" seed="2" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="68" xChannelSelector="R" yChannelSelector="B"/><feGaussianBlur stdDeviation="18"/></filter>
  <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3" seed="7"/><feColorMatrix values="0 0 0 0 .1  0 0 0 0 .07  0 0 0 0 .2  0 0 0 .9 -.28"/></filter>
  <filter id="streak"><feTurbulence type="fractalNoise" baseFrequency=".004 .22" numOctaves="3" seed="3"/><feColorMatrix values="0 0 0 0 1  0 0 0 0 .95  0 0 0 0 .85  0 0 0 1.6 -.55"/></filter>
  <pattern id="dots" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(25)"><circle cx="7" cy="7" r="3.1" fill="#ff4f8b"/></pattern>
@@ -26,11 +26,11 @@ p{margin:34px 0 0;font:600 38px/1.25 Figtree,sans-serif;color:#d9cdea;filter:url
 <!-- painted washes -->
 <g filter="url(#wash)"><ellipse cx="250" cy="200" rx="330" ry="210" fill="#4a2a86" opacity=".8"/><ellipse cx="930" cy="330" rx="300" ry="300" fill="#7a2b6e" opacity=".75"/><ellipse cx="1050" cy="80" rx="200" ry="120" fill="#1f4d8f" opacity=".55"/><ellipse cx="620" cy="600" rx="360" ry="100" fill="#a8335f" opacity=".35"/></g>
 <!-- halftone behind the buzzer -->
-<g mask="url(#halfm)" opacity=".55" transform="translate(0 0)"><rect x="520" y="-10" width="700" height="660" fill="url(#dots)"/></g>
+<g mask="url(#halfm)" opacity=".41" transform="translate(0 0)"><rect x="520" y="-10" width="700" height="660" fill="url(#dots)"/></g>
 <!-- rays: short brush strokes -->
 <g filter="url(#rough)" stroke-linecap="round" fill="none">
- <g stroke="#ffb347" stroke-width="15"><path d="M905 70 L905 28"/><path d="M1068 112 L1098 82"/><path d="M1130 262 L1176 252"/><path d="M1112 430 L1150 452"/><path d="M742 98 L716 62"/><path d="M690 262 L640 252"/></g>
- <g stroke="#52d1ff" stroke-width="13"><path d="M1010 60 L1030 20"/><path d="M820 36 L806 -6"/><path d="M1160 340 L1196 352"/><path d="M700 380 L650 392"/></g>
+ <g stroke="#ffb347" stroke-width="15"><path d="M905 70 L905 28"/><path d="M1068 112 L1098 82"/><path d="M1130 262 L1176 252"/><path d="M742 98 L716 62"/></g>
+ <g stroke="#52d1ff" stroke-width="13"><path d="M1010 60 L1030 20"/><path d="M820 36 L806 -6"/><path d="M1160 340 L1196 352"/></g>
 </g>
 <!-- the buzzer: cut-paper circle, shadow crescent, highlight splotch, brush streaks -->
 <g filter="url(#rough)">
@@ -40,15 +40,15 @@ p{margin:34px 0 0;font:600 38px/1.25 Figtree,sans-serif;color:#d9cdea;filter:url
  <path d="M770 230 q40 -90 135 -92 q-60 40 -90 130 q-20 20 -45 -38z" fill="#ffb3cb"/>
  <circle cx="905" cy="318" r="165" fill="none" stroke="#ffd0e0" stroke-width="7" stroke-dasharray="40 26" stroke-linecap="round" opacity=".9" transform="rotate(-18 905 318)"/>
 </g>
-<g clip-path="url(#bz)" opacity=".35" style="mix-blend-mode:soft-light"><rect x="680" y="100" width="450" height="450" filter="url(#streak)" transform="rotate(-28 905 318)"/></g>
+<g clip-path="url(#bz)" opacity=".26" style="mix-blend-mode:soft-light"><rect x="680" y="100" width="450" height="450" filter="url(#streak)" transform="rotate(-28 905 318)"/></g>
 <!-- music note on the buzzer (cream, painted) -->
 <g filter="url(#rough)" fill="#f6ecd8" transform="translate(905 318) rotate(-8) scale(2.9) translate(-32 -32)"><path d="M27 18v21.5a6.2 6.2 0 1 0 3.6 5.6V28l11 2.8v9.7a6.2 6.2 0 1 0 3.6 5.6V21.2z"/></g>
 <!-- floating notes + stars + snow -->
 <g filter="url(#rough)">
  <g fill="#52d1ff" transform="translate(560 80) rotate(-14) scale(1.5)"><path d="M10 0v26a8 8 0 1 0 4 7V8l14 4V0z" fill="#52d1ff"/></g>
  <g fill="#ffb347" transform="translate(1085 470) rotate(12) scale(1.3)"><path d="M10 0v26a8 8 0 1 0 4 7V8l14 4V0z"/></g>
- <g fill="#f6ecd8"><path d="M640 540 l9 22 22 9 -22 9 -9 22 -9 -22 -22 -9 22 -9z"/><path d="M1090 190 l6 15 15 6 -15 6 -6 15 -6 -15 -15 -6 15 -6z"/><path d="M470 40 l5 12 12 5 -12 5 -5 12 -5 -12 -12 -5 12 -5z"/></g>
- <g fill="#f6ecd8" opacity=".8"><circle cx="700" cy="170" r="4"/><circle cx="1150" cy="130" r="5"/><circle cx="560" cy="470" r="4"/><circle cx="1010" cy="590" r="5"/><circle cx="760" cy="590" r="3"/><circle cx="1170" cy="560" r="4"/><circle cx="430" cy="590" r="4"/></g>
+ <g fill="#f6ecd8"><path d="M640 540 l9 22 22 9 -22 9 -9 22 -9 -22 -22 -9 22 -9z"/><path d="M1090 190 l6 15 15 6 -15 6 -6 15 -6 -15 -15 -6 15 -6z"/></g>
+ <g fill="#f6ecd8" opacity=".8"><circle cx="700" cy="170" r="4"/><circle cx="1150" cy="130" r="5"/><circle cx="560" cy="470" r="4"/><circle cx="1010" cy="590" r="5"/></g>
 </g>
 <!-- orange swash under Quiz -->
 <path filter="url(#rough)" d="M96 428 q150 -30 330 -8 t300 -6" fill="none" stroke="#ffb347" stroke-width="12" stroke-linecap="round" opacity=".0"/>
@@ -60,4 +60,4 @@ p{margin:34px 0 0;font:600 38px/1.25 Figtree,sans-serif;color:#d9cdea;filter:url
 <div class="stick" style="left:78px;top:500px;background:#52d1ff;transform:rotate(-3deg)">Team A</div>
 <div class="stick" style="left:262px;top:508px;background:#ffb347;transform:rotate(2.5deg)">Team B</div>
 <!-- paper grain on everything -->
-<svg class="art" width="1200" height="630" style="mix-blend-mode:multiply;opacity:.55;pointer-events:none"><rect width="1200" height="630" filter="url(#grain)"/></svg>
+<svg class="art" width="1200" height="630" style="mix-blend-mode:multiply;opacity:.41;pointer-events:none"><rect width="1200" height="630" filter="url(#grain)"/></svg>
