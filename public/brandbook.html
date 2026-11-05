@@ -1,4 +1,4 @@
-<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Song Quiz Brandbook</title><link rel=icon type="image/svg+xml" href=/favicon.svg>
+<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Song Quiz Brandbook</title><meta name=description content="Song Quiz: zwei Teams, ein Buzzer, ein Handy pro Person. Erkennst du den Song?"><meta property=og:type content=website><meta property=og:title content="Song Quiz"><meta property=og:description content="Zwei Teams, ein Buzzer, ein Handy pro Person. Erkennst du den Song?"><meta property=og:image content="https://song-quiz-xmas-a414536c.web.app/og.png"><meta property=og:image:width content=1200><meta property=og:image:height content=630><meta name=twitter:card content=summary_large_image><link rel=icon type="image/svg+xml" href=/favicon.svg>
 <link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
 <link rel=stylesheet href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;600&display=swap">
 <link rel=stylesheet href=style.css>
@@ -24,7 +24,7 @@ nav.toc{display:flex;gap:8px;flex-wrap:wrap}nav.toc a{background:var(--card);pad
 <div class=bb>
 <header>
   <div class=logo><img src=/icon-192.png alt="Song Quiz Icon"><div><h1>Song Quiz</h1><p style="margin-top:10px">Brandbook für das Weihnachts-Ratespiel. Eine dunkle Bühne, ein rosa Buzzer, zwei Teamfarben. Alles auf dieser Seite kommt live aus <code>style.css</code>.</p></div></div>
-  <nav class=toc style="margin-top:20px"><a href="#idee">Idee</a><a href="#farben">Farben</a><a href="#schrift">Schrift</a><a href="#bauteile">Bauteile</a><a href="#tv">TV &amp; Handy</a><a href="#bewegung">Bewegung</a><a href="#ton">Ton &amp; Texte</a><a href="#regeln">Regeln</a></nav>
+  <nav class=toc style="margin-top:20px"><a href="#idee">Idee</a><a href="#farben">Farben</a><a href="#schrift">Schrift</a><a href="#bauteile">Bauteile</a><a href="#tv">TV &amp; Handy</a><a href="#logo">Logo</a><a href="#bewegung">Bewegung</a><a href="#ton">Ton &amp; Texte</a><a href="#regeln">Regeln</a></nav>
 </header>
 
 <section id=idee><h2>Idee</h2>
@@ -79,6 +79,25 @@ nav.toc{display:flex;gap:8px;flex-wrap:wrap}nav.toc a{background:var(--card);pad
    <div class=card><b>Handy: Karte</b><p>Eine Spalte, max. 480 px, Hauptaktion klebt unten (<code>.sticky</code>). Jeder Zustand sagt in einem Satz, was jetzt zu tun ist.</p></div>
    <div class=card><b>Handy: Daumen</b><p>Wichtige Knöpfe unten oder mittig, nie in der Ecke. Buzzer in der Mitte des Bildschirms.</p></div>
   </div></section>
+
+<section id=logo><h2>Logo &amp; Share-Bild</h2>
+  <p>Das Zeichen ist ein rosa Kreis mit weißer Note auf dunklem, abgerundetem Quadrat (<code>favicon.svg</code>, App-Icons). Die Wortmarke „Song Quiz“ steht in Bricolage Grotesque 800, als Pfade gezeichnet, braucht also keine Schrift.</p>
+  <div class=row2>
+   <div class=spec style="align-items:center"><h3 style="align-self:flex-start">Auf dunkel</h3><img src=/brand/logo-lockup.svg alt="Song Quiz Logo" style="width:min(100%,380px)"></div>
+   <div class=spec style="align-items:center;background:#f4f1fa"><h3 style="align-self:flex-start;color:#14111c">Auf hell</h3><img src=/brand/logo-lockup-on-light.svg alt="Song Quiz Logo auf hell" style="width:min(100%,380px)"></div>
+  </div>
+  <div class=grid>
+   <div class=card><b>Schutzraum</b><p>Rundherum mindestens die Höhe der Note im Kreis (etwa ein Viertel der Zeichenhöhe) freilassen.</p></div>
+   <div class=card><b>Mindestgröße</b><p>Zeichen 24 px, Logo mit Wortmarke 120 px breit. Kleiner nur das Zeichen.</p></div>
+   <div class=card><b>Dateien</b><p><a href=/brand/logo-lockup.svg style="color:var(--hot2)">logo-lockup.svg</a> · <a href=/brand/logo-lockup-on-light.svg style="color:var(--hot2)">auf hell</a> · <a href=/brand/wordmark.svg style="color:var(--hot2)">wordmark.svg</a> · <a href=/brand/wordmark-on-light.svg style="color:var(--hot2)">auf hell</a> · <a href=/favicon.svg style="color:var(--hot2)">Zeichen</a> · <a href=/icon-512.png style="color:var(--hot2)">App-Icon 512</a></p></div>
+  </div>
+  <div class=dd>
+   <div class=do><b>So</b><ul><li>Rosa Zeichen immer auf dunklem Quadrat oder dunklem Grund.</li><li>Wortmarke weiß auf dunkel, dunkel auf hell.</li></ul></div>
+   <div class=dont><b>Nicht so</b><ul><li>Zeichen oder Wortmarke umfärben, strecken, drehen.</li><li>Rosa Zeichen auf Teamfarbe (Blau/Orange) setzen.</li></ul></div>
+  </div>
+  <h3>Share-Bild (Link-Vorschau, 1200 × 630)</h3>
+  <img src=/og.png alt="Share-Bild" style="width:100%;max-width:640px;border-radius:18px">
+  <p>Datei <code>og.png</code>, gebaut aus <code>scripts/og-card.html</code> (Screenshot mit Playwright). Die Seiten tragen die Open-Graph-Tags, WhatsApp und Co. zeigen das Bild bei jedem geteilten Link. Wenn die Domain <code>songs.teichmeister.lu</code> steht, die Bild-URL in den Tags dorthin ändern.</p></section>
 
 <section id=bewegung><h2>Bewegung</h2>
   <div class=grid>
