@@ -6,9 +6,9 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 // every inline module script must parse (a syntax error blanks the whole page)
-for (const page of ['index', 'play', 'admin', 'sim']) {
+for (const page of ['index', 'play', 'admin', 'sim', 'brandbook']) {
   test(`${page}.html inline script parses`, () => {
-    const m = readFileSync(`public/${page}.html`, 'utf8').match(/<script type=module>([\s\S]*?)<\/script>/);
+    const m = readFileSync(`public/${page}.html`, 'utf8').match(/<script(?: type=module)?>([\s\S]*?)<\/script>/);
     if (!m) return;
     const f = join(mkdtempSync(join(tmpdir(), 'sq-')), page + '.mjs');
     writeFileSync(f, m[1]);

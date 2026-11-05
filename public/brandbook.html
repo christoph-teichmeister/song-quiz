@@ -1,0 +1,118 @@
+<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Song Quiz Brandbook</title><link rel=icon type="image/svg+xml" href=/favicon.svg>
+<link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
+<link rel=stylesheet href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;600&display=swap">
+<link rel=stylesheet href=style.css>
+<style>
+/* the brandbook only lays out specimens; every colour, font and component comes from style.css, so it cannot drift */
+.bb{max-width:980px;margin:auto;padding:40px 20px 120px;display:flex;flex-direction:column;gap:56px}
+.bb section{display:flex;flex-direction:column;gap:18px}
+.bb h1{font-size:clamp(2.6rem,8vw,5rem);margin:0;line-height:.95}.bb h2{font-size:1.9rem;margin:0;border-bottom:2px solid var(--line);padding-bottom:8px}.bb h3{font-size:1.1rem;margin:0;color:var(--mute);font-weight:600}
+.bb p{margin:0;color:var(--mute);max-width:68ch}.bb code{background:var(--card);padding:1px 7px;border-radius:6px;font-size:.88em;color:var(--fg)}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+.sw{border-radius:18px;overflow:hidden;background:var(--card)}.sw i{display:block;height:84px}.sw div{padding:10px 14px;font-size:.85rem;color:var(--mute);display:flex;flex-direction:column;gap:2px}.sw b{color:var(--fg);font:800 1rem var(--display)}
+.spec{background:var(--bg2);border-radius:22px;padding:22px;display:flex;flex-direction:column;gap:14px}
+.phone{max-width:420px;margin:0;display:flex;flex-direction:column;gap:12px}
+.row2{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.dd{display:grid;gap:14px;grid-template-columns:1fr 1fr}@media(max-width:700px){.dd{grid-template-columns:1fr}}
+.do,.dont{border-radius:18px;padding:16px 18px;background:var(--card);border-left:6px solid var(--ok)}.dont{border-color:var(--bad)}.do b,.dont b{font:800 1rem var(--display)}.do ul,.dont ul{margin:.5em 0 0;padding-left:1.1em;color:var(--mute);font-size:.92rem;display:flex;flex-direction:column;gap:4px}
+.say{display:grid;grid-template-columns:auto 1fr 1fr;gap:8px 18px;font-size:.92rem;align-items:baseline}.say b{color:var(--hot2);font-weight:600}.say span{color:var(--mute)}.say em{font-style:normal;color:var(--fg)}
+.logo{display:flex;align-items:center;gap:22px;flex-wrap:wrap}.logo img{width:112px;height:112px;border-radius:26px}
+.type{font-size:clamp(1.4rem,4vw,2.6rem);line-height:1.1}
+.cr{font-variant-numeric:tabular-nums}
+nav.toc{display:flex;gap:8px;flex-wrap:wrap}nav.toc a{background:var(--card);padding:6px 14px;border-radius:20px;color:var(--fg);text-decoration:none;font-size:.88rem}
+</style>
+<div class=bb>
+<header>
+  <div class=logo><img src=/icon-192.png alt="Song Quiz Icon"><div><h1>Song Quiz</h1><p style="margin-top:10px">Brandbook für das Weihnachts-Ratespiel. Eine dunkle Bühne, ein rosa Buzzer, zwei Teamfarben. Alles auf dieser Seite kommt live aus <code>style.css</code>.</p></div></div>
+  <nav class=toc style="margin-top:20px"><a href="#idee">Idee</a><a href="#farben">Farben</a><a href="#schrift">Schrift</a><a href="#bauteile">Bauteile</a><a href="#tv">TV &amp; Handy</a><a href="#bewegung">Bewegung</a><a href="#ton">Ton &amp; Texte</a><a href="#regeln">Regeln</a></nav>
+</header>
+
+<section id=idee><h2>Idee</h2>
+  <p><b style="color:var(--fg)">Party-Show, nicht Büro-Software.</b> Der Fernseher ist die Bühne: groß, dunkel, laut in der Farbe. Die Handys sind Buzzer und Spielkarten: groß zum Antippen, eine Sache pro Bildschirm. Jeder soll es beim ersten Blick verstehen, auch Oma und eine Elfjährige.</p>
+  <div class=grid>
+   <div class=card><b>Bühne</b><p>Dunkler Hintergrund, helle Schrift, Farbe nur für Bedeutung (Aktion, Team A, Team B, richtig, falsch).</p></div>
+   <div class=card><b>Eine Sache pro Bildschirm</b><p>Ein Satz, ein großer Knopf. Wer wartet, sieht, worauf.</p></div>
+   <div class=card><b>Warm statt cool</b><p>Rosa Akzent, runde Formen, kleine Pop-Animationen. Freundlich und ein bisschen frech.</p></div>
+  </div></section>
+
+<section id=farben><h2>Farben</h2><p>Als CSS-Variablen in <code>:root</code>. Kontrast wird hier live gegen den Hintergrund gerechnet (AA normal 4.5, großer oder fetter Text 3).</p>
+  <div class=grid id=sw></div>
+  <h3>Bedeutung</h3>
+  <div class=grid>
+   <div class=card><b class=A>Team A · Blau</b><p>Immer <code>--a</code>. Team-Karten, Matchup, Punkte, Chart-Linie A.</p></div>
+   <div class=card><b class=B>Team B · Orange</b><p>Immer <code>--b</code>. Nie für etwas anderes als Team B.</p></div>
+   <div class=card><b style="color:var(--hot)">Rosa · Aktion</b><p><code>--hot</code> für Buzzer, Hauptknöpfe, Fortschritt, Auswahl. Nicht für Teams.</p></div>
+   <div class=card><b style="color:var(--ok)">Grün · Richtig / Schiri</b><p><code>--ok</code> für Bestätigung, „bereit“, Schiri-Hinweise.</p></div>
+   <div class=card><b style="color:var(--bad)">Rot · Problem</b><p><code>--bad</code> für Fehler, Offline-Balken. Falsche Antwort ist nur „gesperrt“, kein Alarm.</p></div>
+  </div></section>
+
+<section id=schrift><h2>Schrift</h2>
+  <div class=spec>
+   <div class=type style="font-family:var(--display);font-weight:800">Bricolage Grotesque 800 · Titel, Zahlen, Knöpfe, Buzzer</div>
+   <div style="font:600 1.2rem var(--body)">Figtree 400/600 · Fließtext, Hinweise, Beschriftungen. Gut lesbar auf kleinen Handys und aus 4 Metern auf dem TV.</div>
+   <p>Titel <code>letter-spacing:-.01em</code>, <code>text-wrap:balance</code>. Beschriftungen in Großbuchstaben nur für kleine Labels (<code>.label</code>, .12em). Zahlen in Tabellen mit <code>tabular-nums</code>.</p>
+  </div>
+  <div class=grid>
+   <div class=card><b>Handy</b><p>Basis 18 px. H1 2,2 rem, H2 1,5 rem. Knopftext 1,05 rem fett. Hinweise 0,88 rem.</p></div>
+   <div class=card><b>TV</b><p>Alles in <code>vw</code> mit Untergrenze (<code>max(2vw, 18px)</code>). Titel ab 4 vw, Punkte 7 vw, Countdown bis 16 rem.</p></div>
+  </div></section>
+
+<section id=bauteile><h2>Bauteile</h2><p>Echte Klassen aus <code>style.css</code>. Mindest-Tippfläche 48 px, Knöpfe 56 px.</p>
+  <div class=row2>
+   <div class="spec phone"><h3>Knöpfe</h3><button class=btn>Spiel starten</button><button class="btn ghost">Zweitaktion</button><button class="btn ghost on">Gewählt</button><button class=btn disabled>Gesperrt / wartet</button></div>
+   <div class="spec phone"><h3>Eingabe &amp; Auswahl</h3><input class=input placeholder="Dein Name"><div class=seg><button class=on>Normal</button><button>Nur Intro</button><button>Speed</button></div>
+     <div class=tiles><button class="tile on"><i>🎲</i><b>Zufall</b><span>alle Playlists</span></button><button class=tile><i>📺</i><b>TV-Klassiker</b><span>33 Songs</span></button></div></div>
+   <div class="spec phone"><h3>Team-Karten</h3><div class=team-cards><button class="team-card A on"><h3 class=A style="color:var(--a)">Team A</h3><div class=chips><span class=chip>Anna</span><span class=chip>Cleo</span></div><span class=join-pill>✓ Du bist dabei</span></button><button class="team-card B"><h3 class=B style="color:var(--b)">Team B</h3><div class=chips><span class=hint>noch niemand</span></div><span class=join-pill>Antippen zum Beitreten</span></button></div></div>
+   <div class="spec phone"><h3>Schritte, Hinweise, Banner</h3><div class=step><b>1</b>Wähle dein Team<small>Karte antippen</small></div><div class="step done"><b>✓</b>Playlist gewählt</div>
+     <div class=judge-banner>🎧 <b>Du bist Schiri bei diesem Song.</b> Hör mit und behalte die Lösung für dich.</div>
+     <div class=card><div class=answer>Friends<small>The Rembrandts – I'll Be There for You</small></div></div>
+     <div class=cdp><span>Antwortzeit</span><div><i style="animation-duration:10s;animation-play-state:paused;transform:scaleX(.6)"></i></div></div>
+     <p class=err>Fehlertext in Rot, kurz und freundlich.</p></div>
+   <div class="spec phone" style="align-items:center"><h3 style="align-self:flex-start">Buzzer</h3><button class=buzz style="max-width:240px;font-size:2.6rem">BUZZER</button><button class=buzz disabled style="max-width:240px">GESPERRT</button></div>
+   <div class="spec phone"><h3>Statistik</h3><div class=stat-grid><div><b>3</b><span>Punkte</span></div><div><b>2</b><span>Richtig</span></div><div><b>1,8 s</b><span>Ø Buzz</span></div></div><div class=chips><span class=chip>🏆 Meiste Punkte</span><span class=chip>⚡ Schnellster Buzzer</span></div></div>
+  </div></section>
+
+<section id=tv><h2>TV &amp; Handy</h2>
+  <div class=grid>
+   <div class=card><b>TV: Bühne</b><p>Zentriert, viel Luft, ein Gedanke pro Bild. Matchup und Countdown sind riesig, Namen groß. Keine Antwort auf dem Bild, solange gespielt wird.</p></div>
+   <div class=card><b>TV: Kontext</b><p>Fortschrittsbalken oben, Team-Punkte als Karten, Schiri als Pille, Pause als großes Overlay, Offline als roter Balken ganz oben.</p></div>
+   <div class=card><b>Handy: Karte</b><p>Eine Spalte, max. 480 px, Hauptaktion klebt unten (<code>.sticky</code>). Jeder Zustand sagt in einem Satz, was jetzt zu tun ist.</p></div>
+   <div class=card><b>Handy: Daumen</b><p>Wichtige Knöpfe unten oder mittig, nie in der Ecke. Buzzer in der Mitte des Bildschirms.</p></div>
+  </div></section>
+
+<section id=bewegung><h2>Bewegung</h2>
+  <div class=grid>
+   <div class=card><b>Rein</b><p><code>rise</code> .32 s: Elemente schweben beim Bildwechsel von unten ein, gestaffelt.</p></div>
+   <div class=card><b>Pop</b><p><code>pop</code> .35 s für Chips, Zahlen und Punkte.</p></div>
+   <div class=card><b>Buzz</b><p>Ring-Ripple auf dem Handy, Farbblitz in Teamfarbe auf dem TV (700 ms, ohne Weichzeichner), kurzes „Bzzzt“.</p></div>
+   <div class=card><b>Ende</b><p>Konfetti für Sieg, Blasen für Unentschieden, Applaus bzw. Posaune.</p></div>
+  </div>
+  <p>Kein Glow und kein Neon-Leuchten: Tiefe über schlichte Schatten. Mit <code>prefers-reduced-motion</code> laufen Animationen praktisch aus.</p></section>
+
+<section id=ton><h2>Ton &amp; Texte</h2>
+  <p>Deutsch zuerst (Standard), Englisch per DE/EN-Schalter. Du-Form, kurze Sätze, Alltagswörter. Alle Texte stehen in <code>i18n.js</code>, beide Sprachen gleich.</p>
+  <div class=spec><div class=say><b>Statt</b><b>Besser</b><b>Warum</b>
+   <span>Front-person</span><em>Buzzer-Person</em><span>sagt, was die Person tut</span>
+   <span>Judge</span><em>Schiri</em><span>kennt jedes Kind</span>
+   <span>Locked</span><em>gesperrt</em><span>klar und ohne Drama</span>
+   <span>Lobby</span><em>(weglassen) Spielcode</em><span>kein Fachwort</span>
+   <span>Error: cannot buzz</span><em>Du kannst gerade nicht buzzern.</em><span>freundlich, kein Code</span>
+   <span>Connection lost</span><em>Keine Internetverbindung. Das Spiel verbindet sich gleich wieder.</em><span>sagt, dass niemand etwas tun muss</span></div></div>
+  <div class=dd>
+   <div class=do><b>So</b><ul><li>Sag, was jetzt zu tun ist („Sag jetzt laut Titel UND Interpret“).</li><li>Wer wartet, bekommt einen Grund („Warten auf die anderen …“).</li><li>Emoji als Anker (🎤 Buzzer, 🎧 Schiri, 🏆), maximal eins pro Satz.</li></ul></div>
+   <div class=dont><b>Nicht so</b><ul><li>Englische Spielbegriffe ohne Not.</li><li>Technische Meldungen („Datenbank“, „Timeout“).</li><li>Schuldzuweisung bei falschen Antworten.</li></ul></div>
+  </div></section>
+
+<section id=regeln><h2>Regeln für neue Bildschirme</h2>
+  <div class=dd>
+   <div class=do><b>Immer</b><ul><li>Farben nur aus den Variablen, Teamfarben nur für Teams.</li><li>Tippflächen ≥ 48 px, Hauptknopf 56 px.</li><li>Text auf Deutsch und Englisch in <code>i18n.js</code>.</li><li>Zustände sichtbar: wartet, gesperrt, pausiert, offline.</li><li>Echt testen: <code>npm run e2e</code> deckt die Abläufe ab.</li></ul></div>
+   <div class=dont><b>Nie</b><ul><li>Neue Farbe oder Schrift ohne Eintrag hier.</li><li>Mehr als eine Hauptaktion pro Handy-Bildschirm.</li><li>Antworten auf TV oder Handys zeigen, die sie noch nicht sehen dürfen (nur Schiri, siehe Auflösung).</li><li>Zeilenkommentar <code>//</code> mitten in einer Zeile im Inline-Skript.</li></ul></div>
+  </div></section>
+</div>
+<script>
+const R = getComputedStyle(document.documentElement), v = (n) => R.getPropertyValue(n).trim();
+const lum = (h) => { const c = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((x) => (x <= .03928 ? x / 12.92 : ((x + .055) / 1.055) ** 2.4)); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; };
+const cr = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + .05) / (y + .05); };
+const items = [['--bg', 'Hintergrund'], ['--bg2', 'Fläche 2 (Sheets, Eingaben)'], ['--card', 'Karte'], ['--line', 'Linie'], ['--fg', 'Text'], ['--mute', 'Text gedämpft'], ['--hot', 'Aktion (Rosa)'], ['--hot2', 'Aktion hell'], ['--a', 'Team A'], ['--b', 'Team B'], ['--ok', 'Richtig / Schiri'], ['--bad', 'Fehler']];
+document.getElementById('sw').innerHTML = items.map(([n, label]) => { const c = v(n), r = cr(c, v('--bg')); return `<div class=sw><i style="background:var(${n})"></i><div><b>${label}</b><span><code>${n}</code> ${c}</span><span class=cr>Kontrast zu Hintergrund ${r.toFixed(1)}:1 · ${r >= 4.5 ? 'AA' : r >= 3 ? 'nur großer/fetter Text' : 'nur Fläche'}</span></div></div>`; }).join('');
+</script>
