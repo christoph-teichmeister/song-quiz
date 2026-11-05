@@ -8,7 +8,7 @@ Song guessing game for the Christmas party. Web app, phones join via QR code, ho
 
 ```
 public/            everything Firebase Hosting serves
-  index.html       TV page = game server       play.html  phone page
+  index.html       TV page = game server       play.html  phone page   (scripts: js/tv.js, js/phone.js, js/admin.js)
   admin.html sim.html brandbook.html           style.css  sw.js  manifest, icons, og.png
   js/              game.js (pure state machine), i18n.js (all texts), rules.js, pictos.js, disc.js,
                    sfx.js (sounds), qr.js, db.js / auth.js / firebase-config.js (Firebase)
@@ -17,6 +17,12 @@ scripts/           seed-songs.py + seed/*.txt (playlists), make-brand.py, og-car
 test/              game / i18n / pages unit tests (npm test); e2e/ = browser tests (npm run e2e)
 deploy.sh  firebase.json  database.rules.template.json   DESIGN.md = look and brand
 ```
+
+## Checks
+
+- **pre-commit** (`.githooks/`, switched on by `npm install` via `prepare`): runs `npm test` and refuses `database.rules.json`. Skip once: `git commit --no-verify`.
+- **GitHub Actions** (`.github/workflows/ci.yml`): `npm test` + `npm run e2e` on every push to main and every PR. Dependabot updates npm and actions monthly.
+- Deploy stays manual (`./deploy.sh`, tests first); a CI deploy would need a Firebase token as a repo secret.
 
 ## Flow
 

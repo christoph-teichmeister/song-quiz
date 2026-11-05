@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Fast checks before every commit (seconds): logic, texts, script syntax. The browser tests run in CI and in deploy.sh.
+# Enabled by `npm install` (package.json "prepare"); skip once with `git commit --no-verify`.
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+if git diff --cached --name-only | grep -qE '(^|/)database\.rules\.json$'; then
+  echo "pre-commit: database.rules.json holds the admin id and must not be committed (use the template)"; exit 1
+fi
+NODE_ENV=development npm test --silent

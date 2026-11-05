@@ -5,7 +5,8 @@
   "scripts": {
     "test": "node --test test/*.test.js",
     "e2e": "node --test --test-concurrency=1 test/e2e/*.e2e.js",
-    "deploy": "firebase deploy"
+    "deploy": "firebase deploy",
+    "prepare": "git config core.hooksPath .githooks"
   },
   "devDependencies": {
     "playwright-core": "^1.64.1"

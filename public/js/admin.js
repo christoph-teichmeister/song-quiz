@@ -1,0 +1,51 @@
+import { D, r } from './db.js';
+import { onUser, google, signIn, signOut, authError } from './auth.js';
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let user = null, emailV = '', pwV = '', authMsg = '', confirming = null, msg = '', lastHtml = '';
+const rooms = {}; // room -> { ts, seenAt, pub }
+D.onValue(r('roomIndex'), (s) => {
+  const v = s.val() || {};
+  for (const room of Object.keys(v)) {
+    if (!rooms[room]) { rooms[room] = { ts: null, seenAt: 0, pub: null }; D.onValue(r(`rooms/${room}/public`), (p) => { rooms[room].pub = p.val(); render(); }); }
+    if (v[room].ts !== rooms[room].ts) rooms[room].seenAt = Date.now(), rooms[room].ts = v[room].ts;
+  }
+  for (const room of Object.keys(rooms)) if (!(room in v)) delete rooms[room];
+  render();
+});
+onUser((u) => { user = u; lastHtml = ''; render(); });
+window.setEmail = (v) => { emailV = v; }; window.setPw = (v) => { pwV = v; };
+window.doGoogle = async () => { try { await google(); } catch (e) { authMsg = authError(e); render(); } };
+window.doSignIn = async () => { try { await signIn(emailV.trim(), pwV); } catch (e) { authMsg = authError(e); render(); } };
+window.doSignOut = () => signOut();
+setInterval(render, 1000);
+window.ask = (room) => { confirming = room; render(); };
+window.cancel = () => { confirming = null; render(); };
+window.forget = (room) => D.remove(r(`roomIndex/${room}`));
+window.kill = async (room) => { // the TV of that room reacts to the epoch
+  confirming = null;
+  try {
+    await D.set(r(`rooms/${room}/admin/epoch`), Date.now()); // the rules only accept this from the admin's user id
+    msg = `Room ${room}: session killed, the TV and all phones are reset.`;
+  } catch (e) { msg = 'Refused: this account is not the admin.'; }
+  render();
+};
+function render() {
+  if (['keyin2', 'keyin3'].includes(document.activeElement?.id)) return; // do not rebuild the page while the key is typed
+  const list = Object.entries(rooms).sort(([a], [b]) => a.localeCompare(b));
+  const card = ([room, o]) => {
+    const alive = o.seenAt && Date.now() - o.seenAt < 4000, p = o.pub, s = p?.summary, run = p?.session && s;
+    return `<div class=card><div style="display:flex;justify-content:space-between;gap:8px"><b>Room ${esc(room)}</b><b style="color:var(${alive ? '--ok' : '--mute'})">${alive ? 'TV online' : 'TV offline'}</b></div>
+      ${run ? `<div class=answer style="margin-top:8px">Game ${esc(p.code)}<small>${esc(s.phase)}${s.total ? ` · song ${s.idx + 1} of ${s.total}` : ''}${s.list ? ` · ${esc(s.list)} · ${esc(s.mode)}` : ''}</small></div>
+        <p style="margin:8px 0">Score <b class=A>A ${s.scores.A}</b> : <b class=B>${s.scores.B} B</b></p><div class=chips>${s.players.map((q) => `<span class=chip>${esc(q.name)}${q.team ? ' · ' + q.team : ''}</span>`).join('')}</div>`
+        : '<p class=hint style="margin:8px 0;text-align:left">No game running.</p>'}
+      <div class=stack style="margin-top:12px">${confirming === room
+        ? `<p class=err style="margin:0">Kill the session for everyone?</p><button class=btn onclick="kill('${room}')">Yes, kill it</button><button class="btn ghost" onclick="cancel()">Cancel</button>`
+        : `<button class=btn onclick="ask('${room}')" ${run ? '' : 'disabled'}>Kill session</button>${alive ? '' : `<button class="btn ghost" onclick="forget('${room}')">Remove from list</button>`}`}</div></div>`;
+  };
+  const who = user ? `<div class=card><div class=label style="margin:0 0 4px">Signed in</div>${esc(user.email || user.displayName || '')}<div class=hint style="text-align:left;margin-top:6px;word-break:break-all">User id: ${esc(user.uid)}</div><button class="btn ghost" style="margin-top:10px" onclick="doSignOut()">Sign out</button></div>`
+    : `<div class=card><div class=label style="margin:0 0 8px">Admin sign-in</div><div class=stack><button class=btn onclick="doGoogle()">Continue with Google</button><input class=input id=keyin2 type=email placeholder=Email value="${esc(emailV)}" oninput="setEmail(this.value)"><input class=input id=keyin3 type=password placeholder=Password value="${esc(pwV)}" oninput="setPw(this.value)"><button class="btn ghost" onclick="doSignIn()">Sign in</button>${authMsg ? `<p class=err style="margin:0">${esc(authMsg)}</p>` : ''}</div></div>`;
+  const html = `<h1>Admin</h1>${who}<div class=label>Rooms (${list.length})</div>${list.map(card).join('') || '<div class=card><p class=hint style="margin:0">No room has been opened yet.</p></div>'}${msg ? `<p class=hint>${esc(msg)}</p>` : ''}`;
+  if (html !== lastHtml) { lastHtml = html; $('main').innerHTML = html; }
+}
+render();

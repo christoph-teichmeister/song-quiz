@@ -13,7 +13,7 @@ export function serve() {
   const srv = http.createServer(async (req, res) => {
     let p = new URL(req.url, 'http://x').pathname;
     if (p === '/') p = '/index.html'; else if (!extname(p)) p += '.html'; // cleanUrls, like Firebase Hosting
-    try { const f = normalize(join(PUBLIC, p)); if (!f.startsWith(PUBLIC)) throw 0; res.writeHead(200, { 'content-type': MIME[extname(f)] || 'application/octet-stream' }); res.end(await readFile(f)); }
+    try { const f = normalize(join(PUBLIC, p)); if (!f.startsWith(PUBLIC)) throw 0; const body = await readFile(f); res.writeHead(200, { 'content-type': MIME[extname(f)] || 'application/octet-stream' }); res.end(body); }
     catch { res.writeHead(404); res.end('not found'); }
   });
   return new Promise((ok) => srv.listen(0, '127.0.0.1', () => ok({ url: `http://127.0.0.1:${srv.address().port}`, close: () => srv.close() })));

@@ -12,7 +12,7 @@ test('German and English have exactly the same keys', () => {
 
 test('every t(\'key\') used in the pages exists', () => {
   const missing = [];
-  for (const f of ['public/index.html', 'public/play.html', 'public/js/rules.js']) {
+  for (const f of ['public/js/tv.js', 'public/js/phone.js', 'public/js/rules.js', 'public/index.html', 'public/play.html']) {
     for (const m of readFileSync(f, 'utf8').matchAll(/\bt\('([^']+)'\s*[,)]/g)) if (!de.has(m[1])) missing.push(`${f}: ${m[1]}`);
   }
   assert.deepEqual(missing, []);
