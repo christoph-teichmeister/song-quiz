@@ -7,7 +7,7 @@
 <canvas id=confetti></canvas>
 <div id=prog><div id=progt></div><div id=progb><i id=progf></i></div></div>
 <div id=np><button id=npb onclick='toggleMusic()'></button><span id=npt></span></div>
-<div id=snd><div class=gate><div class=gate-note>🎵</div><h1 class=ink data-t="Song Quiz">Song Quiz</h1><button class=gate-btn id=gate-b onclick=unlock()></button><p id=gate-p></p></div></div>
+<div id=snd><div class=gate><div class=gate-note>🎵</div><h1 class=ink data-t="Song Quiz">Song Quiz</h1><button class=gate-btn id=gate-b onclick="window.unlock&&unlock()">▶ Zum Starten tippen</button><p id=gate-p>Schaltet den Ton für heute Abend ein</p></div></div>
 <button id=lang class=lang onclick="toggleLang()" aria-label=Language></button>
 <div id=flash></div><div id=off class=offline hidden></div>
 <div id=pause style="display:none;position:fixed;inset:0;z-index:99;background:#000b;color:#fff;align-items:center;justify-content:center;font:800 min(16vw,16vh) 'Bricolage Grotesque',sans-serif"></div>
@@ -100,6 +100,7 @@ async function wakeLock() { try { if (!wl && navigator.wakeLock) { wl = await na
 document.addEventListener('visibilitychange', () => { if (!document.hidden && unlocked) wakeLock(); });
 window.toggleLang = () => { setLang(getLang() === 'de' ? 'en' : 'de'); lastHtml = ''; $('main').dataset.k = ''; texts(); render(); };
 function texts() { $('gate-b').textContent = t('tv.gate'); $('gate-p').textContent = t('tv.gateP'); $('npb').title = t('tv.musicTitle'); $('lang').innerHTML = getLang() === 'de' ? '<b>DE</b> · EN' : 'DE · <b>EN</b>'; }
+texts();
 addEventListener('click', () => { if (!unlocked) window.unlock(); }); addEventListener('keydown', () => { if (!unlocked) window.unlock(); });
 if (window.YT?.Player) window.onYouTubeIframeAPIReady(); // the API script may have loaded before this module ran
 if (new URLSearchParams(location.search).has('fast')) Object.assign(T, { countdown: 300, reveal: 1500 }); // browser tests: short pauses
@@ -136,7 +137,6 @@ D.onValue(rr('admin/epoch'), (sn) => {
   publish();
 });
 
-texts();
 const catalog = await (await fetch('songs/index.json')).json(); // [{id, name, emoji}], in display order
 for (const c of catalog) lists[c.id] = await (await fetch(`songs/${c.id}.json`)).json();
 await D.remove(rr('actions')); // stale phone actions from before this page load

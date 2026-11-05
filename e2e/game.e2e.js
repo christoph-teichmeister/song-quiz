@@ -285,3 +285,17 @@ test('lobby tiles: German playlist names, Zufall first, English names after the 
   assert.deepEqual(world.errors, []);
   await world.close();
 });
+
+test('the entry gate shows its text at once, even while the database is still loading', async () => {
+  const world = await newWorld(browser, srv.url);
+  await world.ctx.route(/firebase-database\.js/, async (r) => { await new Promise((ok) => setTimeout(ok, 2000)); r.fallback(); });
+  const page = await world.ctx.newPage();
+  await page.goto(srv.url + '/?new&fast', { waitUntil: 'commit' });
+  await page.waitForSelector('#gate-b');
+  assert.match(await page.locator('#gate-b').innerText(), /\S/, 'button has a label');
+  assert.match(await page.locator('#gate-p').innerText(), /\S/);
+  await page.waitForTimeout(2600);
+  await page.getByLabel('Language').click();
+  assert.match(await page.locator('#gate-b').innerText(), /Tap to start/);
+  await world.close();
+});
