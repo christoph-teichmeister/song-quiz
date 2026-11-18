@@ -4,7 +4,7 @@ const TXT = {
     // rules
     'r.teams': 'Zwei Teams.', 'r.teams.t': 'Wählt Team A oder B.',
     'r.listen': 'Buzzern!', 'r.listen.t': 'Wer den Song kennt, drückt den Buzzer.',
-    'r.say': 'Laut sagen.', 'r.say.t': 'Titel und Interpret, 10 Sekunden. Der Schiri hat die Lösung.',
+    'r.say': 'Laut sagen.', 'r.say.t': 'Titel und Interpret, 15 Sekunden. Der Schiri hat die Lösung.',
     'r.wrong': 'Falsch?', 'r.wrong.t': 'Dann ist euer Team für den Song gesperrt.',
     'r.win': 'Gewinnen.', 'r.win.t': 'Die meisten Punkte nach dem letzten Song.',
     'r.intro': 'Modus: Nur Intro', 'r.intro.t': 'Jeder Song stoppt nach 5 Sekunden. Wenn niemand rechtzeitig buzzert, gibt es keine Punkte. Sei schnell!',
@@ -42,7 +42,7 @@ const TXT = {
     'judgeNow': '🎧 <b>Du bist Schiri.</b> Team {team} hat gebuzzert. Hör zu, was gesagt wird, dann tippe das Ergebnis.',
     'bothRight': '✓ Titel und Interpret richtig', 'onlyTitle': 'Nur Titel richtig', 'onlyArtist': 'Nur Interpret richtig', 'titleRight': 'Titel richtig', 'artistRight': 'Interpret richtig', 'allWrong': '✗ Falsch',
     'taken': 'Schon vergeben: {what} ({team})', 'wTitle': 'Titel', 'wArtist': 'Interpret', 'wBoth': 'Titel und Interpret',
-    'talkOver': 'Sprechzeit vorbei. Besprecht euch kurz und tippe dann das Ergebnis.', 'misfire': 'Versehentlich gedrückt, weiter ohne Sperre', 'timeLeft': 'Antwortzeit',
+    'talkOver': 'Sprechzeit vorbei. Besprecht euch kurz und tippe dann das Ergebnis.', 'misfire': 'Versehentlich gedrückt, weiter ohne Sperre', 'timeLeft': 'Antwortzeit', 'tapNow': '👇 Tippe jetzt auf das Ergebnis (kein Zeitlimit)',
     'buzzed': 'hat gebuzzert', 'youBuzzed': 'Du hast gebuzzert! Sag jetzt laut Titel UND Interpret.', 'quiet': 'Psst, nicht reinrufen.', 'isJudging': '{name} ist Schiri', 'sayOut': 'Sagt eure Antwort laut',
     'skip': 'Song überspringen', 'skipAsk': 'Wirklich überspringen?', 'pause': 'Pause', 'resume': 'Weiter', 'pauseBanner': '⏸ Pause – der Host drückt gleich auf Weiter', 'pauseHost': '⏸ Pause. Tippe unten auf Weiter.', 'pauseBuzz': 'Pause', 'offline': 'OFFLINE', 'offlineBanner': 'Keine Internetverbindung. Das Spiel verbindet sich gleich wieder.', 'tv.offline': 'Keine Internetverbindung', 'tv.pauseBig': '⏸ Pause', 'e.paused': 'Das Spiel macht gerade Pause.',
     // reveal
@@ -68,7 +68,7 @@ const TXT = {
   en: {
     'r.teams': 'Two teams.', 'r.teams.t': 'Pick Team A or B.',
     'r.listen': 'Buzz!', 'r.listen.t': 'Know the song? Hit the buzzer.',
-    'r.say': 'Say it out loud.', 'r.say.t': 'Title and artist, 10 seconds. The judge has the answer.',
+    'r.say': 'Say it out loud.', 'r.say.t': 'Title and artist, 15 seconds. The judge has the answer.',
     'r.wrong': 'Wrong?', 'r.wrong.t': 'Then your team is locked for this song.',
     'r.win': 'Win.', 'r.win.t': 'Most points after the last song.',
     'r.intro': 'Mode: Intro only', 'r.intro.t': 'Every song stops after 5 seconds. If nobody buzzes in time, nobody scores. Be quick.',
@@ -99,7 +99,7 @@ const TXT = {
     'judgeNow': '🎧 <b>You are the judge.</b> Team {team} buzzed. Listen to what they say, then tap the result.',
     'bothRight': '✓ Title and artist right', 'onlyTitle': 'Only title right', 'onlyArtist': 'Only artist right', 'titleRight': 'Title right', 'artistRight': 'Artist right', 'allWrong': '✗ Wrong',
     'taken': 'Already scored: {what} ({team})', 'wTitle': 'title', 'wArtist': 'artist', 'wBoth': 'title and artist',
-    'talkOver': 'Speaking time is over. Talk it over, then tap the result.', 'misfire': 'Pressed by mistake, go on without lock', 'timeLeft': 'Time to answer',
+    'talkOver': 'Speaking time is over. Talk it over, then tap the result.', 'misfire': 'Pressed by mistake, go on without lock', 'timeLeft': 'Time to answer', 'tapNow': '👇 Tap the result now (no time limit)',
     'buzzed': 'buzzed', 'youBuzzed': 'You buzzed! Say the title AND the artist out loud now.', 'quiet': 'Shh, no shouting in.', 'isJudging': '{name} is judging', 'sayOut': 'Say your answer out loud',
     'skip': 'Skip song', 'skipAsk': 'Really skip?', 'pause': 'Pause', 'resume': 'Resume', 'pauseBanner': '⏸ Paused – the host will tap Resume soon', 'pauseHost': '⏸ Paused. Tap Resume below.', 'pauseBuzz': 'Paused', 'offline': 'OFFLINE', 'offlineBanner': 'No internet connection. Reconnecting automatically…', 'tv.offline': 'No internet connection', 'tv.pauseBig': '⏸ Pause', 'e.paused': 'The game is paused right now.',
     'nextGuesser': '🎤 <b>You are the next guesser.</b> Get to the front and buzz for Team {team}.', 'nextJudge': '🎧 <b>You are the next judge.</b> You will see the answer, keep it to yourself.',

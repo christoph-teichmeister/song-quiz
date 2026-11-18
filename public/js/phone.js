@@ -205,11 +205,11 @@ function game() {
     if (isJudge || (!S.judge && tm && tm !== S.buzz.team)) {
       const g = S.got || {}, openT = !g.title, openA = !g.artist;
       const dis = S.paused || offline ? 'disabled' : '', b = (label, ti, ar, cls = '') => `<button class="btn ${cls}" ${dis} onclick="act({type:'verify',title:${ti},artist:${ar}})">${label}</button>`;
-      const opts = (openT && openA ? b(t('bothRight'), true, true) + b(t('onlyTitle'), true, false, 'ghost') + b(t('onlyArtist'), false, true, 'ghost') : openT ? b(t('titleRight'), true, false) : b(t('artistRight'), false, true)) + b(t('allWrong'), false, false, 'ghost');
+      const opts = (openT && openA ? b(t('bothRight'), true, true, 'ok') + b(t('onlyTitle'), true, false, 'part') + b(t('onlyArtist'), false, true, 'part') : openT ? b(t('titleRight'), true, false, 'ok') : b(t('artistRight'), false, true, 'ok')) + b(t('allWrong'), false, false, 'bad');
       const taken = !openT || !openA ? `<p class=hint>${t('taken', { what: !openT && !openA ? t('wBoth') : !openT ? t('wTitle') : t('wArtist'), team: t('team') + ' ' + (g.title || g.artist) })}</p>` : '';
-      body = `${hdrP}<div class=judge-banner>${t('judgeNow', { team: S.buzz.team })}</div>${bar}
+      body = `${hdrP}<div class=judge-banner>${t('judgeNow', { team: S.buzz.team })}</div>
         <div class=card><div class=answer>${esc(S.answer.title)}<small>${esc(S.answer.artist)}</small></div></div>${taken}
-        <div class=stack>${opts}<button class="btn ghost" ${dis} style="font-size:.85rem" onclick="act({type:'misfire'})">${t('misfire')}</button></div>${pauseBtn}${skipBtn}`;
+        <h2 class=tapnow>${t('tapNow')}</h2><div class=stack>${opts}<button class="btn ghost" ${dis} style="font-size:.85rem" onclick="act({type:'misfire'})">${t('misfire')}</button></div>${pauseBtn}${skipBtn}`;
     } else if (S.buzz.pid === me.id) body = `${hdrP}<h2 style="text-align:center;margin-top:4vh">${t('youBuzzed')}</h2>${bar}${S.judgeName ? `<p class=hint>${t('isJudging', { name: esc(S.judgeName) })} <span class=dots><i></i><i></i><i></i></span></p>` : ''}${pauseBtn}`;
     else body = `${hdrP}<h2 style="text-align:center;margin-top:6vh"><span class=${S.buzz.team}>${t('team')} ${S.buzz.team}</span> ${t('buzzed')}</h2>${bar}<p class=hint>${S.judgeName ? t('isJudging', { name: esc(S.judgeName) }) : t('sayOut')} · ${t('quiet')} <span class=dots><i></i><i></i><i></i></span></p>${pauseBtn}${skipBtn}`;
     key = 'verify' + vk;
