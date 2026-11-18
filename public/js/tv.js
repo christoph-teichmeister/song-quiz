@@ -281,7 +281,7 @@ function audio() {
   if (!S || S.phase === 'lobby') { if (unlocked && musicOn && !idleOn) ambient(); return; }
   if (idleOn) { idleOn = false; yt.setVolume(100); lastIdx = -1; }
   const p = S.phase;
-  if (p === 'playing') { if (S.idx !== lastIdx || !yt.getVideoData?.().video_id) { lastIdx = S.idx; yt.loadVideoById(S.videoId); } else yt.playVideo(); }
+  if (p === 'playing') { if (S.idx !== lastIdx || !yt.getVideoData?.().video_id) { lastIdx = S.idx; yt.loadVideoById({ videoId: S.videoId, startSeconds: S.start || 0 }); } else yt.playVideo(); }
   else if (p === 'verify' || (p === 'reveal' && S.settings.mode === 'intro')) yt.pauseVideo();
   else if (p === 'end' || p === 'pickfront') { yt.stopVideo(); lastIdx = -1; }
 }
