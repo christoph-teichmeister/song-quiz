@@ -116,12 +116,12 @@ button{cursor:pointer;border:0}
 .center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding-bottom:6vh}
 
 .matchup{display:flex;align-items:stretch;justify-content:center;gap:3vw;margin:3vh 0}
-.mu{background:var(--card);border-radius:2vw;padding:3vh 3vw;min-width:24vw;border:3px solid var(--line);display:flex;flex-direction:column;gap:.4vh}
+.mu{flex:1;min-width:0;max-width:44vw;background:var(--card);border-radius:2vw;padding:3vh 2vw;border:3px solid var(--line);display:flex;flex-direction:column;gap:.4vh}
 .mu.A{border-color:var(--a)}.mu.B{border-color:var(--b)}
 .mu small{font-size:max(1.2vw,13px);text-transform:uppercase;letter-spacing:.12em;color:var(--mute)}
-.mu b{font:800 max(4.6vw,30px)/1.05 var(--display);overflow-wrap:anywhere}.mu span{font-size:max(1.4vw,14px);color:var(--mute)}
+.mu b{font:800 clamp(24px,min(4.2vw,7.5vh),72px)/1.05 var(--display);overflow-wrap:break-word;hyphens:auto}.mu span{font-size:max(1.4vw,14px);color:var(--mute)}
 .vs{align-self:center;font:800 max(3vw,22px) var(--display);color:var(--mute)}
-.tv .big.sm{font-size:min(14vw,9rem)}
+.tv .big.sm{font-size:min(14vw,9rem,16vh)}
 .judge-pill{display:inline-block;background:var(--card);border-radius:3em;padding:.6em 1.8em;font-size:max(2vw,18px)}
 #cover-s{margin-top:2vh;opacity:.95}#cover-s .matchup{margin:0}
 
@@ -209,3 +209,9 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;op
 body.ingame .tv{padding-top:max(9vh,76px)}
 .btn.ok{background:var(--ok);color:#06210f}.btn.part{background:transparent;border:2px solid var(--ok);color:var(--fg)}.btn.bad{background:var(--bad);color:#fff}
 .tapnow{text-align:center;font-size:1.1rem;margin:14px 0 10px}
+
+/* mid-size screens (1280x720, 1024x768): keep every phase inside the viewport */
+.lobbyqr{width:min(30vw,380px,36vh)!important}
+.tv .tcard{min-width:0;overflow-wrap:break-word}
+@media(max-height:800px){.tv .score{font-size:min(7vw,12vh)}.tv .row{margin:1.5vh 0}.tv h1{margin:.1em 0}.matchup{margin:2vh 0}}
+@media(max-height:680px){.tv h1{font-size:min(4vw,6.5vh)}.tv h2{font-size:min(2.4vw,4vh)}.tv .tcard{padding:1vh 2vw}.tv .score{font-size:min(7vw,10vh)}.lobbyqr{width:min(30vw,380px,30vh)!important}body.ingame .tv{padding-top:max(8vh,56px)}}

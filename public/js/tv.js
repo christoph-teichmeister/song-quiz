@@ -229,7 +229,7 @@ function render() {
   $('main').dataset.k = '';
   const sc = `<div class=row><div class="tcard A"><div class=A>Team A</div><div class=score>${S.teams.A.score}</div>${names('A')}</div><div class="tcard B"><div class=B>Team B</div><div class=score>${S.teams.B.score}</div>${names('B')}</div></div>`;
   const ph = S.phase; let h = '';
-  if (ph === 'lobby') h = `<h1>${t('tv.join', { code: S.code })}</h1><div class=qrcard style="width:min(30vw,380px);margin:auto">${q(base + '/play?code=' + S.code + (rq ? '&' + rq : ''))}</div>${sc}<p>${t('tv.hostPicks')}</p>`;
+  if (ph === 'lobby') h = `<h1>${t('tv.join', { code: S.code })}</h1><div class="qrcard lobbyqr" style="margin:auto">${q(base + '/play?code=' + S.code + (rq ? '&' + rq : ''))}</div>${sc}<p>${t('tv.hostPicks')}</p>`;
   else if (ph === 'howto') { const need = S.players.filter((p) => p.team), ok = S.ack || []; h = `<h1>${t('tv.howto')}</h1><div class=rulegrid>${rulesFor(S.settings.mode).map((x) => `<div class=rule><i>${x.key && PICTO[x.key] ? pictos[PICTO[x.key]] : x.icon}</i><div><b>${x.title}</b><p>${x.text}</p></div></div>`).join('')}</div><div class=ackbar>${need.map((p) => `<span class="ack ${p.team}${ok.includes(p.id) ? ' ok' : ''}">${ok.includes(p.id) ? '✓' : '⏳'} ${esc(p.name)}</span>`).join('')}</div><h2>${t('tv.allReady', { n: ok.length, m: need.length })}</h2>`; }
   else if (ph === 'pickfront') h = `<h1>${t('tv.pickFront', { n: S.idx + 1, m: S.total })}</h1>${sc}<p>${t('tv.frontReady')}</p>`;
   else if (ph === 'countdown') h = `<h2>${t('tv.songOf', { n: S.idx + 1, m: S.total })}</h2>${matchup()}<div class="big sm">${Math.max(1, Math.ceil((S.until - tvNow()) / 1000))}</div>${S.judgeName ? `<div class=judge-pill>${t('tv.judge', { name: esc(S.judgeName) })}</div>` : ''}`;
