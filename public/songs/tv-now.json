@@ -25,7 +25,8 @@
   "title": "The Last of Us",
   "artist": "Gustavo Santaolalla",
   "duration": 186,
-  "ytTitle": "Gustavo Santaolalla - The Last of Us (Main Theme) | The Last of Us (Video Game Soundtrack)"
+  "ytTitle": "Gustavo Santaolalla - The Last of Us (Main Theme) | The Last of Us (Video Game Soundtrack)",
+  "start": 1.3
  },
  {
   "id": "HIblsDVSq_k",
@@ -116,7 +117,8 @@
   "title": "The Crown",
   "artist": "Hans Zimmer",
   "duration": 88,
-  "ytTitle": "The Crown Main Title| The Crown: Season One (Soundtrack from the Netflix Original Series)"
+  "ytTitle": "The Crown Main Title| The Crown: Season One (Soundtrack from the Netflix Original Series)",
+  "start": 3.4
  },
  {
   "id": "ZFe55-p7XJc",
@@ -179,7 +181,8 @@
   "title": "Outlander",
   "artist": "The Skye Boat Song",
   "duration": 227,
-  "ytTitle": "The Skye Boat Song (lyrics) - Outlander (theme song) - feat.  Kathryn Jones/Raya Yarbrough"
+  "ytTitle": "The Skye Boat Song (lyrics) - Outlander (theme song) - feat.  Kathryn Jones/Raya Yarbrough",
+  "start": 7.6
  },
  {
   "id": "183tEhupiSQ",
