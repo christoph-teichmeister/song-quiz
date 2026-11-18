@@ -221,7 +221,7 @@ export function view(s, pid, now) {
     teams: s.teams, settings: s.settings, idx: s.idx, total: s.songs.length, locked: s.locked, buzz: s.buzz,
     lastResult: s.lastResult, judged: Object.values(s.stats).reduce((a, p) => a + p.buzzes, 0), // judged: answers so far (the TV plays a sound for each)
     got: s.got, until: s.until, promptUntil: s.promptUntil, paused: !!s.paused,
-    videoId: pid === 'tv' ? song?.id : undefined,
+    videoId: pid === 'tv' ? song?.id : undefined, start: pid === 'tv' ? song?.start : undefined,
     answer: showAnswer && song ? { title: song.title, artist: song.artist } : undefined,
   };
 }

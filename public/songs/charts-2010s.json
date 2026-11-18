@@ -1,52 +1,53 @@
 [
  {
-  "id": "ZbZSe6N_BXs",
+  "id": "TAlYUxQzNyI",
   "title": "Happy",
   "artist": "Pharrell Williams",
-  "duration": 241,
-  "ytTitle": "Pharrell Williams - Happy (Official Video)"
+  "duration": 236,
+  "ytTitle": "Pharrell Williams - Happy (Audio)"
  },
  {
-  "id": "OPf0YbXqDm0",
+  "id": "7Ya2U8XN_Zw",
   "title": "Uptown Funk",
   "artist": "Mark Ronson",
-  "duration": 270,
-  "ytTitle": "Mark Ronson - Uptown Funk (Official Video) ft. Bruno Mars"
+  "duration": 271,
+  "ytTitle": "Mark Ronson - Uptown Funk (Official Audio) ft. Bruno Mars"
  },
  {
-  "id": "8UVNT4wvIGY",
+  "id": "t_dLoOXy8PA",
   "title": "Somebody That I Used to Know",
   "artist": "Gotye",
-  "duration": 244,
-  "ytTitle": "Gotye - Somebody That I Used To Know (feat. Kimbra) [Official Music Video]"
+  "duration": 245,
+  "ytTitle": "Somebody That I Used To Know | Gotye | Lyrics Video"
  },
  {
-  "id": "rYEDA3JcQqw",
+  "id": "Q1UhfovggZw",
   "title": "Rolling in the Deep",
   "artist": "Adele",
-  "duration": 234,
-  "ytTitle": "Adele - Rolling in the Deep (Official Music Video)"
+  "duration": 229,
+  "ytTitle": "Adele - Rolling In The Deep (Audio)"
  },
  {
   "id": "tg00YEETFzg",
   "title": "We Found Love",
   "artist": "Rihanna",
   "duration": 276,
-  "ytTitle": "Rihanna - We Found Love ft. Calvin Harris"
+  "ytTitle": "Rihanna - We Found Love ft. Calvin Harris",
+  "start": 1.8
  },
  {
-  "id": "qrO4YZeyl0I",
+  "id": "43y08ETfLUY",
   "title": "Bad Romance",
   "artist": "Lady Gaga",
-  "duration": 308,
-  "ytTitle": "Lady Gaga - Bad Romance (Official Music Video)"
+  "duration": 309,
+  "ytTitle": "Lady Gaga - Bad Romance  ( Official Audio)"
  },
  {
-  "id": "JGwWNGJdvx8",
+  "id": "nQrwTHTfhto",
   "title": "Shape of You",
   "artist": "Ed Sheeran",
-  "duration": 263,
-  "ytTitle": "Ed Sheeran - Shape of You (Official Music Video)"
+  "duration": 261,
+  "ytTitle": "Ed Sheeran - Shape Of You (Audio)"
  },
  {
   "id": "CevxZvSJLk8",
@@ -56,25 +57,27 @@
   "ytTitle": "Katy Perry - Roar"
  },
  {
-  "id": "iEPTlhBmwRg",
+  "id": "jk01lN8d0xY",
   "title": "Moves Like Jagger",
   "artist": "Maroon 5",
-  "duration": 279,
-  "ytTitle": "Maroon 5 - Moves Like Jagger ft. Christina Aguilera (Official Music Video) ft. Christina Aguilera"
+  "duration": 246,
+  "ytTitle": "Maroon 5 - Moves Like Jagger (Lyrics) ft. Christina Aguilera"
  },
  {
-  "id": "SW_iujvUAzQ",
+  "id": "4pJx72N-x6k",
   "title": "Gangnam Style",
   "artist": "PSY",
-  "duration": 252,
-  "ytTitle": "PSY - GANGNAM STYLE (Official Music Video)"
+  "duration": 253,
+  "ytTitle": "PSY - GANGNAM STYLE (Audio)",
+  "start": 3.7
  },
  {
   "id": "fRh_vgS2dFE",
   "title": "Sorry",
   "artist": "Justin Bieber",
   "duration": 205,
-  "ytTitle": "Justin Bieber - Sorry (PURPOSE : The Movement)"
+  "ytTitle": "Justin Bieber - Sorry (PURPOSE : The Movement)",
+  "start": 3.5
  },
  {
   "id": "fWNaR-rxAic",
@@ -98,32 +101,32 @@
   "ytTitle": "Taylor Swift - Shake It Off"
  },
  {
-  "id": "IcrbM1l_BoI",
+  "id": "fE96CxPls5A",
   "title": "Wake Me Up",
   "artist": "Avicii",
-  "duration": 273,
-  "ytTitle": "Avicii - Wake Me Up (Official Video)"
+  "duration": 269,
+  "ytTitle": "Wake Me Up [art track]"
  },
  {
-  "id": "LjhCEhWiKXk",
+  "id": "i1K9v1R3rwY",
   "title": "Just the Way You Are",
   "artist": "Bruno Mars",
-  "duration": 237,
-  "ytTitle": "Bruno Mars - Just The Way You Are (Official Music Video)"
+  "duration": 224,
+  "ytTitle": "Bruno Mars - Just The Way You Are (Audio)"
  },
  {
-  "id": "kOkQ4T5WO9E",
+  "id": "ipLRRzJ9sWg",
   "title": "This Is What You Came For",
   "artist": "Calvin Harris",
-  "duration": 239,
-  "ytTitle": "Calvin Harris, Rihanna - This Is What You Came For (Official Video)"
+  "duration": 230,
+  "ytTitle": "Calvin Harris, Rihanna - This Is What You Came For (Lyrics)"
  },
  {
-  "id": "CCHdMIEGaaM",
+  "id": "5NV6Rdv1a3I",
   "title": "Get Lucky",
   "artist": "Daft Punk",
-  "duration": 248,
-  "ytTitle": "Daft Punk - Get Lucky (Official Video) feat. Pharrell Williams and Nile Rodgers"
+  "duration": 249,
+  "ytTitle": "Daft Punk - Get Lucky (Official Audio) ft. Pharrell Williams, Nile Rodgers"
  },
  {
   "id": "ktvTqknDobU",
@@ -140,18 +143,18 @@
   "ytTitle": "Lorde - Royals (US Version)"
  },
  {
-  "id": "2vjPBrBU-TM",
+  "id": "73aASJI35iY",
   "title": "Chandelier",
   "artist": "Sia",
-  "duration": 231,
-  "ytTitle": "Sia - Chandelier (Official Video)"
+  "duration": 217,
+  "ytTitle": "Sia - Chandelier (Audio)"
  },
  {
-  "id": "7PCkvCPvDXk",
+  "id": "DCFEn10LWQo",
   "title": "All About That Bass",
   "artist": "Meghan Trainor",
-  "duration": 190,
-  "ytTitle": "Meghan Trainor - All About That Bass (Official Video)"
+  "duration": 188,
+  "ytTitle": "All About That Bass [art track]"
  },
  {
   "id": "uxpDa-c-4Mc",
@@ -161,11 +164,11 @@
   "ytTitle": "Drake - Hotline Bling"
  },
  {
-  "id": "i_kF4zLNKio",
+  "id": "PzpS-Luu7R8",
   "title": "Trap Queen",
   "artist": "Fetty Wap",
-  "duration": 244,
-  "ytTitle": "Fetty Wap  - Trap Queen (Official Video) Prod. By Tony Fadd"
+  "duration": 248,
+  "ytTitle": "Fetty Wap-Trap Queen (Lyrics on screen&description)"
  },
  {
   "id": "hT_nvWreIhg",
@@ -175,32 +178,33 @@
   "ytTitle": "OneRepublic - Counting Stars"
  },
  {
-  "id": "AJtDXIazrMo",
+  "id": "dZE7FQqiFkU",
   "title": "Love Me Like You Do",
   "artist": "Ellie Goulding",
-  "duration": 249,
-  "ytTitle": "Ellie Goulding - Love Me Like You Do (Official Video)"
+  "duration": 254,
+  "ytTitle": "Love Me Like You Do [art track]"
  },
  {
-  "id": "YqeW9_5kURI",
+  "id": "4ZxFyXV7w0c",
   "title": "Lean On",
   "artist": "Major Lazer",
-  "duration": 179,
-  "ytTitle": "Major Lazer & DJ Snake - Lean On (feat. MØ) [Official 4K Music Video]"
+  "duration": 178,
+  "ytTitle": "Major Lazer & DJ Snake - Lean On (Audio)"
  },
  {
-  "id": "m-M1AtrxztU",
+  "id": "VcrL3fS2cIY",
   "title": "Rather Be",
   "artist": "Clean Bandit",
-  "duration": 268,
-  "ytTitle": "Clean Bandit - Rather Be ft. Jess Glynne [Official Video]"
+  "duration": 260,
+  "ytTitle": "Clean Bandit ft Jess Glynne - Rather be [Lyrics]",
+  "start": 5.1
  },
  {
-  "id": "RBumgq5yVrA",
+  "id": "fO8IN5W87ws",
   "title": "Let Her Go",
   "artist": "Passenger",
   "duration": 254,
-  "ytTitle": "Passenger | Let Her Go (Official Video)"
+  "ytTitle": "Let Her Go - Passenger (Audio)"
  },
  {
   "id": "wXhTHyIgQ_U",
@@ -210,11 +214,11 @@
   "ytTitle": "Post Malone - Circles"
  },
  {
-  "id": "P00HMxdsVZI",
+  "id": "BamLp6k7J9c",
   "title": "Truth Hurts",
   "artist": "Lizzo",
-  "duration": 182,
-  "ytTitle": "Lizzo - Truth Hurts (Official Video)"
+  "duration": 175,
+  "ytTitle": "Truth Hurts - Lizzo (Audio)"
  },
  {
   "id": "BQ0mxQXmLsk",
@@ -231,18 +235,18 @@
   "ytTitle": "Billie Eilish - bad guy"
  },
  {
-  "id": "r7qovpFAGrQ",
+  "id": "DTKbDp8M0l4",
   "title": "Old Town Road",
   "artist": "Lil Nas X",
-  "duration": 157,
-  "ytTitle": "Lil Nas X - Old Town Road (Official Video) ft. Billy Ray Cyrus"
+  "duration": 158,
+  "ytTitle": "Lil Nas X - Old Town Road feat. Billy Ray Cyrus (Audio)"
  },
  {
-  "id": "k2qgadSvNyU",
+  "id": "4NNqU8PqMu0",
   "title": "New Rules",
   "artist": "Dua Lipa",
-  "duration": 224,
-  "ytTitle": "Dua Lipa - New Rules (Official Music Video)"
+  "duration": 210,
+  "ytTitle": "New Rules [art track]"
  },
  {
   "id": "Pkh8UtuejGw",
@@ -252,10 +256,10 @@
   "ytTitle": "Shawn Mendes, Camila Cabello - Señorita"
  },
  {
-  "id": "QYh6mYIJG2Y",
+  "id": "M84fFXooS5w",
   "title": "7 rings",
   "artist": "Ariana Grande",
-  "duration": 185,
-  "ytTitle": "Ariana Grande - 7 rings (Official Video)"
+  "duration": 180,
+  "ytTitle": "Ariana Grande - 7 rings (Audio)"
  }
 ]
