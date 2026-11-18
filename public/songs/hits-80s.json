@@ -4,7 +4,8 @@
   "title": "Don't Stop Me Now",
   "artist": "Queen",
   "duration": 211,
-  "ytTitle": "Queen - Don't Stop Me Now (Official Lyric Video)"
+  "ytTitle": "Queen - Don't Stop Me Now (Official Lyric Video)",
+  "start": 4.9
  },
  {
   "id": "Kr4EQDVETuA",
@@ -46,7 +47,8 @@
   "title": "Beat It",
   "artist": "Michael Jackson",
   "duration": 298,
-  "ytTitle": "Michael Jackson - Beat It // Sub Español + Lyrics // Video Oficial"
+  "ytTitle": "Michael Jackson - Beat It // Sub Español + Lyrics // Video Oficial",
+  "start": 1.4
  },
  {
   "id": "MIgK3zOk0zg",
@@ -74,7 +76,8 @@
   "title": "Livin' on a Prayer",
   "artist": "Bon Jovi",
   "duration": 249,
-  "ytTitle": "Bon Jovi - Livin' On A Prayer"
+  "ytTitle": "Bon Jovi - Livin' On A Prayer",
+  "start": 2.5
  },
  {
   "id": "XHfa7dDE-n4",
@@ -179,7 +182,8 @@
   "title": "White Wedding",
   "artist": "Billy Idol",
   "duration": 211,
-  "ytTitle": "Billy Idol - White Wedding Pt 1"
+  "ytTitle": "Billy Idol - White Wedding Pt 1",
+  "start": 1.4
  },
  {
   "id": "jON3_RHKSls",
@@ -228,13 +232,15 @@
   "title": "Running Up That Hill",
   "artist": "Kate Bush",
   "duration": 298,
-  "ytTitle": "Kate Bush - Running Up That Hill (Lyrics)"
+  "ytTitle": "Kate Bush - Running Up That Hill (Lyrics)",
+  "start": 1.7
  },
  {
   "id": "RVz4MMxq7Es",
   "title": "West End Girls",
   "artist": "Pet Shop Boys",
   "duration": 242,
-  "ytTitle": "West End Girls [art track]"
+  "ytTitle": "West End Girls [art track]",
+  "start": 2.5
  }
 ]

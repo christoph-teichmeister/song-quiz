@@ -32,7 +32,8 @@
   "title": "...Baby One More Time",
   "artist": "Britney Spears",
   "duration": 224,
-  "ytTitle": "Hit Me Baby One More Time With Lyrics"
+  "ytTitle": "Hit Me Baby One More Time With Lyrics",
+  "start": 3.7
  },
  {
   "id": "-aKJE1lanQk",
@@ -116,7 +117,8 @@
   "title": "Blue (Da Ba Dee)",
   "artist": "Eiffel 65",
   "duration": 225,
-  "ytTitle": "Eiffel 65 - Blue (Da Ba Dee) (Lyrics)"
+  "ytTitle": "Eiffel 65 - Blue (Da Ba Dee) (Lyrics)",
+  "start": 1.4
  },
  {
   "id": "NIPPh7AWSt4",
@@ -151,7 +153,8 @@
   "title": "Losing My Religion",
   "artist": "R.E.M.",
   "duration": 285,
-  "ytTitle": "R.E.M. - Losing my Religion (lyrics/letras)"
+  "ytTitle": "R.E.M. - Losing my Religion (lyrics/letras)",
+  "start": 1.4
  },
  {
   "id": "zDKO6XYXioc",
@@ -242,7 +245,8 @@
   "title": "Virtual Insanity",
   "artist": "Jamiroquai",
   "duration": 250,
-  "ytTitle": "Jamiroquai - Virtual Insanity"
+  "ytTitle": "Jamiroquai - Virtual Insanity",
+  "start": 13.7
  },
  {
   "id": "8iATPHyiBEI",
