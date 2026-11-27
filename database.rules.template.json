@@ -35,6 +35,14 @@
         ".write": true
       }
     },
+    "songs": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === '__ADMIN_UID__'"
+    },
+    "songsIndex": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === '__ADMIN_UID__'"
+    },
     "users": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",

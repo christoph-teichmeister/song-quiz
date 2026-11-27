@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSession, join, act, tick, view, buildPool, inRandom, T } from '../public/js/game.js';
+import { createSession, join, act, tick, view, buildPool, inRandom, overlaySongs, ytId, T } from '../public/js/game.js';
 
 const songs = [{ id: 'a', title: 'T1', artist: 'A1' }, { id: 'b', title: 'T2', artist: 'A2' }];
 function setup() {
@@ -555,4 +555,19 @@ test('normal lists keep two points for title and artist', () => {
   const { s } = room(1); let now = play(s, 0); buzzFront(s, 'A', now);
   act(s, s.teams.B.front, { type: 'verify', title: true, artist: true }, now);
   assert.equal(s.settings.special, false); assert.equal(s.teams.A.score, 2);
+});
+
+test('overlaySongs: DB lists replace, add and delete static ones; junk is ignored', () => {
+  const cat = [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }], lists = { a: [{ id: 'x' }], b: [{ id: 'y' }] };
+  const r = overlaySongs(cat, lists, { a: { name: 'A2' }, b: { deleted: true }, c: { name: 'C' }, d: 5 }, { a: [{ id: 'z', title: 'Z' }, null], c: { 0: { id: 'q' } } });
+  assert.deepEqual(r.catalog.map((c) => c.name), ['A2', 'C']);
+  assert.deepEqual(r.lists, { a: [{ id: 'z', title: 'Z' }], c: [{ id: 'q' }] });
+  assert.deepEqual(overlaySongs(cat, lists, null, 'x'), { catalog: cat, lists });
+  assert.equal(cat.length, 2);
+});
+
+test('ytId takes ids and common URL shapes', () => {
+  const id = 'dQw4w9WgXcQ';
+  for (const s of [id, ` ${id} `, `https://www.youtube.com/watch?v=${id}&t=5`, `https://youtu.be/${id}?si=x`, `https://www.youtube.com/embed/${id}`, `https://music.youtube.com/watch?list=L&v=${id}`]) assert.equal(ytId(s), id, s);
+  for (const s of ['', 'abc', 'https://example.com/x', `${id}x`]) assert.equal(ytId(s), null, s);
 });

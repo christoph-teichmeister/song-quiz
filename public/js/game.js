@@ -310,3 +310,21 @@ export function buildPool(lists, list, played, length, catalog = []) {
   }
   return { songs, reset };
 }
+
+// Admin edits live in the database ('songsIndex/<id>' = catalog entry or {deleted:true}, 'songs/<id>' = song list). They are laid over the static songs/*.json:
+// a DB list replaces the static one, new ids are appended, deleted ones disappear. Returns fresh {catalog, lists}; bad DB data is ignored.
+export function overlaySongs(catalog, lists, dbIndex, dbSongs) {
+  const idx = dbIndex && typeof dbIndex === 'object' ? dbIndex : {}, songs = dbSongs && typeof dbSongs === 'object' ? dbSongs : {};
+  const out = [...catalog], L = { ...lists };
+  for (const [id, e] of Object.entries(idx)) {
+    if (!e || typeof e !== 'object') continue;
+    const at = out.findIndex((c) => c.id === id);
+    if (e.deleted) { if (at >= 0) out.splice(at, 1); delete L[id]; continue; }
+    const entry = { ...e, id };
+    if (at >= 0) out[at] = entry; else out.push(entry);
+    L[id] = songs[id] ? Object.values(songs[id]).filter((s) => s && s.id) : []; // a list in the DB is complete (Firebase drops empty lists)
+  }
+  return { catalog: out, lists: L };
+}
+// a YouTube id from a pasted id or URL (watch?v=, youtu.be/, embed/, shorts/), or null
+export const ytId = (s) => { s = String(s || '').trim(); const m = s.match(/^[\w-]{11}$/) || s.match(/(?:v=|youtu\.be\/|embed\/|shorts\/|live\/)([\w-]{11})(?![\w-])/); return m ? m[1] || m[0] : null; };

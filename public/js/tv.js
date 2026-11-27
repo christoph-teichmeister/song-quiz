@@ -1,4 +1,4 @@
-import { createSession, join, act, tick, view, awards, buildPool, inRandom, T } from './game.js';
+import { createSession, join, act, tick, view, awards, buildPool, inRandom, overlaySongs, T } from './game.js';
 import { qrSvg } from './qr.js';
 import { RULES, rulesFor } from './rules.js';
 import { t, getLang, setLang } from './i18n.js';
@@ -66,9 +66,17 @@ async function loadCatalog() { // [{id, name, emoji}] in display order, then all
   catalog = await (await fetch('songs/index.json')).json();
   await Promise.all(catalog.map(async (c) => { lists[c.id] = await (await fetch(`songs/${c.id}.json`)).json(); }));
 }
+async function overlayDb(r) { // the static lists are already in; any database problem keeps them as they are
+  try {
+    const get = (p) => Promise.race([D.get(r(p)), new Promise((_, no) => setTimeout(no, 5000))]);
+    const [i, s] = await Promise.all([get('songsIndex'), get('songs')]);
+    ({ catalog, lists } = overlaySongs(catalog, lists, i.val(), s.val()));
+  } catch (e) { console.warn('SQ songs overlay skipped', e?.message); }
+}
 async function boot() {
-  const loading = loadCatalog();
-  ({ D, rr, db } = await import('./db.js'));
+  let loading = loadCatalog(), r;
+  ({ D, rr, db, r } = await import('./db.js'));
+  loading = loading.then(() => overlayDb(r)); // admin edits from the database go on top of the static lists
   const stale = new Set(Object.keys((await D.get(rr('actions'))).val() || {})); // actions left over from before this page load
   // Firebase says false until it has connected: only a gap of 3 s counts as offline
   let offTimer = 0;

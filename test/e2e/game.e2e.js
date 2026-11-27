@@ -465,3 +465,29 @@ test('special list: judge sees only Right/Wrong, one point, TV shows just the na
   assert.deepEqual(world.errors, []);
   await world.close();
 });
+
+test('admin: import, create a list, add a song by pasted link; the TV and phones show the edited catalog', async () => {
+  const world = await newWorld(browser, srv.url);
+  const ad = await world.open('/admin');
+  ad.on('dialog', (d) => d.accept());
+  await btn(ad, 'Import static lists into DB').click();
+  await until(() => world.store.get('songsIndex/charts-now'), 'import');
+  await ad.fill('#nl-name', 'Edited Mix'); await ad.fill('#nl-de', 'Bearbeitet');
+  await btn(ad, 'Create').click();
+  await until(() => world.store.get('songsIndex/edited-mix'), 'list created');
+  await ad.fill('#ns-title', 'My Song'); await ad.fill('#ns-artist', 'Me'); await ad.fill('#ns-id', 'https://youtu.be/dQw4w9WgXcQ?si=x');
+  await btn(ad, 'Add song').click();
+  await until(() => world.store.get('songs/edited-mix'), 'song added');
+  assert.equal(world.store.get('songs/edited-mix')[0].id, 'dQw4w9WgXcQ');
+  await ad.locator('input[placeholder="Name"]').first().fill('Renamed Charts'); await ad.keyboard.press('Tab'); // rename one list, delete another
+  await until(() => world.store.get('songsIndex/charts-now')?.name === 'Renamed Charts', 'rename');
+  world.store.set('songsIndex/hits-90s', { deleted: true });
+  const tv = await world.open('/?new&fast');
+  const ph = await world.open('/play?p=Anna');
+  await btn(ph, 'Neues Spiel starten').click();
+  await waitText(ph, /Bearbeitet/);
+  assert.ok(await has(ph, /Aktuelle Charts|Renamed Charts/));
+  assert.ok(!(await has(ph, /90er-Hits/)));
+  assert.deepEqual(world.errors, []);
+  await world.close();
+});
