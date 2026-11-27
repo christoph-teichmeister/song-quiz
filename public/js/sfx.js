@@ -21,6 +21,7 @@ export const SFX = {
   right: (c) => notes(c, [659, 988], .11, { type: 'triangle', vol: .2 }), // one of title / artist
   both: (c) => notes(c, [523, 659, 784, 1047], .1, { type: 'triangle', vol: .2 }), // title and artist
   wrong: (c) => notes(c, [233, 175], .18, { type: 'sawtooth', vol: .1 }), // nothing right
+  undo: (c) => notes(c, [660, 494], .08, { vol: .16 }), // the judge took a ruling back
   reveal: (c) => notes(c, [784, 1047], .14, { vol: .14 }),
   join: (c) => notes(c, [587, 880], .09, { vol: .24 }), // someone joined the lobby
   ack: (c) => tone(c, c.currentTime + .01, 1175, .14, { type: 'triangle', vol: .2 }), // a player confirmed the rules

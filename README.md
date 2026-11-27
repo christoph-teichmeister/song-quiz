@@ -34,6 +34,8 @@ deploy.sh  firebase.json  database.rules.template.json   DESIGN.md = look and br
 6. **Verify:** the *opposing* team's phone shows Correct / Wrong. Correct = points. Wrong = buzzer team is locked for this song, playback resumes until the other team buzzes (same verification).
 7. **Next song**, repeat. Leaderboard between rounds and at the end.
 
+Lobby settings (host): buzzers `front` (one front-person per team, default) or `all` (everyone buzzes, no front-person step, the judge comes from the other team); auto-skip after 30/45/60 s without a buzz (default 45, off possible) with a 10 s warning. The judge can undo the last ruling (phone button). The TV remembers played songs per room (`localStorage` `sqPlayed-<room>`, reset when too few are left; "Again" keeps it). Random picks a category first and leaves out the TV/film lists (`RANDOM_OFF` in `game.js`). A one-person team is front by itself; if no team has a choice the front step is skipped.
+
 ## Categories (picked by host)
 
 Charts now, 80s, 90s, 2000s, Christmas, movie/TV themes, intro-only, speed (playlist-based, see below).

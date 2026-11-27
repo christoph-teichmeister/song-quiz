@@ -47,6 +47,8 @@ const TXT = {
     'skip': 'Song überspringen', 'skipAsk': 'Wirklich überspringen?', 'pause': 'Pause', 'resume': 'Weiter', 'pauseBanner': '⏸ Pause – der Host drückt gleich auf Weiter', 'pauseHost': '⏸ Pause. Tippe unten auf Weiter.', 'pauseBuzz': 'Pause', 'offline': 'OFFLINE', 'offlineBanner': 'Keine Internetverbindung. Das Spiel verbindet sich gleich wieder.', 'tv.offline': 'Keine Internetverbindung', 'tv.pauseBig': '⏸ Pause', 'e.paused': 'Das Spiel macht gerade Pause.',
     // reveal
     'nextGuesser': '🎤 <b>Du bist als Nächstes am Buzzer.</b> Geh nach vorne und buzzere für Team {team}.', 'nextJudge': '🎧 <b>Du bist beim nächsten Song Schiri.</b> Du siehst die Lösung, behalte sie für dich.',
+    'bz.label': 'Wer darf buzzern?', 'bz.front': 'Eine Person pro Team', 'bz.all': 'Alle im Team', 'as.label': 'Niemand weiß es? Automatisch weiter nach', 'as.off': 'Aus',
+    'nobodyKnows': 'Niemand weiß es? Weiter in {n} s', 'undo': '↩ Rückgängig', 'allBuzz': 'Alle im Team dürfen buzzern. Drück ihn, sobald du den Song kennst.', 'soloFront': 'Du bist allein im Team und damit am Buzzer. Warte auf das andere Team.', 'tv.everyone': 'Alle',
     'nextSoon': 'Der nächste Song startet gleich', 'noPoints': 'keine Punkte', 'lastOne': 'Das war der letzte Song …', 'nobody': 'noch niemand',
     // end
     'draw2': 'Unentschieden', 'winsT': 'Team {team} gewinnt', 'yourGame': 'Dein Spiel', 'noStats': 'Du hast diesmal zugeschaut, keine Zahlen für dich.', 'saved': '✓ Deine Statistik ist in deinem Konto gespeichert.',
@@ -103,6 +105,8 @@ const TXT = {
     'buzzed': 'buzzed', 'youBuzzed': 'You buzzed! Say the title AND the artist out loud now.', 'quiet': 'Shh, no shouting in.', 'isJudging': '{name} is judging', 'sayOut': 'Say your answer out loud',
     'skip': 'Skip song', 'skipAsk': 'Really skip?', 'pause': 'Pause', 'resume': 'Resume', 'pauseBanner': '⏸ Paused – the host will tap Resume soon', 'pauseHost': '⏸ Paused. Tap Resume below.', 'pauseBuzz': 'Paused', 'offline': 'OFFLINE', 'offlineBanner': 'No internet connection. Reconnecting automatically…', 'tv.offline': 'No internet connection', 'tv.pauseBig': '⏸ Pause', 'e.paused': 'The game is paused right now.',
     'nextGuesser': '🎤 <b>You are the next guesser.</b> Get to the front and buzz for Team {team}.', 'nextJudge': '🎧 <b>You are the next judge.</b> You will see the answer, keep it to yourself.',
+    'bz.label': 'Who can buzz?', 'bz.front': 'One per team', 'bz.all': 'Everyone', 'as.label': 'Nobody knows? Move on automatically after', 'as.off': 'Off',
+    'nobodyKnows': 'Nobody knows? Moving on in {n} s', 'undo': '↩ Undo', 'allBuzz': 'Everyone in the team can buzz. Buzz when you know it.', 'soloFront': 'You are alone in your team, so you are at the buzzer. Wait for the other team.', 'tv.everyone': 'Everyone',
     'nextSoon': 'Next song starts soon', 'noPoints': 'no points', 'lastOne': 'That was the last song…',
     'draw2': 'It\'s a draw', 'winsT': 'Team {team} wins', 'yourGame': 'Your game', 'noStats': 'You only watched this time, no stats for you.', 'saved': '✓ Your stats are saved to your account.',
     'liked': 'Liked it?', 'likedP': 'Install the app and create a free account: host your own games at home, send the TV link to friends and keep your stats.', 'install': 'Install the app', 'createFree': 'Create a free account', 'again': 'Play again',
