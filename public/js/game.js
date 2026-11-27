@@ -172,7 +172,8 @@ function pickFront(s) {
 }
 
 function reveal(s, now) {
-  s.phase = 'reveal'; s.until = now + (s.idx + 1 >= s.songs.length ? T.revealLast : T.reveal); // after the last song the final screen comes sooner s.buzz = null;
+  s.phase = 'reveal'; s.until = now + (s.idx + 1 >= s.songs.length ? T.revealLast : T.reveal); // after the last song the final screen comes sooner
+  s.buzz = null;
   s.timeline.push({ A: s.teams.A.score, B: s.teams.B.score });
   s.next = s.idx + 1 < s.songs.length ? planNext(s) : null; // decided now so the phones can announce who is up
   return null;
