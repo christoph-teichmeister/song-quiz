@@ -19,7 +19,8 @@ async function startGame(world, { mode, length = 3, names = NAMES, howto = true,
   await btn(ph.Anna, 'Neues Spiel starten').click();
   await waitText(tv, /Tritt mit dem Code/);
   for (const n of names.slice(1)) { ph[n] = await world.open('/play?p=' + n); await btn(ph[n], 'Spiel beitreten').click(); await btn(ph[n], 'Verstanden').click(); }
-  for (const n of names) await ph[n].locator(`.team-card.${TEAM[n]}`).click();
+  const order = [names.find((n) => TEAM[n] === 'A'), names.find((n) => TEAM[n] === 'B')]; order.push(...names.filter((n) => !order.includes(n))); // the first of each team picks first: nobody may pile onto a team while the other is empty
+  for (const n of order) await ph[n].locator(`.team-card.${TEAM[n]}`).click();
   await waitText(ph.Anna, /Jedes Team braucht|Spiel starten/);
   if (list) await ph.Anna.locator('.tile', { hasText: list }).click();
   if (mode === 'intro') { await btn(ph.Anna, 'Nur Intro').click(); await btn(ph.Anna, 'OK').click(); }
@@ -493,8 +494,8 @@ test('lobby: a joining non-host sees the blurred intro until "Verstanden"; "Zuf�
   const hostTeam = await a.locator('.team-card.on h3').innerText();
   await btn(ben, /Zufälliges Team/).click();
   await until(async () => (await ben.locator('.team-card.on h3').count()) === 1 && (await ben.locator('.team-card.on h3').innerText()) !== hostTeam, 'Ben joins the other, smaller team');
-  assert.ok(await ben.locator('.team-card:not(.on)').isDisabled(), 'the last person of a team cannot leave it');
-  assert.ok(await has(ben, /dein team wäre leer/i));
+  assert.ok(await ben.locator('.team-card:not(.on)').isDisabled(), 'nobody may pile onto a team while the other is empty');
+  assert.ok(await has(ben, /teams bleiben ausgeglichen/i));
   await btn(a, 'Nur Intro').click(); // the host's mode note shows on the watching phone too
   await waitText(ben, /Jeder Song stoppt nach 5/);
   assert.deepEqual(world.errors, []);

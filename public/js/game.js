@@ -3,6 +3,8 @@
 export const T = { countdown: 3000, reveal: 10000, revealLast: 4000, idle: 180000, prompt: 15000, introMs: 5000, speedMs: 5000, answer: 15000, skipWarn: 10000 }; // answer: time to speak after a buzz (a bar on the screens); the judge has no time limit and may talk it over
 const IDLE_PHASES = ['lobby', 'howto', 'pickfront', 'end']; // the idle reset never fires while a song is running
 const other = (t) => (t === 'A' ? 'B' : 'A');
+// nobody may pile onto a team while the other one is still empty: that is how a 2 vs 0 comes about (the first player of the other team has to go first)
+export const canJoin = (players, pid, x) => { const n = (t) => players.filter((q) => q.id !== pid && q.team === t).length; return n(x) === 0 || n(x === 'A' ? 'B' : 'A') > 0; };
 export const inRandom = (c) => !c.special && c.random !== false; // c: a songs/index.json entry; special lists (guess the show/film name only) and ambient stay out of Random
 export const clampLen = (v) => Math.max(1, Math.min(50, Math.floor(+v) || 10)); // 1 to 50 songs
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -46,6 +48,7 @@ export function act(s, pid, a, now) {
   switch (a.type) {
     case 'team':
       if (s.phase !== 'lobby' || !['A', 'B'].includes(a.team)) return 'bad';
+      if (!canJoin(Object.entries(s.players).map(([id, q]) => ({ id, team: q.team })), pid, a.team)) return 'unbalanced';
       p.team = a.team;
       return null;
     case 'cfg': { // the host's lobby picks, stored so the other phones can show them
