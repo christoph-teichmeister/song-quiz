@@ -41,7 +41,7 @@ function cue() {
   else if (ph === 'reveal' && lr && lr.team === tm) once('r' + S.idx, lr.title && lr.artist ? SFX.both : lr.pts ? SFX.right : SFX.wrong, lr.pts ? 50 : [120, 60, 120]);
   else if (ph === 'lobby') cued.clear();
 }
-const sync = () => act({ type: 'cfg', ...cfg, list: cfg.list || firstList() }); // the host's picks go to the session so the other phones can mirror them
+const sync = () => act({ type: 'cfg', ...cfg, list: cfg.list || firstList(), scroll: scrollFrac() }); // the host's picks go to the session so the other phones can mirror them
 let cfgSent = false;
 const buzzNow = (el) => { sfx('buzz'); navigator.vibrate?.(40); el.classList.add('fire'); act({ type: 'buzz' }); };
 const MODES = ['normal', 'intro', 'speed'];
@@ -50,6 +50,7 @@ const langPill = () => `<button class=score-pill style="border:0;color:inherit;c
 // handlers for inline onclick
 Object.assign(window, {
   act, send,
+  randomTeam: () => { const n = (x) => S.players.filter((p) => p.team === x).length, a = n('A'), b = n('B'); window.pickTeam(a === b ? (Math.random() < 0.5 ? 'A' : 'B') : a < b ? 'A' : 'B'); }, // the smaller team, a coin flip when even
   pickTeam: (x) => { if (S?.me?.team !== x) sfx('team'); act({ type: 'team', team: x }); },
   readyNow: () => { sfx('front'); act({ type: 'ready' }); },
   undoNow: () => { sfx('undo'); act({ type: 'undo' }); },
@@ -157,6 +158,19 @@ function sheetHtml() {
   return inner ? `<div class=modal onclick="closeSheet()"><div class=sheet onclick="event.stopPropagation()">${inner}</div></div>` : '';
 }
 
+const scrollFrac = () => { const m = document.documentElement.scrollHeight - innerHeight; return m > 0 ? Math.round((scrollY / m) * 1000) / 1000 : 0; };
+let scrollT = 0, followed = null;
+addEventListener('scroll', () => { // the host's scroll position goes into the mirrored picks (throttled)
+  if (!S?.host || S.phase !== 'lobby' || scrollT) return;
+  scrollT = setTimeout(() => { scrollT = 0; if (S?.host && S.phase === 'lobby') sync(); }, 250);
+}, { passive: true });
+let veilDone = ''; // game code the intro was dismissed for
+function veil() { // non-hosts get one note over the blurred lobby; "Verstanden" fades the blur away
+  const want = live() && S && !S.host && S.phase === 'lobby' && veilDone !== S.code, el = $('veil');
+  if (want && !el) { const d = document.createElement('div'); d.id = 'veil'; d.className = 'veil'; d.innerHTML = `<div class=vcard><h2>${t('veilH')}</h2><p>${t('veilP', { name: esc(S.hostName) })}</p><button class=btn onclick="closeVeil()">${t('veilOk')}</button></div>`; document.body.append(d); }
+  else if (!want && el && !el.classList.contains('gone')) el.remove();
+}
+window.closeVeil = () => { veilDone = S.code; const el = $('veil'); el.classList.add('gone'); setTimeout(() => el.remove(), 1500); };
 function render() {
   $('off').hidden = !offline; $('off').textContent = t('offlineBanner');
   let v;
@@ -168,6 +182,14 @@ function render() {
   const mh = sheet ? sheetHtml() : modal ? `<div class=modal onclick="closeModal()"><div onclick="event.stopPropagation()"><h2>${t('m.' + modal)}</h2><p>${t('m.' + modal + '.t')}</p><button class=btn onclick="closeModal()">OK</button></div></div>` : '';
   const typing = document.activeElement?.tagName === 'INPUT' && $('modal').contains(document.activeElement); // only a focused input inside the sheet blocks the rebuild, buttons must be able to close it
   if (mh !== lastModal && !typing) { lastModal = mh; $('modal').innerHTML = mh; }
+  if (S && !S.host && S.phase === 'lobby' && S.cfg) { // watchers follow the host: scroll position and the mode note
+    if (followed && S.cfg.scroll !== followed.scroll) scrollTo({ top: S.cfg.scroll * (document.documentElement.scrollHeight - innerHeight), behavior: 'smooth' });
+    const note = followed && S.cfg.mode !== followed.mode && S.cfg.mode !== 'normal';
+    followed = { scroll: S.cfg.scroll, mode: S.cfg.mode };
+    if (note) { modal = S.cfg.mode; return render(); }
+  } else followed = null;
+  if (modal && S && S.phase !== 'lobby') modal = null; // the mode note belongs to the lobby only
+  veil();
   cue();
   awake();
 }
@@ -193,18 +215,19 @@ function game() {
 
   if (ph === 'lobby') {
     const ready = mem('A').length > 0 && mem('B').length > 0;
-    const card = (x) => `<button class="team-card ${x}${tm === x ? ' on' : ''}" onclick="pickTeam('${x}')"><h3 class=${x}>${t('team')} ${x}</h3><div class=chips>${mem(x).map((p) => `<span class=chip>${esc(p.name)}</span>`).join('') || `<span class=hint>${t('nobody')}</span>`}</div><span class=join-pill>${tm === x ? t('youIn') : tm ? t('tapSwitch') : t('tapJoin')}</span></button>`;
-    body = `${hdr}<div class=label>${t('code')} ${esc(S.code)}</div><div class="step${tm ? ' done' : ''}"><b>${tm ? '✓' : 1}</b>${t('step1')}<small>${t('tapCard')}</small></div><div class=team-cards>${card('A')}${card('B')}</div>`;
+    const stuck = tm && tm !== undefined && mem(tm).length === 1, card = (x) => `<button class="team-card ${x}${tm === x ? ' on' : ''}" ${stuck && tm !== x ? 'disabled' : `onclick="pickTeam('${x}')"`}><h3 class=${x}>${t('team')} ${x}</h3><div class=chips>${mem(x).map((p) => `<span class=chip>${esc(p.name)}</span>`).join('') || `<span class=hint>${t('nobody')}</span>`}</div><span class=join-pill>${tm === x ? t('youIn') : stuck ? t('soloTeam') : tm ? t('tapSwitch') : t('tapJoin')}</span></button>`;
+    body = `${hdr}<div class=teamfix><div class=label>${t('code')} ${esc(S.code)}</div><div class="step${tm ? ' done' : ''}"><b>${tm ? '✓' : 1}</b>${t('step1')}<small>${t('tapCard')}</small></div><div class=team-cards>${card('A')}${card('B')}</div>${tm ? '' : `<button class="btn ghost" onclick="randomTeam()">${t('randomTeam')}</button>`}</div>`;
     if (S.host && !S.cfg && !cfgSent) { cfgSent = true; sync(); }
     const ro = !S.host, c = ro ? S.cfg : cfg; // the other phones see the host's picks, read only
     if (c) {
       const cat = pub.catalog || [], sel = c.list || firstList(), custom = c.custom || ![5, 10, 15].includes(c.length), tap = (fn) => (ro ? '' : `onclick="${fn}"`), sm = (k) => (ro ? '' : `<small>${t(k)}</small>`);
-      body += `<div class="${ro ? 'ro' : 'cfgbox'}">${ro ? `<p class=hint>${t('hostPicks', { name: esc(S.hostName) })}</p>` : ''}<div class=step><b>2</b>${t('step2')}${sm('tapOne')}</div><div class=tiles>${cat.map((x) => `<button class="tile${x.id === sel ? ' on' : ''}" ${tap(`pickList('${x.id}')`)}><i>${x.emoji || '🎵'}</i><b>${esc(getLang() === 'de' && x.de ? x.de : x.name)}</b><span>${t('songsN', { n: x.count })}${x.special ? ' · ' + t('special') : ''}</span></button>`).join('')}</div>
-        <div class=step><b>3</b>${t('step3')}${sm('tapChange')}</div><div class=seg>${MODES.map((k) => `<button class="${c.mode === k ? 'on' : ''}" ${tap(`pickMode('${k}')`)}>${t('m.' + k)}</button>`).join('')}</div>
-        <div class=step><b>4</b>${t('step4')}${sm('tapChange')}</div><div class=seg>${[5, 10, 15].map((n) => `<button class="${!custom && c.length === n ? 'on' : ''}" ${tap(`pickLen(${n})`)}>${n}</button>`).join('')}<button class="${custom ? 'on' : ''}" ${tap('pickCustom()')}>${t('custom')}</button></div>
+      body += `<div class="${ro ? 'ro' : 'cfgbox'}">${ro ? `<p class=hint>${t('hostPicks', { name: esc(S.hostName) })}</p>` : ''}<div class=step><b>2</b>${t('step3')}${sm('tapChange')}</div><div class=seg>${MODES.map((k) => `<button class="${c.mode === k ? 'on' : ''}" ${tap(`pickMode('${k}')`)}>${t('m.' + k)}</button>`).join('')}</div>
+        <div class=step><b>3</b>${t('step4')}${sm('tapChange')}</div><div class=seg>${[5, 10, 15].map((n) => `<button class="${!custom && c.length === n ? 'on' : ''}" ${tap(`pickLen(${n})`)}>${n}</button>`).join('')}<button class="${custom ? 'on' : ''}" ${tap('pickCustom()')}>${t('custom')}</button></div>
+        ${custom ? (ro ? `<p class=hint>${t('songsN', { n: c.length })}</p>` : `<div class=stepper><button onclick="stepLen(-1)" aria-label="${t('fewer')}">−</button><input class=input id=len type=number inputmode=numeric min=1 max=50 value="${cfg.length}" oninput="setLen(this.value)"><button onclick="stepLen(1)" aria-label="${t('more')}">+</button></div>`) : ''}</div>
         <div class=label>${t('bz.label')}</div><div class=seg>${['front', 'all'].map((k) => `<button class="${c.buzzers === k ? 'on' : ''}" ${tap(`pickBuzzers('${k}')`)}>${t('bz.' + k)}</button>`).join('')}</div>
         <div class=label>${t('as.label')}</div><div class=seg>${[0, 30, 45, 60].map((n) => `<button class="${c.autoskip === n ? 'on' : ''}" ${tap(`pickSkip(${n})`)}>${n ? n + ' s' : t('as.off')}</button>`).join('')}</div>
-        ${custom ? (ro ? `<p class=hint>${t('songsN', { n: c.length })}</p>` : `<div class=stepper><button onclick="stepLen(-1)" aria-label="${t('fewer')}">−</button><input class=input id=len type=number inputmode=numeric min=1 max=50 value="${cfg.length}" oninput="setLen(this.value)"><button onclick="stepLen(1)" aria-label="${t('more')}">+</button></div>`) : ''}</div>`;
+        <div class=step><b>4</b>${t('step2')}${sm('tapOne')}</div><div class=tiles>${cat.map((x) => `<button class="tile${x.id === sel ? ' on' : ''}" ${tap(`pickList('${x.id}')`)}><i>${x.emoji || '🎵'}</i><b>${esc(getLang() === 'de' && x.de ? x.de : x.name)}</b><span>${t('songsN', { n: x.count })}${x.special ? ' · ' + t('special') : ''}</span></button>`).join('')}</div>
+        </div>`;
     }
     if (S.host) {
       sticky = `<button class=btn onclick="start()" ${ready ? '' : 'disabled'}>${ready ? t('start') : t('needTeams')}</button>`;
