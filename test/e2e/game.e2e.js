@@ -466,6 +466,17 @@ test('special list: judge sees only Right/Wrong, one point, TV shows just the na
   await world.close();
 });
 
+test('account sheet: Admin link shows only when adminCheck is readable, path comes from the database', async () => {
+  const world = await newWorld(browser, srv.url);
+  await world.ctx.addInitScript(() => { localStorage.fakeAdmin = '1'; });
+  world.store.set('adminCheck', 'a-test-path');
+  const ph = await world.open('/play?p=Anna');
+  await ph.getByRole('button', { name: /Anna|admin@test|👤/ }).first().click();
+  await ph.locator('a[href="/a-test-path"]').waitFor({ timeout: 5000 });
+  assert.deepEqual(world.errors, []);
+  await world.close();
+});
+
 test('admin: import, create a list, add a song by pasted link; the TV and phones show the edited catalog', async () => {
   const world = await newWorld(browser, srv.url);
   await world.ctx.addInitScript(() => { localStorage.fakeAdmin = '1'; });

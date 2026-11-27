@@ -14,7 +14,7 @@ const pid = sim ? 'sim-' + sim : (localStorage.sqPid ||= Math.random().toString(
 let S = null, pub = { session: false, catalog: [] };
 let cfg = { list: null, mode: 'normal', length: 10, custom: false, buzzers: 'front', autoskip: 45 }, modal = null, nameV = sim || localStorage.sqName || '', codeV = qs.get('code') || '';
 let lastKey = '', skipAsk = false, wl = null;
-let user = null, sheet = null, authMsg = '', games = null, delConfirm = false, homeRoom = null, emailV = '', pwV = '', deferredInstall = null, installHint = '', lastModal = '';
+let user = null, sheet = null, authMsg = '', games = null, delConfirm = false, homeRoom = null, adminPath = null, emailV = '', pwV = '', deferredInstall = null, installHint = '', lastModal = '';
 let pauseSince = 0, offline = false, offTimer = 0;
 const seenAt = {}; // when each reveal / answer window was first seen, so the countdown bars survive re-renders
 
@@ -71,14 +71,15 @@ Object.assign(window, {
   start: () => act({ type: 'start', list: cfg.list || firstList(), mode: cfg.mode, length: cfg.length, buzzers: cfg.buzzers, autoskip: cfg.autoskip }),
   skip: () => { if (!skipAsk) { skipAsk = true; render(); } else { skipAsk = false; act({ type: 'skip' }); } },
   buzzNow,
-  openSheet: async (k) => { sheet = k; authMsg = ''; delConfirm = false; if (k === 'stats' && user) { games = null; render(); const sn = await D.get(r(`users/${user.uid}/games`)); games = Object.values(sn.val() || {}).sort((a, b) => b.ts - a.ts); } render(); },
+  openSheet: async (k) => { sheet = k; authMsg = ''; delConfirm = false; if (k === 'account' && user) D.get(r('adminCheck')).then((sn) => { adminPath = typeof sn.val() === 'string' ? sn.val() : null; render(); }, () => { adminPath = null; }); // readable only by the admin account, so the secret path is not in this file
+    if (k === 'stats' && user) { games = null; render(); const sn = await D.get(r(`users/${user.uid}/games`)); games = Object.values(sn.val() || {}).sort((a, b) => b.ts - a.ts); } render(); },
   closeSheet: () => { sheet = null; render(); },
   setEmail: (v) => { emailV = v; }, setPw: (v) => { pwV = v; },
   doGoogle: async () => { try { await google(); sheet = null; } catch (e) { authMsg = authError(e); } render(); },
   doSignIn: async () => { try { await signIn(emailV.trim(), pwV); sheet = null; } catch (e) { authMsg = authError(e); } render(); },
   doSignUp: async () => { try { await signUp(emailV.trim(), pwV); sheet = null; } catch (e) { authMsg = authError(e); } render(); },
   doReset: async () => { try { await resetPw(emailV.trim()); authMsg = t('resetSent'); } catch (e) { authMsg = authError(e); } render(); },
-  doSignOut: async () => { await signOut(); sheet = null; render(); },
+  doSignOut: async () => { await signOut(); sheet = null; adminPath = null; render(); },
   askDelete: (v) => { delConfirm = v; render(); },
   doDelete: async () => { try { await D.remove(r(`users/${user.uid}`)); await removeAccount(); sheet = null; } catch (e) { authMsg = authError(e); } render(); },
   hostHome: () => { homeRoom = Array.from(crypto.getRandomValues(new Uint8Array(10)), (b) => b.toString(16).padStart(2, '0')).join(''); D.set(r(`users/${user.uid}/rooms/${homeRoom}`), { created: Date.now() }); sheet = 'home'; render(); },
@@ -140,7 +141,7 @@ function sheetHtml() {
     <p class=hint><a href="#" onclick="doReset();return false" style="color:inherit">${t('forgot')}</a></p>${msg}
     <p class=hint style="font-size:.78rem">${t('privacy')}</p>${close}`;
   else if (sheet === 'account') inner = `<h2>${esc(user.displayName || t('yourAccount'))}</h2><p>${esc(user.email || '')}</p>
-    <button class=btn onclick="hostHome()">${t('hostHome')}</button><button class="btn ghost" onclick="openSheet('stats')">${t('myStats')}</button><button class="btn ghost" onclick="doSignOut()">${t('signOut')}</button>
+    <button class=btn onclick="hostHome()">${t('hostHome')}</button><button class="btn ghost" onclick="openSheet('stats')">${t('myStats')}</button>${adminPath ? `<a class="btn ghost" href="/${esc(adminPath)}">${t('adminLink')}</a>` : ''}<button class="btn ghost" onclick="doSignOut()">${t('signOut')}</button>
     ${delConfirm ? `<p class=err>${t('delAsk')}</p><button class=btn onclick="doDelete()">${t('delYes')}</button><button class="btn ghost" onclick="askDelete(false)">${t('cancel')}</button>` : `<button class="btn ghost" onclick="askDelete(true)">${t('delBtn')}</button>`}${msg}${close}`;
   else if (sheet === 'rules') inner = `<h2>${t('howToPlay')}</h2>${ruleCards([...RULES(), MODE_RULE('intro'), MODE_RULE('speed')])}${close}`;
   else if (sheet === 'home') { const link = location.origin + '/?room=' + homeRoom; inner = `<h2>${t('homeH')}</h2><p>${t('homeP')}</p>
