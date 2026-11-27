@@ -52,7 +52,8 @@ window.addSong = (list) => {
   putList(list, entryOf(list), [...songsOf(list), n]);
 };
 window.preview = (i) => { prev = prev === i ? null : i; lastHtml = ''; render(); };
-onUser((u) => { user = u; lastHtml = ''; render(); });
+let isAdmin = null; // null = checking; adminCheck is readable only by the admin user id (database rules), so no id sits in this file
+onUser((u) => { user = u; isAdmin = null; lastHtml = ''; render(); if (u) D.get(r('adminCheck')).then(() => { isAdmin = true; lastHtml = ''; render(); }, () => { isAdmin = false; lastHtml = ''; render(); }); });
 window.setEmail = (v) => { emailV = v; }; window.setPw = (v) => { pwV = v; };
 window.doGoogle = async () => { try { await google(); } catch (e) { authMsg = authError(e); render(); } };
 window.doSignIn = async () => { try { await signIn(emailV.trim(), pwV); } catch (e) { authMsg = authError(e); render(); } };
@@ -97,6 +98,7 @@ function render() {
       <button class="btn ghost" style="${sm}" onclick="preview(${i})">${prev === i ? 'Hide' : 'Preview'}</button><button class="btn ghost" style="${sm}" onclick="delSong('${cur.id}',${i})">Delete</button>
       ${prev === i ? `<iframe style="width:100%;aspect-ratio:16/9;border:0;border-radius:10px" allow="autoplay;encrypted-media" src="https://www.youtube.com/embed/${esc(s.id)}?start=${Math.floor(s.start || 0)}&autoplay=1"></iframe>` : ''}</div>`).join('')}
     <div style="${row};margin-top:12px">${nf('ns-title', 'Title', 'flex:2;min-width:130px')}${nf('ns-artist', 'Artist', 'flex:2;min-width:110px')}${nf('ns-id', 'YouTube id or link', 'width:130px')}${nf('ns-start', 'Start s', 'width:64px')}<button class=btn style="${sm}" onclick="addSong('${cur.id}')">Add song</button></div></div>`;
+  if (!user || !isAdmin) { const h = `<h1>Admin</h1>${user ? (isAdmin === null ? '<p class=hint>Loading…</p>' : `<div class=card><p class=hint style="margin:0">This account is not the admin.</p><button class="btn ghost" style="margin-top:10px" onclick="doSignOut()">Sign out</button></div>`) : who}`; if (h !== lastHtml) { lastHtml = h; $('main').innerHTML = h; } return; }
   const html = `<h1>Admin</h1>${who}${plist}${stable}<div class=label>Rooms (${list.length})</div>${list.map(card).join('') || '<div class=card><p class=hint style="margin:0">No room has been opened yet.</p></div>'}${msg ? `<p class=hint>${esc(msg)}</p>` : ''}`;
   if (html !== lastHtml) { lastHtml = html; $('main').innerHTML = html; }
 }

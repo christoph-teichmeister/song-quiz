@@ -72,7 +72,7 @@ window.__online = (b) => { online = b; CON.forEach((cb) => cb({ val: () => onlin
 export const onValue = (r, cb) => { if (r.path === '.info/connected') { CON.add(cb); cb({ val: () => online }); return () => CON.delete(cb); } return listen(r, cb, 'value'); };
 export const onChildAdded = (r, cb) => listen(r, cb, 'child');
 `;
-  const FAKE_AUTH = `export const getAuth = () => ({ currentUser: null }); export const onAuthStateChanged = (a, cb) => { setTimeout(() => cb(null), 0); return () => {}; };
+  const FAKE_AUTH = `export const getAuth = () => ({ currentUser: null }); export const onAuthStateChanged = (a, cb) => { setTimeout(() => cb(localStorage.fakeAdmin ? { uid: 'adm', email: 'admin@test' } : null), 0); return () => {}; };
 export class GoogleAuthProvider {} const no = async () => { throw Object.assign(new Error('offline'), { code: 'auth/offline' }); };
 export const signInWithPopup = no, signInWithEmailAndPassword = no, createUserWithEmailAndPassword = no, sendPasswordResetEmail = no, signOut = no, deleteUser = no;`;
   const FAKE_YT = `window.YT = { Player: class { constructor(el, o) { this.o = o; this.log = []; window.__yt = this; setTimeout(() => o.events.onReady(), 0); }
