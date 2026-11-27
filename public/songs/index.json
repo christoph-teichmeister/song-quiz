@@ -61,6 +61,18 @@
   "de": "Deutsche Hits"
  },
  {
+  "id": "dnb-classics",
+  "name": "DnB Classics",
+  "emoji": "🥁",
+  "de": "DnB Klassiker"
+ },
+ {
+  "id": "rock-legends",
+  "name": "Rock Legends",
+  "emoji": "🎸",
+  "de": "Rock-Legenden"
+ },
+ {
   "id": "tv-classics",
   "name": "TV classics",
   "emoji": "📺",
