@@ -24,36 +24,50 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 // Quiet cues on the phone: a ping + buzz when it is this player's turn. Audio unlocks with the first tap; each cue plays once.
 addEventListener('pointerdown', () => { try { ac().resume(); } catch {} }, { passive: true });
 const cued = new Set();
+const sfx = (k) => { if (!S?.paused) try { SFX[k](ac()); } catch {} }; // no sound while the game is paused
+let pz, mates; // paused flag and own team size as last seen
 function cue() {
-  if (!S || !S.me || S.paused) return;
+  if (!S || !S.me) return;
   const me = S.me, tm = me.team, ph = S.phase, nx = S.next, lr = S.lastResult;
+  if (pz !== undefined && !!S.paused !== pz) try { SFX[S.paused ? 'pause' : 'resume'](ac()); } catch {} // the pause itself and the resume are audible
+  pz = !!S.paused;
+  const mm = tm ? S.players.filter((p) => p.team === tm).length : undefined;
+  if (mates !== undefined && mm < mates && !S.paused) sfx('left'); // a teammate dropped out
+  mates = mm;
+  if (S.paused) return;
   const once = (k, sound, vib) => { if (cued.has(k)) return; cued.add(k); try { sound(ac()); } catch {} navigator.vibrate?.(vib); };
   if (ph === 'verify' && S.buzz && (S.judge === me.id || (!S.judge && tm && tm !== S.buzz.team))) once('j' + S.idx + S.buzz.at, SFX.join, [60, 50, 60]);
   else if (ph === 'reveal' && nx && (nx.A === me.id || nx.B === me.id || nx.judge === me.id)) once('n' + S.idx, SFX.ack, 80);
   else if (ph === 'reveal' && lr && lr.team === tm) once('r' + S.idx, lr.title && lr.artist ? SFX.both : lr.pts ? SFX.right : SFX.wrong, lr.pts ? 50 : [120, 60, 120]);
   else if (ph === 'lobby') cued.clear();
 }
-const buzzNow = (el) => { navigator.vibrate?.(40); el.classList.add('fire'); act({ type: 'buzz' }); };
+const sync = () => act({ type: 'cfg', ...cfg, list: cfg.list || firstList() }); // the host's picks go to the session so the other phones can mirror them
+let cfgSent = false;
+const buzzNow = (el) => { sfx('buzz'); navigator.vibrate?.(40); el.classList.add('fire'); act({ type: 'buzz' }); };
 const MODES = ['normal', 'intro', 'speed'];
 const firstList = () => (pub.catalog || []).find((c) => c.id !== 'random')?.id; // Random is the first tile but not the default
 const langPill = () => `<button class=score-pill style="border:0;color:inherit;cursor:pointer" onclick="toggleLang()" aria-label="Language">${getLang() === 'de' ? '<b>DE</b> · EN' : 'DE · <b>EN</b>'}</button>`;
 // handlers for inline onclick
 Object.assign(window, {
   act, send,
+  pickTeam: (x) => { if (S?.me?.team !== x) sfx('team'); act({ type: 'team', team: x }); },
+  readyNow: () => { sfx('front'); act({ type: 'ready' }); },
+  undoNow: () => { sfx('undo'); act({ type: 'undo' }); },
+  leave: (profile) => { try { localStorage[leftKey()] = '1'; } catch {} if (profile) window.openSheet('stats'); else { sheet = null; render(); } }, // end screen: leave this finished game (local only)
   toggleLang: () => { setLang(getLang() === 'de' ? 'en' : 'de'); lastModal = '\u0000'; render(); },
   setName: (v) => { nameV = v; if (!sim) localStorage.sqName = v; },
   setCode: (v) => { codeV = v; },
   create: () => send({ create: nameV.trim() || 'Player' }),
-  joinGame: () => send({ join: { code: (codeV || pub.code || '').trim(), name: nameV.trim() || 'Player' } }),
-  pickList: (id) => { cfg.list = id; render(); },
-  pickLen: (n) => { cfg.length = n; cfg.custom = false; render(); },
+  joinGame: () => { try { delete localStorage[leftKey()]; } catch {} render(); send({ join: { code: (codeV || pub.code || '').trim(), name: nameV.trim() || 'Player' } }); },
+  pickList: (id) => { cfg.list = id; sync(); render(); },
+  pickLen: (n) => { cfg.length = n; cfg.custom = false; sync(); render(); },
   pickCustom: () => { cfg.custom = true; render(); },
-  stepLen: (d) => { cfg.length = Math.max(1, Math.min(50, cfg.length + d)); render(); },
-  setLen: (v) => { const n = parseInt(v, 10); if (n > 0) cfg.length = Math.min(50, n); },
-  pickMode: (m) => { cfg.mode = m; modal = m === 'normal' ? null : m; render(); },
+  stepLen: (d) => { cfg.length = Math.max(1, Math.min(50, cfg.length + d)); sync(); render(); },
+  setLen: (v) => { const n = parseInt(v, 10); if (n > 0) { cfg.length = Math.min(50, n); sync(); } },
+  pickMode: (m) => { cfg.mode = m; sync(); modal = m === 'normal' ? null : m; render(); },
   closeModal: () => { modal = null; render(); },
-  pickBuzzers: (v) => { cfg.buzzers = v; render(); },
-  pickSkip: (n) => { cfg.autoskip = n; render(); },
+  pickBuzzers: (v) => { cfg.buzzers = v; sync(); render(); },
+  pickSkip: (n) => { cfg.autoskip = n; sync(); render(); },
   start: () => act({ type: 'start', list: cfg.list || firstList(), mode: cfg.mode, length: cfg.length, buzzers: cfg.buzzers, autoskip: cfg.autoskip }),
   skip: () => { if (!skipAsk) { skipAsk = true; render(); } else { skipAsk = false; act({ type: 'skip' }); } },
   buzzNow,
@@ -99,7 +113,9 @@ function maybeSave() { // each phone writes its own stats into its own account w
 const catName = (id) => { const c = (pub.catalog || []).find((x) => x.id === id); return c ? `${c.emoji || ''} ${getLang() === 'de' && c.de ? c.de : c.name}`.trim() : ''; };
 const skipLeft = () => { const k = seenAt['s' + S?.skipAt]; return k ? Math.max(0, Math.ceil((T.skipWarn - ((pauseSince || Date.now()) - k)) / 1000)) : ''; };
 setInterval(() => { const e = $('skn'); if (e) e.textContent = skipLeft(); }, 250);
-const live = () => S && S.me && pub.session && S.code === pub.code; // a view from an older game is ignored
+const leftKey = () => `sqLeft:${ROOM}-${S?.code}-${S?.game}`; // set when this phone left the finished game (end screen buttons)
+const left = () => { try { return S?.phase === 'end' && !!localStorage[leftKey()]; } catch { return false; } };
+const live = () => S && S.me && pub.session && S.code === pub.code && !left(); // a view from an older game is ignored
 async function awake() { try { if (live() && !wl && navigator.wakeLock) { wl = await navigator.wakeLock.request('screen'); wl.addEventListener('release', () => { wl = null; }); } } catch {} } // a sleeping screen would cost the buzz
 document.addEventListener('visibilitychange', () => { if (!document.hidden) awake(); });
 
@@ -143,10 +159,10 @@ function sheetHtml() {
 function render() {
   $('off').hidden = !offline; $('off').textContent = t('offlineBanner');
   let v;
-  if (!live()) v = entry(); else v = game();
+  if (!live()) { v = entry(); cfgSent = false; } else v = game();
   const enter = v.key !== lastKey; if (enter) skipAsk = false; lastKey = v.key;
   $('main').className = 'app' + (enter ? ' enter' : '');
-  $('main').innerHTML = v.body + (S?.err ? `<p class=err>${esc(t('e.' + S.err) === 'e.' + S.err ? S.err : t('e.' + S.err))}</p>` : '');
+  $('main').innerHTML = v.body + (S?.err ? `<p class=err>${esc(t('e.' + S.err) === 'e.' + S.err ? S.err : t('e.' + S.err, { name: S.hostName }))}</p>` : '');
   $('sticky').innerHTML = v.sticky ? `<div class=sticky>${v.sticky}</div>` : '';
   const mh = sheet ? sheetHtml() : modal ? `<div class=modal onclick="closeModal()"><div onclick="event.stopPropagation()"><h2>${t('m.' + modal)}</h2><p>${t('m.' + modal + '.t')}</p><button class=btn onclick="closeModal()">OK</button></div></div>` : '';
   const typing = document.activeElement?.tagName === 'INPUT' && $('modal').contains(document.activeElement); // only a focused input inside the sheet blocks the rebuild, buttons must be able to close it
@@ -169,25 +185,29 @@ function game() {
   else if (!S.paused && pauseSince) { for (const k in seenAt) seenAt[k] += Date.now() - pauseSince; pauseSince = 0; }
   document.body.classList.toggle('paused', !!S.paused);
   const pauseBtn = S.host && ['countdown', 'playing', 'verify', 'reveal'].includes(ph) ? `<div class=stack style="margin-top:1rem"><button class="btn ghost" onclick="act({type:'${S.paused ? 'resume' : 'pause'}'})">${S.paused ? '▶ ' + t('resume') : '⏸ ' + t('pause')}</button></div>` : '';
-  const undoBtn = S.canUndo ? `<div class=stack style="margin-top:1rem"><button class="btn ghost" onclick="act({type:'undo'})">${t('undo')}</button></div>` : '';
+  const undoBtn = S.canUndo ? `<div class=stack style="margin-top:1rem"><button class="btn ghost" onclick="undoNow()">${t('undo')}</button></div>` : '';
   const sk = S.skipAt && ph === 'playing' ? (seenAt['s' + S.skipAt] ||= Date.now()) : 0; // nobody knows: the same 10 s warning as on the TV, on this phone's clock
   const skipBanner = sk ? `<div class=judge-banner style="text-align:center">${t('nobodyKnows', { n: `<span id=skn>${skipLeft()}</span>` })}</div>` : '';
   const skipBtn = S.host && ['pickfront', 'countdown', 'playing', 'verify'].includes(ph) && !S.paused ? `<div class=stack style="margin-top:2.5rem"><button class="btn ghost" onclick="skip()">${skipAsk ? t('skipAsk') : t('skip')}</button></div>` : '';
 
   if (ph === 'lobby') {
     const ready = mem('A').length > 0 && mem('B').length > 0;
-    const card = (x) => `<button class="team-card ${x}${tm === x ? ' on' : ''}" onclick="act({type:'team',team:'${x}'})"><h3 class=${x}>${t('team')} ${x}</h3><div class=chips>${mem(x).map((p) => `<span class=chip>${esc(p.name)}</span>`).join('') || `<span class=hint>${t('nobody')}</span>`}</div><span class=join-pill>${tm === x ? t('youIn') : tm ? t('tapSwitch') : t('tapJoin')}</span></button>`;
+    const card = (x) => `<button class="team-card ${x}${tm === x ? ' on' : ''}" onclick="pickTeam('${x}')"><h3 class=${x}>${t('team')} ${x}</h3><div class=chips>${mem(x).map((p) => `<span class=chip>${esc(p.name)}</span>`).join('') || `<span class=hint>${t('nobody')}</span>`}</div><span class=join-pill>${tm === x ? t('youIn') : tm ? t('tapSwitch') : t('tapJoin')}</span></button>`;
     body = `${hdr}<div class=label>${t('code')} ${esc(S.code)}</div><div class="step${tm ? ' done' : ''}"><b>${tm ? '✓' : 1}</b>${t('step1')}<small>${t('tapCard')}</small></div><div class=team-cards>${card('A')}${card('B')}</div>`;
+    if (S.host && !S.cfg && !cfgSent) { cfgSent = true; sync(); }
+    const ro = !S.host, c = ro ? S.cfg : cfg; // the other phones see the host's picks, read only
+    if (c) {
+      const cat = pub.catalog || [], sel = c.list || firstList(), custom = c.custom || ![5, 10, 15].includes(c.length), tap = (fn) => (ro ? '' : `onclick="${fn}"`), sm = (k) => (ro ? '' : `<small>${t(k)}</small>`);
+      body += `<div class="${ro ? 'ro' : 'cfgbox'}">${ro ? `<p class=hint>${t('hostPicks', { name: esc(S.hostName) })}</p>` : ''}<div class=step><b>2</b>${t('step2')}${sm('tapOne')}</div><div class=tiles>${cat.map((x) => `<button class="tile${x.id === sel ? ' on' : ''}" ${tap(`pickList('${x.id}')`)}><i>${x.emoji || '🎵'}</i><b>${esc(getLang() === 'de' && x.de ? x.de : x.name)}</b><span>${t('songsN', { n: x.count })}</span></button>`).join('')}</div>
+        <div class=step><b>3</b>${t('step3')}${sm('tapChange')}</div><div class=seg>${MODES.map((k) => `<button class="${c.mode === k ? 'on' : ''}" ${tap(`pickMode('${k}')`)}>${t('m.' + k)}</button>`).join('')}</div>
+        <div class=step><b>4</b>${t('step4')}${sm('tapChange')}</div><div class=seg>${[5, 10, 15].map((n) => `<button class="${!custom && c.length === n ? 'on' : ''}" ${tap(`pickLen(${n})`)}>${n}</button>`).join('')}<button class="${custom ? 'on' : ''}" ${tap('pickCustom()')}>${t('custom')}</button></div>
+        <div class=label>${t('bz.label')}</div><div class=seg>${['front', 'all'].map((k) => `<button class="${c.buzzers === k ? 'on' : ''}" ${tap(`pickBuzzers('${k}')`)}>${t('bz.' + k)}</button>`).join('')}</div>
+        <div class=label>${t('as.label')}</div><div class=seg>${[0, 30, 45, 60].map((n) => `<button class="${c.autoskip === n ? 'on' : ''}" ${tap(`pickSkip(${n})`)}>${n ? n + ' s' : t('as.off')}</button>`).join('')}</div>
+        ${custom ? (ro ? `<p class=hint>${t('songsN', { n: c.length })}</p>` : `<div class=stepper><button onclick="stepLen(-1)" aria-label="${t('fewer')}">−</button><input class=input id=len type=number inputmode=numeric min=1 max=50 value="${cfg.length}" oninput="setLen(this.value)"><button onclick="stepLen(1)" aria-label="${t('more')}">+</button></div>`) : ''}</div>`;
+    }
     if (S.host) {
-      const cat = pub.catalog || [], sel = cfg.list || firstList(), custom = cfg.custom || ![5, 10, 15].includes(cfg.length);
-      body += `<div class=step><b>2</b>${t('step2')}<small>${t('tapOne')}</small></div><div class=tiles>${cat.map((c) => `<button class="tile${c.id === sel ? ' on' : ''}" onclick="pickList('${c.id}')"><i>${c.emoji || '🎵'}</i><b>${esc(getLang() === 'de' && c.de ? c.de : c.name)}</b><span>${t('songsN', { n: c.count })}</span></button>`).join('')}</div>
-        <div class=step><b>3</b>${t('step3')}<small>${t('tapChange')}</small></div><div class=seg>${MODES.map((k) => `<button class="${cfg.mode === k ? 'on' : ''}" onclick="pickMode('${k}')">${t('m.' + k)}</button>`).join('')}</div>
-        <div class=step><b>4</b>${t('step4')}<small>${t('tapChange')}</small></div><div class=seg>${[5, 10, 15].map((n) => `<button class="${!custom && cfg.length === n ? 'on' : ''}" onclick="pickLen(${n})">${n}</button>`).join('')}<button class="${custom ? 'on' : ''}" onclick="pickCustom()">${t('custom')}</button></div>
-        <div class=label>${t('bz.label')}</div><div class=seg>${['front', 'all'].map((k) => `<button class="${cfg.buzzers === k ? 'on' : ''}" onclick="pickBuzzers('${k}')">${t('bz.' + k)}</button>`).join('')}</div>
-        <div class=label>${t('as.label')}</div><div class=seg>${[0, 30, 45, 60].map((n) => `<button class="${cfg.autoskip === n ? 'on' : ''}" onclick="pickSkip(${n})">${n ? n + ' s' : t('as.off')}</button>`).join('')}</div>
-        ${custom ? `<div class=stepper><button onclick="stepLen(-1)" aria-label="${t('fewer')}">−</button><input class=input id=len type=number inputmode=numeric min=1 max=50 value="${cfg.length}" oninput="setLen(this.value)"><button onclick="stepLen(1)" aria-label="${t('more')}">+</button></div>` : ''}`;
       sticky = `<button class=btn onclick="start()" ${ready ? '' : 'disabled'}>${ready ? t('start') : t('needTeams')}</button>`;
-    } else body += `<p class=hint>${tm ? '' : t('pickTeam')}${t('hostStarts')} <span class=dots><i></i><i></i><i></i></span></p>`;
+    } else body += `<p class=hint>${tm ? '' : t('pickTeam')}${t('hostStarts', { name: esc(S.hostName) })} <span class=dots><i></i><i></i><i></i></span></p>`;
   } else if (!tm && ph !== 'end') { // joined after the start: watch, play from the next round
     body = `${hdrP}<div class=center><h2>👀</h2><p class=hint>${t('spectator')}</p></div>`;
     if (S.host && ph === 'howto') sticky = `<button class=btn onclick="act({type:'skiphowto'})">${t('startAnyway')}</button>`;
@@ -200,7 +220,7 @@ function game() {
   } else if (ph === 'pickfront') {
     const fr = S.teams[tm].front, solo = mem(tm).length < 2;
     body = `${hdrP}<h2>${solo ? t('soloFront') : t('whoFront')}</h2><div class=stack>${solo ? '' : mem(tm).map((p) => `<button class="btn ghost${p.id === fr ? ' on' : ''}" onclick="act({type:'front',id:'${p.id}'})">${esc(p.name)}${p.id === fr ? ' 🎤' : ''}</button>`).join('')}</div>${skipBtn}`;
-    if (fr === me.id) sticky = `<button class=btn onclick="act({type:'ready'})" ${S.teams[tm].ready ? 'disabled' : ''}>${S.teams[tm].ready ? t('waitOtherTeam') : t('ready')}</button>`;
+    if (fr === me.id) sticky = `<button class=btn onclick="readyNow()" ${S.teams[tm].ready ? 'disabled' : ''}>${S.teams[tm].ready ? t('waitOtherTeam') : t('ready')}</button>`;
   } else if (ph === 'countdown') {
     body = `${hdrP}${judgeBanner}<h2 style="text-align:center;margin-top:6vh">${t('getReady')}<br><span class=dots><i></i><i></i><i></i></span></h2>${front ? `<p class=hint>${all ? t('allBuzz') : t('youFront')}</p>` : ''}${pauseBtn}${skipBtn}`;
     key = 'countdown' + S.idx;
@@ -238,10 +258,11 @@ function game() {
       <div class=stat-grid><div><b>${me2.pts}</b><span>${t('points')}</span></div><div><b>${me2.buzzes}</b><span>${t('buzzes')}</span></div><div><b>${me2.right}</b><span>${t('right')}</span></div><div><b>${me2.wrong}</b><span>${t('wrong')}</span></div><div><b>${sec(me2.avgMs)}</b><span>${t('avgBuzz')}</span></div><div><b>${sec(me2.bestMs)}</b><span>${t('fastest')}</span></div></div>` : `<p class=hint>${t('noStats')}</p>`);
     const standalone = matchMedia('(display-mode: standalone)').matches;
     body += user ? `<p class=hint>${t('saved')}</p>` : `<div class=card><b>${t('liked')}</b><p style="margin:.4em 0 .8em;color:var(--mute)">${t('likedP')}</p><div class=stack>${standalone ? '' : `<button class="btn ghost" onclick="installApp()">${t('install')}</button>`}<button class=btn onclick="openSheet('account')">${t('createFree')}</button></div>${installHint ? `<p class=hint>${esc(installHint)}</p>` : ''}</div>`;
+    body += `<div class=stack><button class="btn ghost" onclick="leave(${!!user})">${user ? t('toProfile') : t('toStart')}</button></div>`;
     if (S.host) sticky = `<button class=btn onclick="act({type:'again'})">${t('again')}</button>`;
   } else body = hdr;
   const tvWarn = pub.tvHidden && S.host && ph !== 'end' ? `<div class=judge-banner style="border-color:var(--bad);background:#ff6b6b1a">${t('tvHidden')}</div>` : '';
-  const pauseWarn = S.paused ? `<div class=judge-banner style="text-align:center;font-weight:600">${S.host ? t('pauseHost') : t('pauseBanner')}</div>` : '';
+  const pauseWarn = S.paused ? `<div class=judge-banner style="text-align:center;font-weight:600">${S.host ? t('pauseHost') : t('pauseBanner', { name: esc(S.hostName) })}</div>` : '';
   return { key, body: tvWarn + pauseWarn + body, sticky };
 }
 render();

@@ -510,3 +510,19 @@ test('the reveal answer carries the song category', () => {
   const now = play(s, 0); act(s, s.teams.A.front, { type: 'skip' }, now);
   assert.equal(view(s, ids.A[0], now).answer.cat, 'hits-80s');
 });
+
+test('host picks are stored for the other phones and used at start', () => {
+  const s = createSession('host', 0), h = s.hostId, b = join(s, 'bob', 0).id;
+  act(s, h, { type: 'team', team: 'A' }, 0); act(s, b, { type: 'team', team: 'B' }, 0);
+  assert.equal(view(s, b, 0).cfg, null);
+  assert.equal(view(s, b, 0).hostName, 'host');
+  assert.equal(act(s, b, { type: 'cfg', list: 'x' }, 0), 'host only');
+  assert.equal(act(s, h, { type: 'cfg', list: 'x', mode: 'speed', length: 7, buzzers: 'all', autoskip: 30 }, 0), null);
+  assert.deepEqual(view(s, b, 0).cfg, { list: 'x', mode: 'speed', length: 7, buzzers: 'all', autoskip: 30 });
+  assert.equal(act(s, h, { type: 'cfg', mode: 'bogus', length: 999, buzzers: 'x', autoskip: 5 }, 0), null);
+  assert.deepEqual(view(s, b, 0).cfg, { list: null, mode: 'normal', length: 50, buzzers: 'front', autoskip: 45 });
+  act(s, h, { type: 'cfg', list: 'x', mode: 'speed', length: 1, buzzers: 'all', autoskip: 0 }, 0);
+  assert.equal(act(s, h, { type: 'start', list: 'other', mode: 'normal', length: 2, songs }, 0), null); // the stored picks win
+  assert.deepEqual(s.settings, { list: 'x', mode: 'speed', length: 1, buzzers: 'all', autoskip: 0 });
+  assert.equal(act(s, h, { type: 'cfg', list: 'y' }, 0), 'host only'); // lobby only
+});
