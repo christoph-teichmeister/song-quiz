@@ -12,7 +12,7 @@ const qs = new URLSearchParams(location.search);
 const sim = qs.get('p'); // /sim opens several fake phones: ?p=Anna gives a fixed player id and name
 const pid = sim ? 'sim-' + sim : (localStorage.sqPid ||= Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6));
 let S = null, pub = { session: false, catalog: [] };
-let cfg = { list: null, mode: 'normal', length: 10, custom: false }, modal = null, nameV = sim || localStorage.sqName || '', codeV = qs.get('code') || '';
+let cfg = { list: null, mode: 'normal', length: 10, custom: false, buzzers: 'front', autoskip: 45 }, modal = null, nameV = sim || localStorage.sqName || '', codeV = qs.get('code') || '';
 let lastKey = '', skipAsk = false, wl = null;
 let user = null, sheet = null, authMsg = '', games = null, delConfirm = false, homeRoom = null, emailV = '', pwV = '', deferredInstall = null, installHint = '', lastModal = '';
 let pauseSince = 0, offline = false, offTimer = 0;
@@ -52,7 +52,9 @@ Object.assign(window, {
   setLen: (v) => { const n = parseInt(v, 10); if (n > 0) cfg.length = Math.min(50, n); },
   pickMode: (m) => { cfg.mode = m; modal = m === 'normal' ? null : m; render(); },
   closeModal: () => { modal = null; render(); },
-  start: () => act({ type: 'start', list: cfg.list || firstList(), mode: cfg.mode, length: cfg.length }),
+  pickBuzzers: (v) => { cfg.buzzers = v; render(); },
+  pickSkip: (n) => { cfg.autoskip = n; render(); },
+  start: () => act({ type: 'start', list: cfg.list || firstList(), mode: cfg.mode, length: cfg.length, buzzers: cfg.buzzers, autoskip: cfg.autoskip }),
   skip: () => { if (!skipAsk) { skipAsk = true; render(); } else { skipAsk = false; act({ type: 'skip' }); } },
   buzzNow,
   openSheet: async (k) => { sheet = k; authMsg = ''; delConfirm = false; if (k === 'stats' && user) { games = null; render(); const sn = await D.get(r(`users/${user.uid}/games`)); games = Object.values(sn.val() || {}).sort((a, b) => b.ts - a.ts); } render(); },
@@ -94,6 +96,9 @@ function maybeSave() { // each phone writes its own stats into its own account w
   D.set(r(`users/${user.uid}/games/${id}`), { ts: Date.now(), room: ROOM, list: S.settings?.list ?? null, mode: S.settings?.mode ?? 'normal', songs: S.total, team: me2.team, A: a, B: b, result: mine > other ? 'win' : mine < other ? 'loss' : 'draw',
     pts: me2.pts, buzzes: me2.buzzes, right: me2.right, wrong: me2.wrong, avgMs: me2.avgMs ?? null, bestMs: me2.bestMs ?? null });
 }
+const catName = (id) => { const c = (pub.catalog || []).find((x) => x.id === id); return c ? `${c.emoji || ''} ${getLang() === 'de' && c.de ? c.de : c.name}`.trim() : ''; };
+const skipLeft = () => { const k = seenAt['s' + S?.skipAt]; return k ? Math.max(0, Math.ceil((T.skipWarn - ((pauseSince || Date.now()) - k)) / 1000)) : ''; };
+setInterval(() => { const e = $('skn'); if (e) e.textContent = skipLeft(); }, 250);
 const live = () => S && S.me && pub.session && S.code === pub.code; // a view from an older game is ignored
 async function awake() { try { if (live() && !wl && navigator.wakeLock) { wl = await navigator.wakeLock.request('screen'); wl.addEventListener('release', () => { wl = null; }); } } catch {} } // a sleeping screen would cost the buzz
 document.addEventListener('visibilitychange', () => { if (!document.hidden) awake(); });
@@ -152,11 +157,11 @@ function render() {
 
 function game() {
   const me = S.me, tm = me.team, ph = S.phase, mem = (x) => S.players.filter((p) => p.team === x);
-  const isJudge = S.judge === me.id, front = tm && S.teams[tm].front === me.id, lk = (S.locked || []).includes(tm);
+  const all = S.settings.buzzers === 'all', isJudge = S.judge === me.id, front = tm && (all || S.teams[tm].front === me.id), lk = (S.locked || []).includes(tm);
   const hdr = `<div class=hdr><span><b>${esc(me.name)}</b> · ${tm ? `<b class=${tm}>${t('team')} ${tm}</b>` : t('noTeam')}</span>${langPill()}<span class=score-pill><span class=A>${S.teams.A.score}</span> : <span class=B>${S.teams.B.score}</span></span></div>`;
   const left = S.total - S.idx - 1;
   const prog = S.total && !['lobby', 'end'].includes(ph) ? `<div class=prog><span>${t('songOf', { n: S.idx + 1, m: S.total })} · ${left ? t('toGo', { n: left }) : t('lastSong')}</span><div><i style="width:${100 * (S.idx + (ph === 'reveal' ? 1 : 0)) / S.total}%"></i></div></div>` : '';
-  const judgeBanner = isJudge && ['countdown', 'playing'].includes(ph) ? `<div class=judge-banner>${t('judgeBanner')}</div>` : '';
+  const judgeBanner = isJudge && !all && ['countdown', 'playing'].includes(ph) ? `<div class=judge-banner>${t('judgeBanner')}</div>` : '';
   let body = '', sticky = '', key = ph;
   const hdrP = hdr + prog;
   // countdown bars run on this phone's clock: freeze them with the game and push them on by the paused time
@@ -164,6 +169,9 @@ function game() {
   else if (!S.paused && pauseSince) { for (const k in seenAt) seenAt[k] += Date.now() - pauseSince; pauseSince = 0; }
   document.body.classList.toggle('paused', !!S.paused);
   const pauseBtn = S.host && ['countdown', 'playing', 'verify', 'reveal'].includes(ph) ? `<div class=stack style="margin-top:1rem"><button class="btn ghost" onclick="act({type:'${S.paused ? 'resume' : 'pause'}'})">${S.paused ? '▶ ' + t('resume') : '⏸ ' + t('pause')}</button></div>` : '';
+  const undoBtn = S.canUndo ? `<div class=stack style="margin-top:1rem"><button class="btn ghost" onclick="act({type:'undo'})">${t('undo')}</button></div>` : '';
+  const sk = S.skipAt && ph === 'playing' ? (seenAt['s' + S.skipAt] ||= Date.now()) : 0; // nobody knows: the same 10 s warning as on the TV, on this phone's clock
+  const skipBanner = sk ? `<div class=judge-banner style="text-align:center">${t('nobodyKnows', { n: `<span id=skn>${skipLeft()}</span>` })}</div>` : '';
   const skipBtn = S.host && ['pickfront', 'countdown', 'playing', 'verify'].includes(ph) && !S.paused ? `<div class=stack style="margin-top:2.5rem"><button class="btn ghost" onclick="skip()">${skipAsk ? t('skipAsk') : t('skip')}</button></div>` : '';
 
   if (ph === 'lobby') {
@@ -175,6 +183,8 @@ function game() {
       body += `<div class=step><b>2</b>${t('step2')}<small>${t('tapOne')}</small></div><div class=tiles>${cat.map((c) => `<button class="tile${c.id === sel ? ' on' : ''}" onclick="pickList('${c.id}')"><i>${c.emoji || '🎵'}</i><b>${esc(getLang() === 'de' && c.de ? c.de : c.name)}</b><span>${t('songsN', { n: c.count })}</span></button>`).join('')}</div>
         <div class=step><b>3</b>${t('step3')}<small>${t('tapChange')}</small></div><div class=seg>${MODES.map((k) => `<button class="${cfg.mode === k ? 'on' : ''}" onclick="pickMode('${k}')">${t('m.' + k)}</button>`).join('')}</div>
         <div class=step><b>4</b>${t('step4')}<small>${t('tapChange')}</small></div><div class=seg>${[5, 10, 15].map((n) => `<button class="${!custom && cfg.length === n ? 'on' : ''}" onclick="pickLen(${n})">${n}</button>`).join('')}<button class="${custom ? 'on' : ''}" onclick="pickCustom()">${t('custom')}</button></div>
+        <div class=label>${t('bz.label')}</div><div class=seg>${['front', 'all'].map((k) => `<button class="${cfg.buzzers === k ? 'on' : ''}" onclick="pickBuzzers('${k}')">${t('bz.' + k)}</button>`).join('')}</div>
+        <div class=label>${t('as.label')}</div><div class=seg>${[0, 30, 45, 60].map((n) => `<button class="${cfg.autoskip === n ? 'on' : ''}" onclick="pickSkip(${n})">${n ? n + ' s' : t('as.off')}</button>`).join('')}</div>
         ${custom ? `<div class=stepper><button onclick="stepLen(-1)" aria-label="${t('fewer')}">−</button><input class=input id=len type=number inputmode=numeric min=1 max=50 value="${cfg.length}" oninput="setLen(this.value)"><button onclick="stepLen(1)" aria-label="${t('more')}">+</button></div>` : ''}`;
       sticky = `<button class=btn onclick="start()" ${ready ? '' : 'disabled'}>${ready ? t('start') : t('needTeams')}</button>`;
     } else body += `<p class=hint>${tm ? '' : t('pickTeam')}${t('hostStarts')} <span class=dots><i></i><i></i><i></i></span></p>`;
@@ -188,17 +198,17 @@ function game() {
     sticky = (mine ? `<button class=btn disabled>${t('waitOthers')}</button>` : `<button class=btn onclick="act({type:'ack'})">${t('gotIt')}</button>`)
       + (S.host ? `<button class="btn ghost" onclick="act({type:'skiphowto'})">${t('startAnyway')}</button>` : '');
   } else if (ph === 'pickfront') {
-    const fr = S.teams[tm].front;
-    body = `${hdrP}<h2>${t('whoFront')}</h2><div class=stack>${mem(tm).map((p) => `<button class="btn ghost${p.id === fr ? ' on' : ''}" onclick="act({type:'front',id:'${p.id}'})">${esc(p.name)}${p.id === fr ? ' 🎤' : ''}</button>`).join('')}</div>${skipBtn}`;
+    const fr = S.teams[tm].front, solo = mem(tm).length < 2;
+    body = `${hdrP}<h2>${solo ? t('soloFront') : t('whoFront')}</h2><div class=stack>${solo ? '' : mem(tm).map((p) => `<button class="btn ghost${p.id === fr ? ' on' : ''}" onclick="act({type:'front',id:'${p.id}'})">${esc(p.name)}${p.id === fr ? ' 🎤' : ''}</button>`).join('')}</div>${skipBtn}`;
     if (fr === me.id) sticky = `<button class=btn onclick="act({type:'ready'})" ${S.teams[tm].ready ? 'disabled' : ''}>${S.teams[tm].ready ? t('waitOtherTeam') : t('ready')}</button>`;
   } else if (ph === 'countdown') {
-    body = `${hdrP}${judgeBanner}<h2 style="text-align:center;margin-top:6vh">${t('getReady')}<br><span class=dots><i></i><i></i><i></i></span></h2>${front ? `<p class=hint>${t('youFront')}</p>` : ''}${pauseBtn}${skipBtn}`;
+    body = `${hdrP}${judgeBanner}<h2 style="text-align:center;margin-top:6vh">${t('getReady')}<br><span class=dots><i></i><i></i><i></i></span></h2>${front ? `<p class=hint>${all ? t('allBuzz') : t('youFront')}</p>` : ''}${pauseBtn}${skipBtn}`;
     key = 'countdown' + S.idx;
   } else if (ph === 'playing') {
     key = 'playing' + S.idx;
-    body = `${hdrP}${judgeBanner}` + (front
+    body = `${hdrP}${judgeBanner}${skipBanner}` + (front
       ? `<div class=center><button class=buzz id=buzz ${lk || S.paused || offline ? 'disabled' : ''} onclick="buzzNow(this)">${offline ? t('offline') : S.paused ? t('pauseBuzz') : lk ? t('locked') : t('buzz')}</button></div>`
-      : `<div class=center><h2>${lk ? t('teamLocked') : t('listening')}</h2><p class=hint>${lk ? t('otherTry') : t('frontBuzzes')}</p></div>`) + pauseBtn + skipBtn;
+      : `<div class=center><h2>${lk ? t('teamLocked') : t('listening')}</h2><p class=hint>${lk ? t('otherTry') : t('frontBuzzes')}</p></div>`) + undoBtn + pauseBtn + skipBtn;
   } else if (ph === 'verify') {
     const vk = S.idx + ':' + S.buzz.at, since = (seenAt['v' + vk] ||= Date.now()), clock = pauseSince || Date.now(), el = Math.min(clock - since, T.answer);
     const bar = `<div class=cdp><span>${el >= T.answer ? t('talkOver') : t('timeLeft')}</span><div><i style="animation-duration:${T.answer}ms;animation-delay:-${el}ms"></i></div></div>`;
@@ -219,7 +229,7 @@ function game() {
     const nextNote = upNext ? `<div class=judge-banner>${t('nextGuesser', { team: tm })}</div>` : judgeNext ? `<div class=judge-banner>${t('nextJudge')}</div>` : '';
     const rs = (seenAt['r' + S.idx] ||= Date.now()), el = Math.min((pauseSince || Date.now()) - rs, 10000);
     const cdp = nx ? `<div class=cdp><span>${t('nextSoon')}</span><div><i style="animation-duration:10000ms;animation-delay:-${el}ms"></i></div></div>` : '';
-    body = `${hdrP}${nextNote}${cdp}<div class=card><div class=answer>${esc(S.answer.title)}<small>${esc(S.answer.artist)}</small></div></div>${lr ? `<p class=hint><b class=${lr.team}>${t('team')} ${lr.team}</b> ${lr.pts ? `+${lr.pts}` : t('noPoints')}</p>` : ''}<p class=hint>${nx ? '' : t('lastOne')}</p>${pauseBtn}`;
+    body = `${hdrP}${nextNote}${cdp}<div class=card><div class=answer>${esc(S.answer.title)}<small>${esc(S.answer.artist)}</small></div></div>${S.settings.list === 'random' && S.answer.cat ? `<p class=hint>${esc(catName(S.answer.cat))}</p>` : ''}${lr ? `<p class=hint><b class=${lr.team}>${t('team')} ${lr.team}</b> ${lr.pts ? `+${lr.pts}` : t('noPoints')}</p>` : ''}<p class=hint>${nx ? '' : t('lastOne')}</p>${undoBtn}${pauseBtn}`;
   } else if (ph === 'end') {
     const draw = S.teams.A.score === S.teams.B.score, w = draw ? t('draw2') : t('winsT', { team: S.teams.A.score > S.teams.B.score ? 'A' : 'B' });
     const me2 = (S.stats || []).find((p) => p.id === me.id), aw = awards(S.stats || [])[me.id] || [];

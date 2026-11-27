@@ -11,7 +11,7 @@ const NAMES = ['Anna', 'Cleo', 'Ben', 'Dan'], TEAM = { Anna: 'A', Cleo: 'A', Ben
 const btn = (p, name) => p.getByRole('button', { name });
 
 // TV + four phones in the lobby, teams picked, game started (mode and length as given), rules confirmed
-async function startGame(world, { mode, length = 3, names = NAMES, howto = true, list } = {}) {
+async function startGame(world, { mode, length = 3, names = NAMES, howto = true, list, all } = {}) {
   const tv = await world.open('/?new&fast');
   await tv.click('#snd');
   const ph = {};
@@ -23,6 +23,7 @@ async function startGame(world, { mode, length = 3, names = NAMES, howto = true,
   await waitText(ph.Anna, /Jedes Team braucht|Spiel starten/);
   if (list) await ph.Anna.locator('.tile', { hasText: list }).click();
   if (mode === 'intro') { await btn(ph.Anna, 'Nur Intro').click(); await btn(ph.Anna, 'OK').click(); }
+  if (all) await btn(ph.Anna, 'Alle im Team').click();
   await btn(ph.Anna, 'Eigene').click();
   await ph.Anna.fill('#len', String(length));
   await btn(ph.Anna, 'Spiel starten').click();
@@ -389,5 +390,22 @@ test('phones ping and vibrate for the judge, once per buzz', async () => {
   await until(async () => (await ph[judge].evaluate(() => window.__osc)) > before[0], 'judge ping');
   assert.ok((await ph[judge].evaluate(() => window.__vib)) > before[1], 'judge phone vibrated');
   assert.equal(await ph[other].evaluate(() => window.__osc), 0, 'a bystander phone stays silent');
+  await world.close();
+});
+
+test('buzzers for everyone: no front-person step, any team member buzzes, the other team judges and can undo', async () => {
+  const world = await newWorld(browser, srv.url);
+  const { tv, ph } = await startGame(world, { all: true, length: 2 });
+  await until(async () => (await Promise.all(Object.values(ph).map((p) => p.locator('.buzz').count()))).every((n) => n === 1), 'a buzzer on every phone');
+  await ph.Cleo.locator('.buzz').click();                                            // the second player of team A, not a front-person
+  const judge = await until(async () => { for (const n of ['Ben', 'Dan']) if (await btn(ph[n], RIGHT.wrong).count()) return n; }, 'judge screen on team B');
+  assert.equal(await btn(ph[judge === 'Ben' ? 'Dan' : 'Ben'], RIGHT.wrong).count(), 0);
+  await btn(ph[judge], RIGHT.both).click();                                          // song over: reveal
+  await waitText(tv, /Nächster Song in/);
+  await btn(ph[judge], 'Rückgängig').click();                                        // wrong tap: back to the judge screen
+  await until(() => btn(ph[judge], RIGHT.wrong).count(), 'judge screen again');
+  await btn(ph[judge], RIGHT.wrong).click();
+  await waitText(ph.Cleo, /GESPERRT/);
+  assert.deepEqual(world.errors, []);
   await world.close();
 });
