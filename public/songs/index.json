@@ -45,7 +45,8 @@
   "id": "film-songs",
   "name": "Film songs",
   "emoji": "🎞️",
-  "de": "Film-Songs"
+  "de": "Film-Songs",
+  "special": true
  },
  {
   "id": "movie-tv-themes",

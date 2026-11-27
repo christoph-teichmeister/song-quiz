@@ -132,7 +132,7 @@ function render() {
   const html = `<header class=top><h1>Song Quiz Admin</h1><nav class=tabs><button class="${tab === 'lists' ? 'on' : ''}" onclick="setTab('lists')">Playlists</button><button class="${tab === 'rooms' ? 'on' : ''}" onclick="setTab('rooms')">Rooms${live ? ` <span class=badge>${live}</span>` : ''}</button></nav>
     <details class=acct><summary>${esc(user.email || user.displayName || 'Account')}</summary><div class=card><button class=sb onclick="doSignOut()">Sign out</button></div></details></header>
     ${tab === 'lists' ? listsView(M) : `<div class=grid>${rl.map(roomCard).join('') || '<div class=card><p class=hint style="margin:0">No room has been opened yet.</p></div>'}</div>`}
-    ${toastOn ? `<div class=toast>${esc(msg)}${undoFn ? ' <button onclick="undo()">Undo</button>' : ''}</div>` : ''}`;
+    ${toastOn ? `<div class=toast><span>${esc(msg)}</span>${undoFn ? '<button onclick="undo()">Undo</button>' : ''}</div>` : ''}`;
   if (html !== lastHtml) { lastHtml = html; $('main').innerHTML = html; }
 }
 render();
