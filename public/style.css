@@ -225,3 +225,7 @@ body.ingame .tv{padding-top:max(9vh,76px)}
 .teamfix{position:sticky;top:0;z-index:6;background:var(--bg);padding:6px 0 10px;margin:0 -2px;display:flex;flex-direction:column;gap:10px}.teamfix .team-card{min-height:0;gap:6px;padding:12px 14px}.teamfix .team-card h3{font-size:1.1rem}
 .team-card:disabled{opacity:.55;cursor:not-allowed}
 button,.btn,.join-pill,.tile b{text-wrap:balance}
+#snow{position:fixed;inset:0;z-index:4;pointer-events:none}
+html.xmas body::before{content:'';position:fixed;top:0;left:0;right:0;height:14px;z-index:4;pointer-events:none;background:radial-gradient(circle at 12px 7px,#ff4d4d 0 5px,transparent 6px),radial-gradient(circle at 36px 7px,#ffd34d 0 5px,transparent 6px),radial-gradient(circle at 60px 7px,#4dff88 0 5px,transparent 6px),radial-gradient(circle at 84px 7px,#4db8ff 0 5px,transparent 6px);background-size:96px 14px;filter:drop-shadow(0 0 6px #fff8);animation:twinkle 2.4s ease-in-out infinite}
+@keyframes twinkle{50%{opacity:.45}}
+@media(prefers-reduced-motion:reduce){html.xmas body::before{animation:none}}

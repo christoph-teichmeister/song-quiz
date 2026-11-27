@@ -29,6 +29,10 @@
         }
       }
     },
+    "config": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === '__ADMIN_UID__'"
+    },
     "adminCheck": {
       ".read": "auth != null && auth.uid === '__ADMIN_UID__'"
     },

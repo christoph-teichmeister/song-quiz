@@ -501,6 +501,23 @@ test('lobby: a joining non-host sees the blurred intro until "Verstanden"; "ZufÃ
   await world.close();
 });
 
+test('christmas effects: the admin toggle switches snow and lights on for the phones, live', async () => {
+  const world = await newWorld(browser, srv.url);
+  await world.ctx.addInitScript(() => { localStorage.fakeAdmin = '1'; });
+  const ad = await world.open('/a-f70125a18f9a77e558c8');
+  await btn(ad, 'Config').click();
+  const ph = await world.open('/play?p=Anna');
+  assert.equal(await ph.locator('html.xmas').count(), 0);
+  await ad.getByLabel(/Christmas effects/).check();
+  await until(() => world.store.get('config/xmas') === true, 'toggle stored');
+  await ph.locator('html.xmas').waitFor({ timeout: 5000 });
+  await ph.locator('canvas#snow').waitFor({ timeout: 5000 });
+  await ad.getByLabel(/Christmas effects/).uncheck();
+  await ph.locator('canvas#snow').waitFor({ state: 'detached', timeout: 5000 });
+  assert.deepEqual(world.errors, []);
+  await world.close();
+});
+
 test('admin: import, create a list, add a song by pasted link; the TV and phones show the edited catalog', async () => {
   const world = await newWorld(browser, srv.url);
   await world.ctx.addInitScript(() => { localStorage.fakeAdmin = '1'; });

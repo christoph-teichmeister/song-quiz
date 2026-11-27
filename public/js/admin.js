@@ -72,6 +72,9 @@ window.addSongs = async (list) => { // one line per song: a YouTube link, option
   dr.bulk = ''; lastHtml = ''; render();
 };
 window.preview = (i) => go(() => { prev = prev === i ? null : i; });
+let xmasOn = false;
+D.onValue(r('config/xmas'), (sn) => { xmasOn = !!sn.val(); lastHtml = ''; render(); });
+window.setXmas = (on) => guard(() => D.set(r('config/xmas'), !!on), on ? 'Christmas effects on 🎄' : 'Christmas effects off');
 let isAdmin = null; // null = checking; adminCheck is readable only by the admin user id (database rules), so no id sits in this file
 onUser((u) => { user = u; isAdmin = null; lastHtml = ''; render(); if (u) D.get(r('adminCheck')).then(() => { isAdmin = true; lastHtml = ''; render(); }, () => { isAdmin = false; lastHtml = ''; render(); }); });
 window.setEmail = (v) => { emailV = v; }; window.setPw = (v) => { pwV = v; };
@@ -119,6 +122,9 @@ function listsView(M) {
       ${prev === i ? `<iframe class=pv allow="autoplay;encrypted-media" src="https://www.youtube.com/embed/${esc(s.id)}?start=${Math.floor(s.start || 0)}&autoplay=1"></iframe>` : ''}</div>`).join('') || '<p class=hint style="text-align:left;margin:10px">No songs yet.</p>'}</div></section>`;
   return `<div class="split ${cur ? 'has' : ''}">${side}${detail}</div>`;
 }
+const configView = () => `<div class=card style="max-width:520px"><div class=label style="margin:0 0 10px">Effects</div>
+  <label class=chk style="color:var(--fg);font-size:1rem"><input type=checkbox ${xmasOn ? 'checked' : ''} onchange="setXmas(this.checked)"> 🎄 Christmas effects</label>
+  <p class=hint style="text-align:left;margin:8px 0 0">Falling snow and a string of lights on the TV and on every phone, live. Off by default.</p></div>`;
 function render() {
   if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return; // do not rebuild the page while something is typed
   if (!user || !isAdmin) {
@@ -129,9 +135,9 @@ function render() {
   }
   const rl = Object.entries(rooms).sort(([a], [b]) => a.localeCompare(b)), live = rl.filter(([, o]) => o.seenAt && Date.now() - o.seenAt < 4000).length, M = merged();
   const toastOn = msg && Date.now() - msgAt < 6000;
-  const html = `<header class=top><h1>Song Quiz Admin</h1><nav class=tabs><button class="${tab === 'lists' ? 'on' : ''}" onclick="setTab('lists')">Playlists</button><button class="${tab === 'rooms' ? 'on' : ''}" onclick="setTab('rooms')">Rooms${live ? ` <span class=badge>${live}</span>` : ''}</button></nav>
+  const html = `<header class=top><h1>Song Quiz Admin</h1><nav class=tabs><button class="${tab === 'lists' ? 'on' : ''}" onclick="setTab('lists')">Playlists</button><button class="${tab === 'rooms' ? 'on' : ''}" onclick="setTab('rooms')">Rooms${live ? ` <span class=badge>${live}</span>` : ''}</button><button class="${tab === 'config' ? 'on' : ''}" onclick="setTab('config')">Config</button></nav>
     <details class=acct><summary>${esc(user.email || user.displayName || 'Account')}</summary><div class=card><button class=sb onclick="doSignOut()">Sign out</button></div></details></header>
-    ${tab === 'lists' ? listsView(M) : `<div class=grid>${rl.map(roomCard).join('') || '<div class=card><p class=hint style="margin:0">No room has been opened yet.</p></div>'}</div>`}
+    ${tab === 'lists' ? listsView(M) : tab === 'config' ? configView() : `<div class=grid>${rl.map(roomCard).join('') || '<div class=card><p class=hint style="margin:0">No room has been opened yet.</p></div>'}</div>`}
     ${toastOn ? `<div class=toast><span>${esc(msg)}</span>${undoFn ? '<button onclick="undo()">Undo</button>' : ''}</div>` : ''}`;
   if (html !== lastHtml) { lastHtml = html; $('main').innerHTML = html; }
 }
