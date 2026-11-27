@@ -100,5 +100,6 @@ Charts now, 80s, 90s, 2000s, Christmas, movie/TV themes, intro-only, speed (play
 - Host can skip a song (two taps); a finished or broken video skips by itself. Idle reset only in lobby/howto/pickfront/end.
 - Speed/intro time counts song time, not time since the last resume.
 - Judge has no time limit (only the 10 s speaking bar). Host can pause/resume; TV flashes in the team colour on a buzz; red banner when the connection is down (3 s grace).
-- Playlists: `scripts/seed-songs.py` resolves `scripts/seed/<list>.txt` to embeddable YouTube ids; tile "Zufall/Random" mixes all lists (not the ambient music). `index.json` has `de` names.
+- Playlists: `scripts/seed-songs.py` resolves `scripts/seed/<list>.txt` to embeddable YouTube ids; tile "Zufall/Random" mixes all normal lists (not ambient, not specials). `index.json` has `de` names.
+- Special lists (`"special": true` in `index.json`: movie-tv-themes, tv-classics, tv-now, kids-tv): guess only the show/film name. Songs have `artist: ''` (the seed script's artist column is only a search hint). The judge taps Right/Wrong, a right answer is 1 point (2 when fast in speed mode) and wins title and artist together. Real songs from films live in `film-songs`.
 - Texts live in `public/js/i18n.js` (German default, EN switch per device).

@@ -448,3 +448,20 @@ test('end screen: a guest leaves to the start page and stays there until a new g
   assert.deepEqual(world.errors, []);
   await world.close();
 });
+
+test('special list: judge sees only Right/Wrong, one point, TV shows just the name', async () => {
+  const world = await newWorld(browser, srv.url);
+  const { tv, ph } = await startGame(world, { list: 'TV-Klassiker', length: 1 });
+  await ready(ph);
+  const r = await playing(ph);
+  await ph[r.fronts.A].locator('.buzz').click();
+  await until(() => btn(ph[r.judge], '✗ Falsch').count(), 'judge screen');
+  assert.equal(await btn(ph[r.judge], 'Nur Titel richtig').count(), 0);
+  assert.equal(await ph[r.judge].locator('.answer small').count(), 0, 'no artist line');
+  await btn(ph[r.judge], '✓ Richtig').click();
+  await waitText(tv, /Team A: \+1/);
+  assert.ok((await tv.locator('#main h1').innerText()).trim(), 'name shown');
+  assert.equal(await tv.locator('#main h2').count(), 0, 'no artist line');
+  assert.deepEqual(world.errors, []);
+  await world.close();
+});

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Resolve curated (title, artist) lists to YouTube video ids: python3 scripts/seed-songs.py scripts/seed/<list>.txt
 Input lines: title | artist | [German]   Output: public/songs/<list>.json (embeddable videos only, checked via oEmbed).
+Special lists ("special": true in public/songs/index.json) are guessed by show/film name only: title = name, the artist column is just a search hint and the output writes artist ''.
 Needs `uvx yt-dlp` (uv). Review the output: the first good search hit is taken, a wrong hit means fix the query line."""
 import json, re, subprocess, sys, urllib.request, urllib.error
 from concurrent.futures import ThreadPoolExecutor
@@ -14,6 +15,8 @@ def embeddable(vid):
     except urllib.error.URLError:
         return False
 
+special = {c['id'] for c in json.load(open('public/songs/index.json')) if c.get('special')}
+
 def resolve(line):
     title, artist, *flag = [x.strip() for x in line.split('|')]
     q = f'{title} {"Titelmusik Intro" if flag else "intro theme song"} {artist}'
@@ -23,10 +26,10 @@ def resolve(line):
         except ValueError: continue
         d = v.get('duration') or 0
         if 15 <= d <= 480 and not BAD.search(v.get('title', '')) and embeddable(v['id']):
-            return {'id': v['id'], 'title': title, 'artist': artist, 'duration': int(d), 'ytTitle': v.get('title', '')}
+            return {'id': v['id'], 'title': title, 'artist': '' if SPECIAL else artist, 'duration': int(d), 'ytTitle': v.get('title', '')}
     print('NO HIT:', line, file=sys.stderr)
 
-src = sys.argv[1]; name = src.rsplit('/', 1)[-1].rsplit('.', 1)[0]
+src = sys.argv[1]; name = src.rsplit('/', 1)[-1].rsplit('.', 1)[0]; SPECIAL = name in special
 lines = [l for l in open(src, encoding='utf8').read().splitlines() if l.strip() and not l.startswith('#')]
 with ThreadPoolExecutor(6) as ex: res = [r for r in ex.map(resolve, lines) if r]
 seen = set(); res = [r for r in res if not (r['id'] in seen or seen.add(r['id']))]
