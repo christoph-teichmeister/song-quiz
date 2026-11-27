@@ -5,7 +5,7 @@ const TXT = {
     'r.teams': 'Zwei Teams.', 'r.teams.t': 'Wählt Team A oder B.',
     'r.listen': 'Buzzern!', 'r.listen.t': 'Wer den Song kennt, drückt den Buzzer.',
     'r.say': 'Laut sagen.', 'r.say.t': 'Titel und Interpret, {n} Sekunden. Der Schiri hat die Lösung.',
-    'r.sayName': 'Name sagen.', 'r.sayName.t': 'Nur der Name der Serie oder des Films, {n} Sekunden. Kein Interpret, kein Songtitel. Der Schiri hat die Lösung.', 'special': 'Special', 'judgeRight': '✓ Richtig', 'youBuzzedName': 'Du hast gebuzzert! Sag jetzt laut den Namen der Serie oder des Films.',
+    'r.sayName': 'Name sagen.', 'r.sayName.t': 'Nur der Name der Serie oder des Films, {n} Sekunden. Kein Interpret, kein Songtitel. Der Schiri hat die Lösung.', 'special': 'Nur Namen raten', 'judgeRight': '✓ Richtig', 'youBuzzedName': 'Du hast gebuzzert! Sag jetzt laut den Namen der Serie oder des Films.',
     'r.judge': 'Wer ist Schiri?', 'r.judge.t': 'Ein zufälliger Mitspieler, der nicht am Buzzer ist. Er sieht die Lösung auf seinem Handy, hört zu, was das Team sagt, und tippt richtig oder falsch. Die Lösung bleibt geheim. Bei jedem Song wechselt der Schiri. Zu zweit ist der Gegner Schiri.',
     'r.wrong': 'Falsch?', 'r.wrong.t': 'Dann ist euer Team für den Song gesperrt.',
     'r.win': 'Gewinnen.', 'r.win.t': 'Die meisten Punkte nach dem letzten Song.',
@@ -31,7 +31,7 @@ const TXT = {
     // lobby
     'team': 'Team', 'noTeam': 'noch kein Team', 'code': 'Spielcode', 'step1': 'Wähle dein Team', 'tapCard': 'Karte antippen', 'nobody': 'noch niemand', 'youIn': '✓ Du bist dabei', 'tapSwitch': 'Antippen zum Wechseln', 'tapJoin': 'Antippen zum Beitreten',
     'step2': 'Wähle eine Playlist', 'tapOne': 'eine antippen', 'songsN': '{n} Songs', 'step3': 'Wähle den Modus', 'tapChange': 'antippen zum Ändern', 'step4': 'Anzahl der Songs', 'custom': 'Eigene', 'fewer': 'weniger', 'more': 'mehr',
-    'start': 'Spiel starten', 'needTeams': 'Jedes Team braucht eine Person', 'hostStarts': 'Der Host ({name}) startet gleich das Spiel', 'hostPicks': 'Der Host ({name}) wählt aus. Du siehst live, was gerade gewählt ist.', 'toProfile': 'Zu meinem Profil', 'toStart': 'Zurück zur Startseite', 'tv.nSongs': '{n} Songs', 'pickTeam': 'Wähle ein Team. ',
+    'start': 'Spiel starten', 'needTeams': 'Jedes Team braucht eine Person', 'hostStarts': 'Der Host ({name}) startet gleich das Spiel', 'soloTeam': 'Dein Team wäre leer', 'randomTeam': '🎲 Zufälliges Team', 'veilH': 'Du schaust dem Host zu', 'veilP': 'Der Host ({name}) wählt gerade Spielart, Liste und Länge. Du siehst live auf deinem Handy mit, was er auswählt – ändern kannst du dort nichts. Nur dein Team wählst du selbst.', 'veilOk': 'Verstanden', 'hostPicks': 'Der Host ({name}) wählt aus. Du siehst live, was gerade gewählt ist.', 'toProfile': 'Zu meinem Profil', 'toStart': 'Zurück zur Startseite', 'tv.nSongs': '{n} Songs', 'pickTeam': 'Wähle ein Team. ',
     // howto
     'howItWorks': 'So funktioniert es', 'nReady': '{n} von {m} bereit', 'gotIt': 'Verstanden', 'waitOthers': 'Warten auf die anderen …', 'startAnyway': 'Trotzdem starten',
     // pickfront
@@ -73,7 +73,7 @@ const TXT = {
     'r.teams': 'Two teams.', 'r.teams.t': 'Pick Team A or B.',
     'r.listen': 'Buzz!', 'r.listen.t': 'Know the song? Hit the buzzer.',
     'r.say': 'Say it out loud.', 'r.say.t': 'Title and artist, {n} seconds. The judge has the answer.',
-    'r.sayName': 'Say the name.', 'r.sayName.t': 'Only the name of the show or film, {n} seconds. No artist, no song title. The judge has the answer.', 'special': 'Special', 'judgeRight': '✓ Right', 'youBuzzedName': 'You buzzed! Say the name of the show or film out loud now.',
+    'r.sayName': 'Say the name.', 'r.sayName.t': 'Only the name of the show or film, {n} seconds. No artist, no song title. The judge has the answer.', 'special': 'Guess the name only', 'judgeRight': '✓ Right', 'youBuzzedName': 'You buzzed! Say the name of the show or film out loud now.',
     'r.judge': 'Who is the judge?', 'r.judge.t': 'A random player who is not at the buzzer. They see the answer on their phone, listen to what the team says and tap right or wrong. The answer stays secret. The judge changes every song. With only two players, the opposing player judges.',
     'r.wrong': 'Wrong?', 'r.wrong.t': 'Then your team is locked for this song.',
     'r.win': 'Win.', 'r.win.t': 'Most points after the last song.',
@@ -95,7 +95,7 @@ const TXT = {
     'games': 'games', 'wins': 'wins', 'points': 'points', 'right': 'right', 'wrong': 'wrong', 'buzzes': 'buzzes', 'avgBuzz': 'avg buzz', 'fastest': 'fastest', 'recent': 'Recent games', 'win': 'win', 'loss': 'loss', 'draw': 'draw', 'pts': 'pts',
     'team': 'Team', 'noTeam': 'no team yet', 'code': 'Game code', 'step1': 'Pick your team', 'tapCard': 'tap a card', 'nobody': 'nobody yet', 'youIn': '✓ You are in', 'tapSwitch': 'Tap to switch', 'tapJoin': 'Tap to join',
     'step2': 'Choose a playlist', 'tapOne': 'tap one', 'songsN': '{n} songs', 'step3': 'Pick a mode', 'tapChange': 'tap to change', 'step4': 'Number of songs', 'custom': 'Custom', 'fewer': 'fewer', 'more': 'more',
-    'start': 'Start game', 'needTeams': 'Each team needs a player', 'hostStarts': 'The host ({name}) starts the game', 'hostPicks': 'The host ({name}) is choosing. You see live what is picked right now.', 'toProfile': 'To my profile', 'toStart': 'Back to start page', 'tv.nSongs': '{n} songs', 'pickTeam': 'Pick a team. ',
+    'start': 'Start game', 'needTeams': 'Each team needs a player', 'hostStarts': 'The host ({name}) starts the game', 'soloTeam': 'Your team would be empty', 'randomTeam': '🎲 Random team', 'veilH': 'You are watching the host', 'veilP': 'The host ({name}) is choosing mode, list and length. You see their picks live on your phone – you cannot change them. Only your own team is yours to pick.', 'veilOk': 'Got it', 'hostPicks': 'The host ({name}) is choosing. You see live what is picked right now.', 'toProfile': 'To my profile', 'toStart': 'Back to start page', 'tv.nSongs': '{n} songs', 'pickTeam': 'Pick a team. ',
     'howItWorks': 'How it works', 'nReady': '{n} of {m} ready', 'gotIt': 'Got it, I understand', 'waitOthers': 'Waiting for the others…', 'startAnyway': 'Start anyway',
     'whoFront': 'Who stands at the buzzer?', 'ready': 'Ready', 'waitOtherTeam': 'Waiting for the other team…',
     'songOf': 'Song {n} of {m}', 'toGo': '{n} to go', 'lastSong': 'last song',

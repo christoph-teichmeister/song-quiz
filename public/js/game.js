@@ -50,7 +50,7 @@ export function act(s, pid, a, now) {
       return null;
     case 'cfg': { // the host's lobby picks, stored so the other phones can show them
       if (pid !== s.hostId || s.phase !== 'lobby') return 'host only';
-      s.cfg = { list: typeof a.list === 'string' ? a.list : null, mode: ['intro', 'speed'].includes(a.mode) ? a.mode : 'normal', length: clampLen(a.length), buzzers: a.buzzers === 'all' ? 'all' : 'front', autoskip: [0, 30, 45, 60].includes(a.autoskip) ? a.autoskip : 45 };
+      s.cfg = { list: typeof a.list === 'string' ? a.list : null, mode: ['intro', 'speed'].includes(a.mode) ? a.mode : 'normal', length: clampLen(a.length), buzzers: a.buzzers === 'all' ? 'all' : 'front', autoskip: [0, 30, 45, 60].includes(a.autoskip) ? a.autoskip : 45, scroll: Math.max(0, Math.min(1, +a.scroll || 0)) }; // scroll: how far down the host has scrolled, 0..1, so watching phones follow
       return null;
     }
     case 'start': {

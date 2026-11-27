@@ -519,10 +519,10 @@ test('host picks are stored for the other phones and used at start', () => {
   assert.equal(view(s, b, 0).cfg, null);
   assert.equal(view(s, b, 0).hostName, 'host');
   assert.equal(act(s, b, { type: 'cfg', list: 'x' }, 0), 'host only');
-  assert.equal(act(s, h, { type: 'cfg', list: 'x', mode: 'speed', length: 7, buzzers: 'all', autoskip: 30 }, 0), null);
-  assert.deepEqual(view(s, b, 0).cfg, { list: 'x', mode: 'speed', length: 7, buzzers: 'all', autoskip: 30 });
+  assert.equal(act(s, h, { type: 'cfg', list: 'x', mode: 'speed', length: 7, buzzers: 'all', autoskip: 30, scroll: 0.4 }, 0), null);
+  assert.deepEqual(view(s, b, 0).cfg, { list: 'x', mode: 'speed', length: 7, buzzers: 'all', autoskip: 30, scroll: 0.4 });
   assert.equal(act(s, h, { type: 'cfg', mode: 'bogus', length: 999, buzzers: 'x', autoskip: 5 }, 0), null);
-  assert.deepEqual(view(s, b, 0).cfg, { list: null, mode: 'normal', length: 50, buzzers: 'front', autoskip: 45 });
+  assert.deepEqual(view(s, b, 0).cfg, { list: null, mode: 'normal', length: 50, buzzers: 'front', autoskip: 45, scroll: 0 });
   act(s, h, { type: 'cfg', list: 'x', mode: 'speed', length: 1, buzzers: 'all', autoskip: 0 }, 0);
   assert.equal(act(s, h, { type: 'start', list: 'other', mode: 'normal', length: 2, songs }, 0), null); // the stored picks win
   assert.deepEqual(s.settings, { list: 'x', special: false, mode: 'speed', length: 1, buzzers: 'all', autoskip: 0 });

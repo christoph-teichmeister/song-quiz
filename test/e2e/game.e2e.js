@@ -18,7 +18,7 @@ async function startGame(world, { mode, length = 3, names = NAMES, howto = true,
   ph.Anna = await world.open('/play?p=Anna');
   await btn(ph.Anna, 'Neues Spiel starten').click();
   await waitText(tv, /Tritt mit dem Code/);
-  for (const n of names.slice(1)) { ph[n] = await world.open('/play?p=' + n); await btn(ph[n], 'Spiel beitreten').click(); }
+  for (const n of names.slice(1)) { ph[n] = await world.open('/play?p=' + n); await btn(ph[n], 'Spiel beitreten').click(); await btn(ph[n], 'Verstanden').click(); }
   for (const n of names) await ph[n].locator(`.team-card.${TEAM[n]}`).click();
   await waitText(ph.Anna, /Jedes Team braucht|Spiel starten/);
   if (list) await ph.Anna.locator('.tile', { hasText: list }).click();
@@ -473,6 +473,30 @@ test('account sheet: Admin link shows only when adminCheck is readable, path com
   const ph = await world.open('/play?p=Anna');
   await ph.getByRole('button', { name: /Anna|admin@test|👤/ }).first().click();
   await ph.locator('a[href="/a-test-path"]').waitFor({ timeout: 5000 });
+  assert.deepEqual(world.errors, []);
+  await world.close();
+});
+
+test('lobby: a joining non-host sees the blurred intro until "Verstanden"; "Zufälliges Team" picks the smaller team', async () => {
+  const world = await newWorld(browser, srv.url);
+  const tv = await world.open('/?new&fast');
+  const a = await world.open('/play?p=Anna'); await btn(a, 'Neues Spiel starten').click();
+  await waitText(tv, /Tritt mit dem Code/);
+  assert.equal(await a.locator('#veil').count(), 0, 'the host gets no intro');
+  await btn(a, /Zufälliges Team/).click();
+  await until(async () => (await a.locator('.team-card.on').count()) === 1, 'host has a team');
+  const ben = await world.open('/play?p=Ben'); await btn(ben, 'Spiel beitreten').click();
+  await ben.locator('#veil').waitFor();
+  assert.ok(await has(ben, /Du schaust dem Host zu/));
+  await btn(ben, 'Verstanden').click();
+  await ben.locator('#veil').waitFor({ state: 'detached', timeout: 4000 });
+  const hostTeam = await a.locator('.team-card.on h3').innerText();
+  await btn(ben, /Zufälliges Team/).click();
+  await until(async () => (await ben.locator('.team-card.on h3').count()) === 1 && (await ben.locator('.team-card.on h3').innerText()) !== hostTeam, 'Ben joins the other, smaller team');
+  assert.ok(await ben.locator('.team-card:not(.on)').isDisabled(), 'the last person of a team cannot leave it');
+  assert.ok(await has(ben, /dein team wäre leer/i));
+  await btn(a, 'Nur Intro').click(); // the host's mode note shows on the watching phone too
+  await waitText(ben, /Jeder Song stoppt nach 5/);
   assert.deepEqual(world.errors, []);
   await world.close();
 });
