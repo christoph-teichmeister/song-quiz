@@ -1,4 +1,4 @@
-import { createSession, join, act, tick, view, awards, T } from './game.js';
+import { createSession, join, act, tick, view, awards, buildPool, inRandom, overlaySongs, T } from './game.js';
 import { qrSvg } from './qr.js';
 import { RULES, rulesFor } from './rules.js';
 import { t, getLang, setLang } from './i18n.js';
@@ -66,9 +66,17 @@ async function loadCatalog() { // [{id, name, emoji}] in display order, then all
   catalog = await (await fetch('songs/index.json')).json();
   await Promise.all(catalog.map(async (c) => { lists[c.id] = await (await fetch(`songs/${c.id}.json`)).json(); }));
 }
+async function overlayDb(r) { // the static lists are already in; any database problem keeps them as they are
+  try {
+    const get = (p) => Promise.race([D.get(r(p)), new Promise((_, no) => setTimeout(no, 5000))]);
+    const [i, s] = await Promise.all([get('songsIndex'), get('songs')]);
+    ({ catalog, lists } = overlaySongs(catalog, lists, i.val(), s.val()));
+  } catch (e) { console.warn('SQ songs overlay skipped', e?.message); }
+}
 async function boot() {
-  const loading = loadCatalog();
-  ({ D, rr, db } = await import('./db.js'));
+  let loading = loadCatalog(), r;
+  ({ D, rr, db, r } = await import('./db.js'));
+  loading = loading.then(() => overlayDb(r)); // admin edits from the database go on top of the static lists
   const stale = new Set(Object.keys((await D.get(rr('actions'))).val() || {})); // actions left over from before this page load
   // Firebase says false until it has connected: only a gap of 3 s counts as offline
   let offTimer = 0;
@@ -113,15 +121,20 @@ function handle(m) {
   else if (m.join && session && m.join.code === session.code && !session.players[m.pid]) join(session, m.join.name, now(), m.pid);
   else if (m.act && session?.players[m.pid]) {
     const a = m.act;
-    if (a.type === 'start') a.songs = a.list === 'random' ? randomPool() : lists[a.list]; // never trust the phone's song list
+    const played = loadPlayed();
+    if (a.type === 'start') { Object.assign(a, session.cfg, { list: session.cfg?.list || a.list }); const r = buildPool(lists, a.list, played, a.length, catalog); a.songs = r.songs; if (r.reset) played.clear(); } // never trust the phone's song list; no song twice, until too few are left
     const err = act(session, m.pid, a, now());
+    if (a.type === 'start' && !err) { session.songs.forEach((x) => played.add(x.id)); try { localStorage[PLAYED] = JSON.stringify([...played]); } catch {} } // "Again" keeps the memory
     if (err) { errs[m.pid] = err; setTimeout(() => { delete errs[m.pid]; publish(); }, 2500); }
   }
   publish();
 }
 
-// "Random": songs of every playlist mixed (the quiet ambient music stays out)
-function randomPool() { const seen = new Set(); return Object.entries(lists).filter(([id]) => id !== 'ambient-sound-system').flatMap(([, l]) => l).filter((s) => !seen.has(s.id) && seen.add(s.id)); }
+// Songs played in this room so far (the TV browser remembers them)
+const PLAYED = 'sqPlayed-' + ROOM;
+function loadPlayed() { try { return new Set(JSON.parse(localStorage[PLAYED] || '[]')); } catch { return new Set(); } }
+const randomCount = () => new Set(Object.entries(lists).filter(([id]) => inRandom(catalog.find((c) => c.id === id) || {})).flatMap(([, l]) => l.map((s) => s.id))).size;
+const catName = (id) => { const c = catalog.find((x) => x.id === id); return c ? `${c.emoji || ''} ${getLang() === 'de' && c.de ? c.de : c.name}`.trim() : ''; };
 
 function put(path, val) { // write only what changed
   const j = JSON.stringify(val ?? null);
@@ -134,7 +147,7 @@ function publish() {
   try { publish2(); } catch (e) { console.error('SQ publish', e.stack || e.message); }
 }
 function publish2() {
-  put('public', { tvHidden: document.hidden, session: !!session, code: session?.code ?? null, summary: session ? { phase: session.phase, idx: session.idx, total: session.songs.length, list: session.settings.list, mode: session.settings.mode, scores: { A: session.teams.A.score, B: session.teams.B.score }, players: Object.values(session.players).map((p) => ({ name: p.name, team: p.team })) } : null, catalog: [{ id: 'random', name: 'Random', de: 'Zufall', emoji: '🎲', count: randomPool().length }, ...catalog.map((c) => ({ ...c, count: lists[c.id].length }))] });
+  put('public', { tvHidden: document.hidden, session: !!session, code: session?.code ?? null, summary: session ? { phase: session.phase, idx: session.idx, total: session.songs.length, list: session.settings.list, mode: session.settings.mode, scores: { A: session.teams.A.score, B: session.teams.B.score }, players: Object.values(session.players).map((p) => ({ name: p.name, team: p.team })) } : null, catalog: [{ id: 'random', name: 'Random', de: 'Zufall', emoji: '🎲', count: randomCount() }, ...catalog.map((c) => ({ ...c, count: lists[c.id].length }))] });
   if (!session && Object.keys(last).some((k) => k.startsWith('views/'))) { // game ended: wipe all views
     for (const k of Object.keys(last)) if (k.startsWith('views/')) delete last[k];
     D.remove(rr('views'));
@@ -164,7 +177,7 @@ window.keepAlive = () => { if (session) { session.lastActivity = now(); session.
 
 const q = (url) => `<div class=qrsvg>${qrSvg(url)}</div>`;
 const base = location.origin, rq = ROOM === 'main' ? '' : 'room=' + ROOM;
-const fr = (t) => esc(S.players.find((p) => p.id === S.teams[t].front)?.name) || '–';
+const fr = (x) => S.settings.buzzers === 'all' ? t('tv.everyone') : esc(S.players.find((p) => p.id === S.teams[x].front)?.name) || '–';
 const nl = (t) => Math.max(1, ((S.players.find((p) => p.id === S.teams[t].front)?.name || '').length) / 9); // font shrinks for long names
 const matchup = () => `<div class=matchup><div class="mu A"><small>Team A</small><b style="--n:${nl('A')}">${fr('A')}</b><span>${t('tv.atBuzzer')}</span></div><div class=vs>vs</div><div class="mu B"><small>Team B</small><b style="--n:${nl('B')}">${fr('B')}</b><span>${t('tv.atBuzzer')}</span></div></div>`;
 const cd = () => '<div class=cd><span id=cdn></span><div><i id=cdi></i></div></div>'; // static html; the number and bar are set in place (see tickCd) so the screen does not re-render
@@ -184,13 +197,15 @@ function statsTable() {
   return `<table class=stats><tr><th></th><th>${t('buzzes')}</th><th>${t('right')}</th><th>${t('wrong')}</th><th>${t('points')}</th><th>Ø</th><th>${t('fastest')}</th></tr>${rows.map((p) => `<tr><td class=${p.team}>${esc(p.name)} ${(aw[p.id] || []).map((c) => AW[c]).join('')}</td><td>${p.buzzes}</td><td>${p.right}</td><td>${p.wrong}</td><td><b>${p.pts}</b></td><td>${sec(p.avgMs)}</td><td>${sec(p.bestMs)}</td></tr>`).join('')}</table>
     <p class=legend>${t('tv.legend')}</p>`;
 }
+const cfgLine = () => { const c = S.cfg; return `${c.list === 'random' ? '🎲 ' + (getLang() === 'de' ? 'Zufall' : 'Random') : esc(catName(c.list || catalog[0]?.id))} · ${t('m.' + c.mode)} · ${t('tv.nSongs', { n: c.length })} · ${t('bz.' + c.buzzers)}`; }; // what the host has picked so far
 function names(t) { return S.players.filter((p) => p.team === t).map((p) => esc(p.name) + (S.teams[t].front === p.id && S.phase !== 'lobby' ? ' 🎤' : '')).join(', ') || '–'; }
 
 let sx = {}; // what the last render saw, to play an effect when something changes
 function sfx() {
   if (!S) { sx = { idle: true }; return; }
   const n = S.judged, cd = S.phase === 'countdown' ? Math.ceil((S.until - tvNow()) / 1000) : 0, p = S.players.length, a = S.ack?.length ?? 0;
-  const play = (k) => { if (unlocked && !S.paused) try { SFX[k](ac()); } catch {} };
+  const play = (k, force) => { if (unlocked && (force || !S.paused)) try { SFX[k](ac()); } catch {} };
+  const rd = (S.teams.A.ready ? 1 : 0) + (S.teams.B.ready ? 1 : 0), tms = S.players.map((x) => x.team).join();
   if (sx.idle && S.phase === 'lobby') play('join'); // the host opened a game
   else if (sx.ph !== undefined) { // not on the first render after a reload
     if (S.phase === 'howto' && sx.ph === 'lobby') play('start');
@@ -199,10 +214,15 @@ function sfx() {
     else if (S.phase === 'playing' && sx.ph === 'countdown') play('go');
     else if (S.phase === 'reveal' && sx.ph !== 'reveal' && sx.n === n) play('reveal');
     if (n > sx.n && S.lastResult) play(S.lastResult.title && S.lastResult.artist ? 'both' : S.lastResult.pts ? 'right' : 'wrong');
+    else if (n < sx.n && S.phase === 'verify') play('undo'); // the judge took the ruling back
     else if (S.phase === 'lobby' && p > sx.p) play('join');
+    else if (S.phase === 'lobby' && p < sx.p) play('left'); // a player dropped out
+    else if (S.phase === 'lobby' && tms !== sx.tms) play('team'); // someone picked or switched a team
+    else if (S.phase === 'pickfront' && sx.ph === 'pickfront' && rd > sx.rd) play('front'); // a front-person is ready
     else if (S.phase === 'howto' && a > (sx.a ?? 99)) play('ack'); // someone tapped "Verstanden"
+    if (S.paused !== sx.pz) play(S.paused ? 'pause' : 'resume', true); // the only sounds that may play while paused: the pause itself and the resume
   }
-  sx = { ph: S.phase, cd, n, p, a };
+  sx = { ph: S.phase, cd, n, p, a, rd, tms, pz: S.paused };
 }
 function render() {
   sfx();
@@ -231,14 +251,14 @@ function render() {
   $('main').dataset.k = '';
   const sc = `<div class=row><div class="tcard A"><div class=A>Team A</div><div class=score>${S.teams.A.score}</div>${names('A')}</div><div class="tcard B"><div class=B>Team B</div><div class=score>${S.teams.B.score}</div>${names('B')}</div></div>`;
   const ph = S.phase; let h = '';
-  if (ph === 'lobby') h = `<h1>${t('tv.join', { code: S.code })}</h1><div class="qrcard lobbyqr" style="margin:auto">${q(base + '/play?code=' + S.code + (rq ? '&' + rq : ''))}</div>${sc}<p>${t('tv.hostPicks')}</p>`;
-  else if (ph === 'howto') { const need = S.players.filter((p) => p.team), ok = S.ack || []; h = `<h1>${t('tv.howto')}</h1><div class=rulegrid>${rulesFor(S.settings.mode).map((x) => `<div class=rule><i>${x.key && PICTO[x.key] ? pictos[PICTO[x.key]] : x.icon}</i><div><b>${x.title}</b><p>${x.text}</p></div></div>`).join('')}</div><div class=ackbar>${need.map((p) => `<span class="ack ${p.team}${ok.includes(p.id) ? ' ok' : ''}">${ok.includes(p.id) ? '✓' : '⏳'} ${esc(p.name)}</span>`).join('')}</div><h2>${t('tv.allReady', { n: ok.length, m: need.length })}</h2>`; }
+  if (ph === 'lobby') h = `<h1>${t('tv.join', { code: S.code })}</h1><div class="qrcard lobbyqr" style="margin:auto">${q(base + '/play?code=' + S.code + (rq ? '&' + rq : ''))}</div>${sc}<p>${t('tv.hostPicks', { name: esc(S.hostName) })}</p>${S.cfg ? `<p class=cfgline>${cfgLine()}</p>` : ''}`;
+  else if (ph === 'howto') { const need = S.players.filter((p) => p.team), ok = S.ack || []; h = `<h1>${t('tv.howto')}</h1><div class=rulegrid>${rulesFor(S.settings.mode, S.settings.special).map((x) => `<div class=rule><i>${x.key && PICTO[x.key] ? pictos[PICTO[x.key]] : x.icon}</i><div><b>${x.title}</b><p>${x.text}</p></div></div>`).join('')}</div><div class=ackbar>${need.map((p) => `<span class="ack ${p.team}${ok.includes(p.id) ? ' ok' : ''}">${ok.includes(p.id) ? '✓' : '⏳'} ${esc(p.name)}</span>`).join('')}</div><h2>${t('tv.allReady', { n: ok.length, m: need.length })}</h2>`; }
   else if (ph === 'pickfront') h = `<h1>${t('tv.pickFront', { n: S.idx + 1, m: S.total })}</h1>${sc}<p>${t('tv.frontReady')}</p>`;
   else if (ph === 'countdown') h = `<h2>${t('tv.songOf', { n: S.idx + 1, m: S.total })}</h2>${matchup()}<div class="big sm">${Math.max(1, Math.ceil((S.until - tvNow()) / 1000))}</div>${S.judgeName ? `<div class=judge-pill>${t('tv.judge', { name: esc(S.judgeName) })}</div>` : ''}`;
-  else if (ph === 'playing') { $('cover-t').textContent = videoErr || `${t('tv.songOf', { n: S.idx + 1, m: S.total })}${S.locked.length ? ' — ' + t('tv.locked', { teams: S.locked.map((x) => t('team') + ' ' + x).join(', ') }) : ''}`; $('cover-s').innerHTML = matchup(); }
+  else if (ph === 'playing') { $('cover-t').textContent = videoErr || `${t('tv.songOf', { n: S.idx + 1, m: S.total })}${S.locked.length ? ' — ' + t('tv.locked', { teams: S.locked.map((x) => t('team') + ' ' + x).join(', ') }) : ''}`; $('cover-s').innerHTML = matchup() + (S.skipAt ? `<p style="font-size:max(2vw,18px);margin-top:2vh">${t('nobodyKnows', { n: Math.max(0, Math.ceil((S.skipAt - tvNow()) / 1000)) })}</p>` : ''); }
   else if (ph === 'verify') { const left = Math.max(0, Math.ceil((S.buzz.until - tvNow()) / 1000)); $('cover-t').innerHTML = `<span class=${S.buzz.team}>${t('team')} ${S.buzz.team}</span> ${t('tv.buzzed')}${S.judgeName ? `<br><small>${t('tv.judges', { name: esc(S.judgeName) })}</small>` : ''}<br><small>${left ? t('tv.answerTime', { n: left }) : t('talkOver')}</small>`; $('cover-s').innerHTML = matchup(); }
-  else if (ph === 'reveal') h = `${S.next ? cd() : ''}<h1>${S.answer.title}</h1><h2>${S.answer.artist}</h2>${S.lastResult ? `<p>${t('team')} ${S.lastResult.team}: +${S.lastResult.pts}</p>` : `<p>${t('tv.nobodyGotIt')}</p>`}${S.next ? `<h2>${t('tv.nextUp')}: <span class=A>${esc(S.next.names.A)}</span> (A) · <span class=B>${esc(S.next.names.B)}</span> (B)${S.next.names.judge ? ` · ${t('tv.judges', { name: esc(S.next.names.judge) })}` : ''}</h2>` : ''}${sc}`;
-  else if (ph === 'end') { const w = S.teams.A.score === S.teams.B.score ? t('tv.draw') : t('tv.wins', { team: S.teams.A.score > S.teams.B.score ? 'A' : 'B' }); h = `<h1>${w}</h1><div class=endscore><span class=A>Team A <b>${S.teams.A.score}</b></span> : <span class=B><b>${S.teams.B.score}</b> Team B</span></div><div class=endgrid><div class=panel><h3>${t('tv.scoreTime')}</h3>${S.timeline ? chart(S.timeline) : ''}</div><div class=panel><h3>${t('tv.players')}</h3>${S.stats ? statsTable() : ''}</div></div><p class=again>${t('tv.again')}</p>`; }
+  else if (ph === 'reveal') h = `${S.next ? cd() : ''}<h1>${S.answer.title}</h1>${S.answer.artist ? `<h2>${S.answer.artist}</h2>` : ''}${S.settings.list === 'random' && S.answer.cat ? `<p>${esc(catName(S.answer.cat))}</p>` : ''}${S.lastResult ? `<p>${t('team')} ${S.lastResult.team}: +${S.lastResult.pts}</p>` : `<p>${t('tv.nobodyGotIt')}</p>`}${S.next && S.settings.buzzers !== 'all' ? `<h2>${t('tv.nextUp')}: <span class=A>${esc(S.next.names.A)}</span> (A) · <span class=B>${esc(S.next.names.B)}</span> (B)${S.next.names.judge ? ` · ${t('tv.judges', { name: esc(S.next.names.judge) })}` : ''}</h2>` : ''}${sc}`;
+  else if (ph === 'end') { const w = S.teams.A.score === S.teams.B.score ? t('tv.draw') : t('tv.wins', { team: S.teams.A.score > S.teams.B.score ? 'A' : 'B' }); h = `<h1>${w}</h1><div class=endscore><span class=A>Team A <b>${S.teams.A.score}</b></span> : <span class=B><b>${S.teams.B.score}</b> Team B</span></div><div class=endgrid><div class=panel><h3>${t('tv.scoreTime')}</h3>${S.timeline ? chart(S.timeline) : ''}</div><div class=panel><h3>${t('tv.players')}</h3>${S.stats ? statsTable() : ''}</div></div><p class=again>${t('tv.again', { name: esc(S.hostName) })}</p>`; }
   if (lastHtml !== h) { lastHtml = h; $('main').innerHTML = h; } // only touch the DOM on change so animations do not restart every tick
   if (ph === 'reveal' && S.next) tickCd();
   if (ph === 'end' && !confettiDone) { confettiDone = true; const draw = S.teams.A.score === S.teams.B.score; if (unlocked) try { draw ? sadTrombone() : applause(); } catch {} draw ? drawFx() : confetti(); } else if (ph !== 'end') confettiDone = false;

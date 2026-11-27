@@ -11,7 +11,7 @@ const NAMES = ['Anna', 'Cleo', 'Ben', 'Dan'], TEAM = { Anna: 'A', Cleo: 'A', Ben
 const btn = (p, name) => p.getByRole('button', { name });
 
 // TV + four phones in the lobby, teams picked, game started (mode and length as given), rules confirmed
-async function startGame(world, { mode, length = 3, names = NAMES, howto = true, list } = {}) {
+async function startGame(world, { mode, length = 3, names = NAMES, howto = true, list, all } = {}) {
   const tv = await world.open('/?new&fast');
   await tv.click('#snd');
   const ph = {};
@@ -23,6 +23,7 @@ async function startGame(world, { mode, length = 3, names = NAMES, howto = true,
   await waitText(ph.Anna, /Jedes Team braucht|Spiel starten/);
   if (list) await ph.Anna.locator('.tile', { hasText: list }).click();
   if (mode === 'intro') { await btn(ph.Anna, 'Nur Intro').click(); await btn(ph.Anna, 'OK').click(); }
+  if (all) await btn(ph.Anna, 'Alle im Team').click();
   await btn(ph.Anna, 'Eigene').click();
   await ph.Anna.fill('#len', String(length));
   await btn(ph.Anna, 'Spiel starten').click();
@@ -383,11 +384,110 @@ test('phones ping and vibrate for the judge, once per buzz', async () => {
   await ready(ph);
   const { fronts, judge } = await playing(ph);
   const other = Object.keys(ph).find((n) => n !== judge && n !== fronts.A && n !== fronts.B);
-  const before = await ph[judge].evaluate(() => [window.__osc, window.__vib]);
+  const before = await ph[judge].evaluate(() => [window.__osc, window.__vib]), quiet = await ph[other].evaluate(() => window.__osc); // team taps in the lobby already made sounds
   await ph[fronts.A].locator('.buzz').click();
   await until(() => btn(ph[judge], RIGHT.wrong).count(), 'judge screen');
   await until(async () => (await ph[judge].evaluate(() => window.__osc)) > before[0], 'judge ping');
   assert.ok((await ph[judge].evaluate(() => window.__vib)) > before[1], 'judge phone vibrated');
-  assert.equal(await ph[other].evaluate(() => window.__osc), 0, 'a bystander phone stays silent');
+  assert.equal(await ph[other].evaluate(() => window.__osc), quiet, 'a bystander phone stays silent');
+  await world.close();
+});
+
+test('buzzers for everyone: no front-person step, any team member buzzes, the other team judges and can undo', async () => {
+  const world = await newWorld(browser, srv.url);
+  const { tv, ph } = await startGame(world, { all: true, length: 2 });
+  await until(async () => (await Promise.all(Object.values(ph).map((p) => p.locator('.buzz').count()))).every((n) => n === 1), 'a buzzer on every phone');
+  await ph.Cleo.locator('.buzz').click();                                            // the second player of team A, not a front-person
+  const judge = await until(async () => { for (const n of ['Ben', 'Dan']) if (await btn(ph[n], RIGHT.wrong).count()) return n; }, 'judge screen on team B');
+  assert.equal(await btn(ph[judge === 'Ben' ? 'Dan' : 'Ben'], RIGHT.wrong).count(), 0);
+  await btn(ph[judge], RIGHT.both).click();                                          // song over: reveal
+  await waitText(tv, /Nächster Song in/);
+  await btn(ph[judge], 'Rückgängig').click();                                        // wrong tap: back to the judge screen
+  await until(() => btn(ph[judge], RIGHT.wrong).count(), 'judge screen again');
+  await btn(ph[judge], RIGHT.wrong).click();
+  await waitText(ph.Cleo, /GESPERRT/);
+  assert.deepEqual(world.errors, []);
+  await world.close();
+});
+
+test('lobby: the other phones mirror the host picks read-only, with the host name', async () => {
+  const world = await newWorld(browser, srv.url);
+  const tv = await world.open('/?new&fast');
+  await tv.click('#snd');
+  const anna = await world.open('/play?p=Anna'), cleo = await world.open('/play?p=Cleo');
+  await btn(anna, 'Neues Spiel starten').click();
+  await waitText(tv, /Tritt mit dem Code/);
+  await btn(cleo, 'Spiel beitreten').click();
+  await waitText(cleo, /Der Host \(Anna\)/);
+  await anna.locator('.tile').nth(2).click();
+  await btn(anna, 'Nur Intro').click(); await btn(anna, 'OK').click();
+  await btn(anna, 'Alle im Team').click();
+  const sel = (p) => p.evaluate(() => [...document.querySelectorAll('.tile, .seg button')].map((b) => +b.classList.contains('on')).join(''));
+  await until(async () => (await sel(cleo)) === (await sel(anna)) && /1/.test(await sel(cleo)), 'cleo shows the same picks');
+  assert.equal(await cleo.locator('.tile').first().getAttribute('onclick'), null, 'read only');
+  assert.equal(await cleo.locator('.seg button').first().getAttribute('onclick'), null, 'read only');
+  await waitText(tv, /Nur Intro/);                                                   // the TV shows the picks too
+  assert.deepEqual(world.errors, []);
+  await world.close();
+});
+
+test('end screen: a guest leaves to the start page and stays there until a new game', async () => {
+  const world = await newWorld(browser, srv.url);
+  const { tv, ph } = await startGame(world, { length: 1 });
+  await ready(ph);
+  const r = await playing(ph);
+  await buzzAndJudge(ph, r.fronts, r.judge, 'A', 'both');
+  await waitText(ph.Cleo, /dein spiel/i, 12000);
+  await btn(ph.Anna, 'Nochmal spielen').waitFor();                                  // the host keeps "Play again"
+  await btn(ph.Cleo, 'Zurück zur Startseite').click();
+  await btn(ph.Cleo, 'Spiel beitreten').waitFor();
+  await ph.Cleo.reload();                                                           // the same finished game does not pull the phone back
+  await btn(ph.Cleo, 'Spiel beitreten').waitFor();
+  await btn(ph.Cleo, 'Spiel beitreten').click();                                    // joining again brings it back
+  await waitText(ph.Cleo, /dein spiel/i);
+  assert.deepEqual(world.errors, []);
+  await world.close();
+});
+
+test('special list: judge sees only Right/Wrong, one point, TV shows just the name', async () => {
+  const world = await newWorld(browser, srv.url);
+  const { tv, ph } = await startGame(world, { list: 'TV-Klassiker', length: 1 });
+  await ready(ph);
+  const r = await playing(ph);
+  await ph[r.fronts.A].locator('.buzz').click();
+  await until(() => btn(ph[r.judge], '✗ Falsch').count(), 'judge screen');
+  assert.equal(await btn(ph[r.judge], 'Nur Titel richtig').count(), 0);
+  assert.equal(await ph[r.judge].locator('.answer small').count(), 0, 'no artist line');
+  await btn(ph[r.judge], '✓ Richtig').click();
+  await waitText(tv, /Team A: \+1/);
+  assert.ok((await tv.locator('#main h1').innerText()).trim(), 'name shown');
+  assert.equal(await tv.locator('#main h2').count(), 0, 'no artist line');
+  assert.deepEqual(world.errors, []);
+  await world.close();
+});
+
+test('admin: import, create a list, add a song by pasted link; the TV and phones show the edited catalog', async () => {
+  const world = await newWorld(browser, srv.url);
+  const ad = await world.open('/admin');
+  ad.on('dialog', (d) => d.accept());
+  await btn(ad, 'Import static lists into DB').click();
+  await until(() => world.store.get('songsIndex/charts-now'), 'import');
+  await ad.fill('#nl-name', 'Edited Mix'); await ad.fill('#nl-de', 'Bearbeitet');
+  await btn(ad, 'Create').click();
+  await until(() => world.store.get('songsIndex/edited-mix'), 'list created');
+  await ad.fill('#ns-title', 'My Song'); await ad.fill('#ns-artist', 'Me'); await ad.fill('#ns-id', 'https://youtu.be/dQw4w9WgXcQ?si=x');
+  await btn(ad, 'Add song').click();
+  await until(() => world.store.get('songs/edited-mix'), 'song added');
+  assert.equal(world.store.get('songs/edited-mix')[0].id, 'dQw4w9WgXcQ');
+  await ad.locator('input[placeholder="Name"]').first().fill('Renamed Charts'); await ad.keyboard.press('Tab'); // rename one list, delete another
+  await until(() => world.store.get('songsIndex/charts-now')?.name === 'Renamed Charts', 'rename');
+  world.store.set('songsIndex/hits-90s', { deleted: true });
+  const tv = await world.open('/?new&fast');
+  const ph = await world.open('/play?p=Anna');
+  await btn(ph, 'Neues Spiel starten').click();
+  await waitText(ph, /Bearbeitet/);
+  assert.ok(await has(ph, /Aktuelle Charts|Renamed Charts/));
+  assert.ok(!(await has(ph, /90er-Hits/)));
+  assert.deepEqual(world.errors, []);
   await world.close();
 });

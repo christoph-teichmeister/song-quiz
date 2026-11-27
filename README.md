@@ -34,6 +34,17 @@ deploy.sh  firebase.json  database.rules.template.json   DESIGN.md = look and br
 6. **Verify:** the *opposing* team's phone shows Correct / Wrong. Correct = points. Wrong = buzzer team is locked for this song, playback resumes until the other team buzzes (same verification).
 7. **Next song**, repeat. Leaderboard between rounds and at the end.
 
+Lobby and game rules added after the first test rounds:
+
+- **Lobby settings** (host only; stored in the session as `cfg`, so other phones and the TV show the picks read-only):
+  - buzzers `front` (one front-person per team, default) or `all` (everyone buzzes, no front-person step, the judge comes from the other team);
+  - auto-skip after 30/45/60 s without a buzz (default 45, can be off), with a 10 s warning.
+- **Judge** can undo the last ruling (phone button).
+- **End screen** has a local-only "leave" button: profile for signed-in users, start page for guests (`localStorage` `sqLeft:<room>-<code>-<game>`).
+- **No repeats:** the TV remembers played songs per room (`localStorage` `sqPlayed-<room>`, reset when too few are left; "Again" keeps it).
+- **Random** picks a category first and leaves out the TV/film lists (`inRandom` in `game.js`: `special` or `random: false` in `index.json`).
+- **Front-person:** a one-person team is front by itself; if no team has a choice the front step is skipped.
+
 ## Categories (picked by host)
 
 Charts now, 80s, 90s, 2000s, Christmas, movie/TV themes, intro-only, speed (playlist-based, see below).
@@ -55,6 +66,7 @@ Charts now, 80s, 90s, 2000s, Christmas, movie/TV themes, intro-only, speed (play
 - Setup/deploy: `firebase login`, project + web app + Realtime Database, config in `public/js/firebase-config.js`. Deploy with `./deploy.sh` (injects the admin user id from `~/.config/song-quiz/admin-uid` into `database.rules.json`, which is gitignored; the template is committed).
 - PWA: `/play` has a manifest and a pass-through service worker, so phones can install it ("Add to Home screen").
 - Admin: `/admin` lists all rooms and can kill a session for everyone. Sign in with the admin Google account; the rules only accept the kill (`rooms/<room>/admin/epoch`) from the user id in `~/.config/song-quiz/admin-uid`, the TV of that room resets on every change.
+- Admin playlists: `/admin` also edits songs without a redeploy. Edits live in the database (`songsIndex/<id>` = catalog entry or `{deleted:true}`, `songs/<id>` = song list; readable by all, writable only by the admin uid, see `database.rules.template.json`). The TV loads the static `songs/*.json` first, then overlays the DB (`overlaySongs` in `game.js`): DB list replaces static, new ids appear, deleted ones vanish; any DB failure keeps the static lists. Use "Import static lists into DB" once to start editing from the current content; the TV picks up changes on its next page load. Rules must be deployed (`./deploy.sh`) before this works live.
 - `/sim` opens four fake phones for solo testing.
 
 ## Song source: YouTube
@@ -98,5 +110,6 @@ Charts now, 80s, 90s, 2000s, Christmas, movie/TV themes, intro-only, speed (play
 - Host can skip a song (two taps); a finished or broken video skips by itself. Idle reset only in lobby/howto/pickfront/end.
 - Speed/intro time counts song time, not time since the last resume.
 - Judge has no time limit (only the 10 s speaking bar). Host can pause/resume; TV flashes in the team colour on a buzz; red banner when the connection is down (3 s grace).
-- Playlists: `scripts/seed-songs.py` resolves `scripts/seed/<list>.txt` to embeddable YouTube ids; tile "Zufall/Random" mixes all lists (not the ambient music). `index.json` has `de` names.
+- Playlists: `scripts/seed-songs.py` resolves `scripts/seed/<list>.txt` to embeddable YouTube ids; tile "Zufall/Random" mixes all normal lists (not ambient, not specials). `index.json` has `de` names.
+- Special lists (`"special": true` in `index.json`: movie-tv-themes, tv-classics, tv-now, kids-tv): guess only the show/film name. Songs have `artist: ''` (the seed script's artist column is only a search hint). The judge taps Right/Wrong, a right answer is 1 point (2 when fast in speed mode) and wins title and artist together. Real songs from films live in `film-songs`.
 - Texts live in `public/js/i18n.js` (German default, EN switch per device).

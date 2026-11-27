@@ -21,9 +21,16 @@ export const SFX = {
   right: (c) => notes(c, [659, 988], .11, { type: 'triangle', vol: .2 }), // one of title / artist
   both: (c) => notes(c, [523, 659, 784, 1047], .1, { type: 'triangle', vol: .2 }), // title and artist
   wrong: (c) => notes(c, [233, 175], .18, { type: 'sawtooth', vol: .1 }), // nothing right
+  undo: (c) => notes(c, [660, 494], .08, { vol: .16 }), // the judge took a ruling back
   reveal: (c) => notes(c, [784, 1047], .14, { vol: .14 }),
   join: (c) => notes(c, [587, 880], .09, { vol: .24 }), // someone joined the lobby
   ack: (c) => tone(c, c.currentTime + .01, 1175, .14, { type: 'triangle', vol: .2 }), // a player confirmed the rules
+  team: (c) => notes(c, [698, 932], .07, { type: 'triangle', vol: .18 }), // picked or switched a team
+  front: (c) => notes(c, [880, 1319], .08, { type: 'triangle', vol: .2 }), // a front-person is ready
+  left: (c) => notes(c, [587, 392], .1, { vol: .2 }), // a player dropped out
+  buzz: (c) => tone(c, c.currentTime + .01, 520, .12, { type: 'square', vol: .08, to: 260 }), // own buzz on the phone
+  pause: (c) => tone(c, c.currentTime + .01, 440, .2, { type: 'triangle', vol: .18, to: 311 }),
+  resume: (c) => tone(c, c.currentTime + .01, 311, .2, { type: 'triangle', vol: .18, to: 440 }),
   start: (c) => notes(c, [392, 523, 659, 784], .12, { type: 'square', vol: .08 }), // game begins
 };
 

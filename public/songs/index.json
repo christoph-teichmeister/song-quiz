@@ -42,10 +42,17 @@
   "de": "Weihnachten"
  },
  {
+  "id": "film-songs",
+  "name": "Film songs",
+  "emoji": "🎞️",
+  "de": "Film-Songs"
+ },
+ {
   "id": "movie-tv-themes",
   "name": "Movies & TV",
   "emoji": "🎬",
-  "de": "Film- & TV-Themes"
+  "de": "Film- & TV-Themes",
+  "special": true
  },
  {
   "id": "deutsche-hits",
@@ -54,27 +61,43 @@
   "de": "Deutsche Hits"
  },
  {
+  "id": "dnb-classics",
+  "name": "DnB Classics",
+  "emoji": "🥁",
+  "de": "DnB Klassiker"
+ },
+ {
+  "id": "rock-legends",
+  "name": "Rock Legends",
+  "emoji": "🎸",
+  "de": "Rock-Legenden"
+ },
+ {
   "id": "tv-classics",
   "name": "TV classics",
   "emoji": "📺",
-  "de": "TV-Klassiker"
+  "de": "TV-Klassiker",
+  "special": true
  },
  {
   "id": "tv-now",
   "name": "TV series now",
   "emoji": "🍿",
-  "de": "Aktuelle Serien"
+  "de": "Aktuelle Serien",
+  "special": true
  },
  {
   "id": "kids-tv",
   "name": "Kids TV & cartoons",
   "emoji": "🧸",
-  "de": "Kinder-TV & Zeichentrick"
+  "de": "Kinder-TV & Zeichentrick",
+  "special": true
  },
  {
   "id": "ambient-sound-system",
   "name": "Ambient Sound System",
   "emoji": "🎧",
-  "de": "Ambient Sound System"
+  "de": "Ambient Sound System",
+  "random": false
  }
 ]

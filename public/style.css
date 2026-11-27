@@ -215,3 +215,7 @@ body.ingame .tv{padding-top:max(9vh,76px)}
 .tv .tcard{min-width:0;overflow-wrap:break-word}
 @media(max-height:800px){.tv .score{font-size:min(7vw,12vh)}.tv .row{margin:1.5vh 0}.tv h1{margin:.1em 0}.matchup{margin:2vh 0}}
 @media(max-height:680px){.tv h1{font-size:min(4vw,6.5vh)}.tv h2{font-size:min(2.4vw,4vh)}.tv .tcard{padding:1vh 2vw}.tv .score{font-size:min(7vw,10vh)}.lobbyqr{width:min(30vw,380px,30vh)!important}body.ingame .tv{padding-top:max(8vh,56px)}}
+
+/* lobby: the host's picks shown read-only on the other phones; TV line with the current picks */
+.ro,.cfgbox{display:contents}.ro button{pointer-events:none;cursor:default}
+.cfgline{font-size:max(1.6vw,14px);color:var(--mute)}
