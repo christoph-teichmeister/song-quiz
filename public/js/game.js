@@ -3,8 +3,7 @@
 export const T = { countdown: 3000, reveal: 10000, revealLast: 4000, idle: 180000, prompt: 15000, introMs: 5000, speedMs: 5000, answer: 15000, skipWarn: 10000 }; // answer: time to speak after a buzz (a bar on the screens); the judge has no time limit and may talk it over
 const IDLE_PHASES = ['lobby', 'howto', 'pickfront', 'end']; // the idle reset never fires while a song is running
 const other = (t) => (t === 'A' ? 'B' : 'A');
-export const RANDOM_OFF = ['ambient-sound-system', 'movie-tv-themes', 'tv-classics', 'tv-now', 'kids-tv']; // lists Random leaves out (PR 4 switches this to a flag in the song lists)
-export const inRandom = (id) => !RANDOM_OFF.includes(id);
+export const inRandom = (c) => !c.special && c.random !== false; // c: a songs/index.json entry; special lists (guess the show/film name only) and ambient stay out of Random
 export const clampLen = (v) => Math.max(1, Math.min(50, Math.floor(+v) || 10)); // 1 to 50 songs
 const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -59,7 +58,7 @@ export function act(s, pid, a, now) {
       a = { ...a, ...s.cfg, list: s.cfg?.list || a.list }; // the stored picks win
       if (!members(s, 'A').length || !members(s, 'B').length) return 'both teams need a player';
       if (!a.songs?.length) return 'no songs';
-      s.settings = { list: a.list, mode: a.mode || 'normal', length: clampLen(a.length), buzzers: a.buzzers === 'all' ? 'all' : 'front', autoskip: [0, 30, 45, 60].includes(a.autoskip) ? a.autoskip : 45 }; // autoskip: seconds without a buzz, 0 = off
+      s.settings = { list: a.list, special: a.songs.every((x) => x.special), mode: a.mode || 'normal', length: clampLen(a.length), buzzers: a.buzzers === 'all' ? 'all' : 'front', autoskip: [0, 30, 45, 60].includes(a.autoskip) ? a.autoskip : 45 }; // autoskip: seconds without a buzz, 0 = off
       s.undo = null; s.skipAt = 0;
       s.songs = shuffle(a.songs).slice(0, s.settings.length);
       s.idx = 0; s.gameNo++; s.stats = {}; s.timeline = [{ A: 0, B: 0 }];
@@ -163,7 +162,8 @@ function resume(s, now) { s.skipAt = 0; s.playMs = s.buzz.at; s.buzz = null; s.p
 function judged(s, now, title, artist, by) {
   const b = s.buzz, old = s.stats[b.pid];
   s.undo = { by, idx: s.idx, buzz: { ...b }, score: { A: s.teams.A.score, B: s.teams.B.score }, got: { ...s.got }, locked: [...s.locked], lastResult: s.lastResult, tl: s.timeline.length, playMs: s.playMs, startedAt: s.startedAt, judge: s.judge, st: old && { ...old, times: [...old.times] } };
-  const g = s.got, nt = title && !g.title, na = artist && !g.artist, pts = (nt ? 1 : 0) + (na ? 1 : 0);
+  const g = s.got, sp = s.settings.special; // special list: only the name is asked, one point, title and artist are won together
+  const nt = title && !g.title, na = (sp ? title : artist) && !g.artist, pts = sp ? +nt : (nt ? 1 : 0) + (na ? 1 : 0);
   const fast = s.settings.mode === 'speed' && b.at < T.speedMs;
   const gain = pts + (fast ? pts : 0);
   if (nt) g.title = b.team;
@@ -295,9 +295,9 @@ export function awards(stats) {
 
 // The song pool for a new game: unplayed songs only, `played` is a Set of song ids that the caller keeps. Random draws a category first
 // (uniformly), then a song from it. When fewer unplayed songs are left than the game needs, everything is fresh again (reset: true).
-export function buildPool(lists, list, played, length) {
-  const n = clampLen(length), seen = new Set(), ids = list === 'random' ? Object.keys(lists).filter(inRandom) : [list];
-  const all = Object.fromEntries(ids.map((id) => [id, (lists[id] || []).filter((x) => !seen.has(x.id) && seen.add(x.id)).map((x) => ({ ...x, cat: id }))]));
+export function buildPool(lists, list, played, length, catalog = []) {
+  const cat = (id) => catalog.find((c) => c.id === id) || { id }, n = clampLen(length), seen = new Set(), ids = list === 'random' ? Object.keys(lists).filter((id) => inRandom(cat(id))) : [list];
+  const all = Object.fromEntries(ids.map((id) => [id, (lists[id] || []).filter((x) => !seen.has(x.id) && seen.add(x.id)).map((x) => ({ ...x, cat: id, special: !!cat(id).special }))]));
   const count = (o) => Object.values(o).reduce((a, l) => a + l.length, 0);
   let pool = Object.fromEntries(ids.map((id) => [id, all[id].filter((x) => !played.has(x.id))]));
   const reset = count(pool) < Math.min(n, count(all));

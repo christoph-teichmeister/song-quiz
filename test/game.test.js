@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSession, join, act, tick, view, buildPool, RANDOM_OFF, T } from '../public/js/game.js';
+import { createSession, join, act, tick, view, buildPool, inRandom, T } from '../public/js/game.js';
 
 const songs = [{ id: 'a', title: 'T1', artist: 'A1' }, { id: 'b', title: 'T2', artist: 'A2' }];
 function setup() {
@@ -480,6 +480,8 @@ test('auto-skip: the warning and the clock shift by the paused time', () => {
 const L = (id, n) => Array.from({ length: n }, (_, i) => ({ id: id + i, title: id + i, artist: 'x' }));
 const lists = { a: L('a', 10), b: L('b', 4), c: L('c', 4), 'tv-now': L('tv', 20), 'ambient-sound-system': L('amb', 5) };
 
+const CAT = [{ id: 'tv-now', special: true }, { id: 'ambient-sound-system', random: false }];
+
 test('pool: played songs stay out, memory resets when too few are left, each song carries its category', () => {
   const played = new Set(['a0', 'a1', 'a2', 'a3', 'a4', 'a5', 'a6']);
   let r = buildPool(lists, 'a', played, 3);
@@ -492,17 +494,17 @@ test('pool: played songs stay out, memory resets when too few are left, each son
 });
 
 test('random: special lists stay out, categories are drawn uniformly first, played songs excluded', () => {
-  assert.ok(['movie-tv-themes', 'tv-classics', 'tv-now', 'kids-tv'].every((id) => RANDOM_OFF.includes(id)));
+  assert.ok(!inRandom({ id: 'tv-now', special: true }) && !inRandom({ id: 'ambient', random: false }) && inRandom({ id: 'a' }));
   const hits = { a: 0, b: 0, c: 0 };
   for (let i = 0; i < 600; i++) {
-    const r = buildPool(lists, 'random', new Set(), 1).songs[0];
+    const r = buildPool(lists, 'random', new Set(), 1, CAT).songs[0];
     assert.ok(r.cat in hits); hits[r.cat]++;
   }
   for (const k in hits) assert.ok(hits[k] > 140, k + ' ' + hits[k]);               // flat mixing would give a 10/18 share to "a"
-  const r = buildPool(lists, 'random', new Set(['a0', 'b0']), 12);
+  const r = buildPool(lists, 'random', new Set(['a0', 'b0']), 12, CAT);
   assert.equal(r.songs.length, 12); assert.ok(!r.songs.some((x) => ['a0', 'b0'].includes(x.id))); assert.equal(new Set(r.songs.map((x) => x.id)).size, 12);
-  assert.equal(buildPool(lists, 'random', new Set(), 50).songs.length, 18);
-  assert.equal(buildPool(lists, 'random', new Set(), 5).reset, false);
+  assert.equal(buildPool(lists, 'random', new Set(), 50, CAT).songs.length, 18);
+  assert.equal(buildPool(lists, 'random', new Set(), 5, CAT).reset, false);
 });
 
 test('the reveal answer carries the song category', () => {
@@ -523,6 +525,34 @@ test('host picks are stored for the other phones and used at start', () => {
   assert.deepEqual(view(s, b, 0).cfg, { list: null, mode: 'normal', length: 50, buzzers: 'front', autoskip: 45 });
   act(s, h, { type: 'cfg', list: 'x', mode: 'speed', length: 1, buzzers: 'all', autoskip: 0 }, 0);
   assert.equal(act(s, h, { type: 'start', list: 'other', mode: 'normal', length: 2, songs }, 0), null); // the stored picks win
-  assert.deepEqual(s.settings, { list: 'x', mode: 'speed', length: 1, buzzers: 'all', autoskip: 0 });
+  assert.deepEqual(s.settings, { list: 'x', special: false, mode: 'speed', length: 1, buzzers: 'all', autoskip: 0 });
   assert.equal(act(s, h, { type: 'cfg', list: 'y' }, 0), 'host only'); // lobby only
+});
+
+test('special list: the judge only says right or wrong, one point, title and artist are won together', () => {
+  const sp = [{ id: 's1', title: 'Show', artist: '', special: true }, { id: 's2', title: 'Film', artist: '', special: true }];
+  assert.ok(buildPool(lists, 'tv-now', new Set(), 3, CAT).songs.every((x) => x.special));
+  assert.ok(!buildPool(lists, 'a', new Set(), 3, CAT).songs.some((x) => x.special));
+  const { s } = room(1, { songs: sp }, 2); assert.equal(s.settings.special, true);
+  let now = play(s, 0); buzzFront(s, 'A', now);
+  assert.equal(act(s, s.hostId === s.teams.B.front ? s.hostId : s.teams.B.front, { type: 'verify', title: true, artist: true }, now), null);
+  assert.deepEqual([s.teams.A.score, s.got.title, s.got.artist, s.phase], [1, 'A', 'A', 'reveal']);
+  assert.deepEqual(s.lastResult, { team: 'A', title: true, artist: true, pts: 1 });
+  assert.equal(view(s, 'tv', now).answer.artist, '');
+});
+
+test('special list in speed mode: a fast right answer gives 2 points, wrong gives none', () => {
+  const sp = [{ id: 's1', title: 'Show', artist: '', special: true }, { id: 's2', title: 'Film', artist: '', special: true }];
+  for (const [ok, pts] of [[true, 2], [false, 0]]) {
+    const { s } = room(1, { songs: sp, mode: 'speed' }, 2);
+    const now = play(s, 0); buzzFront(s, 'B', now + 1000);
+    act(s, s.teams.A.front, { type: 'verify', title: ok, artist: ok }, now + 1000);
+    assert.equal(s.teams.B.score, pts);
+  }
+});
+
+test('normal lists keep two points for title and artist', () => {
+  const { s } = room(1); let now = play(s, 0); buzzFront(s, 'A', now);
+  act(s, s.teams.B.front, { type: 'verify', title: true, artist: true }, now);
+  assert.equal(s.settings.special, false); assert.equal(s.teams.A.score, 2);
 });

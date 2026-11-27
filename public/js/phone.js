@@ -198,7 +198,7 @@ function game() {
     const ro = !S.host, c = ro ? S.cfg : cfg; // the other phones see the host's picks, read only
     if (c) {
       const cat = pub.catalog || [], sel = c.list || firstList(), custom = c.custom || ![5, 10, 15].includes(c.length), tap = (fn) => (ro ? '' : `onclick="${fn}"`), sm = (k) => (ro ? '' : `<small>${t(k)}</small>`);
-      body += `<div class="${ro ? 'ro' : 'cfgbox'}">${ro ? `<p class=hint>${t('hostPicks', { name: esc(S.hostName) })}</p>` : ''}<div class=step><b>2</b>${t('step2')}${sm('tapOne')}</div><div class=tiles>${cat.map((x) => `<button class="tile${x.id === sel ? ' on' : ''}" ${tap(`pickList('${x.id}')`)}><i>${x.emoji || '🎵'}</i><b>${esc(getLang() === 'de' && x.de ? x.de : x.name)}</b><span>${t('songsN', { n: x.count })}</span></button>`).join('')}</div>
+      body += `<div class="${ro ? 'ro' : 'cfgbox'}">${ro ? `<p class=hint>${t('hostPicks', { name: esc(S.hostName) })}</p>` : ''}<div class=step><b>2</b>${t('step2')}${sm('tapOne')}</div><div class=tiles>${cat.map((x) => `<button class="tile${x.id === sel ? ' on' : ''}" ${tap(`pickList('${x.id}')`)}><i>${x.emoji || '🎵'}</i><b>${esc(getLang() === 'de' && x.de ? x.de : x.name)}</b><span>${t('songsN', { n: x.count })}${x.special ? ' · ' + t('special') : ''}</span></button>`).join('')}</div>
         <div class=step><b>3</b>${t('step3')}${sm('tapChange')}</div><div class=seg>${MODES.map((k) => `<button class="${c.mode === k ? 'on' : ''}" ${tap(`pickMode('${k}')`)}>${t('m.' + k)}</button>`).join('')}</div>
         <div class=step><b>4</b>${t('step4')}${sm('tapChange')}</div><div class=seg>${[5, 10, 15].map((n) => `<button class="${!custom && c.length === n ? 'on' : ''}" ${tap(`pickLen(${n})`)}>${n}</button>`).join('')}<button class="${custom ? 'on' : ''}" ${tap('pickCustom()')}>${t('custom')}</button></div>
         <div class=label>${t('bz.label')}</div><div class=seg>${['front', 'all'].map((k) => `<button class="${c.buzzers === k ? 'on' : ''}" ${tap(`pickBuzzers('${k}')`)}>${t('bz.' + k)}</button>`).join('')}</div>
@@ -214,7 +214,7 @@ function game() {
     body += skipBtn;
   } else if (ph === 'howto') {
     const need = S.players.filter((q) => q.team), done = S.ack || [], mine = done.includes(me.id);
-    body = `${hdr}<h2>${t('howItWorks')}</h2>${ruleCards(rulesFor(S.settings.mode))}<p class=hint>${t('nReady', { n: done.length, m: need.length })}</p>`;
+    body = `${hdr}<h2>${t('howItWorks')}</h2>${ruleCards(rulesFor(S.settings.mode, S.settings.special))}<p class=hint>${t('nReady', { n: done.length, m: need.length })}</p>`;
     sticky = (mine ? `<button class=btn disabled>${t('waitOthers')}</button>` : `<button class=btn onclick="act({type:'ack'})">${t('gotIt')}</button>`)
       + (S.host ? `<button class="btn ghost" onclick="act({type:'skiphowto'})">${t('startAnyway')}</button>` : '');
   } else if (ph === 'pickfront') {
@@ -235,12 +235,12 @@ function game() {
     if (isJudge || (!S.judge && tm && tm !== S.buzz.team)) {
       const g = S.got || {}, openT = !g.title, openA = !g.artist;
       const dis = S.paused || offline ? 'disabled' : '', b = (label, ti, ar, cls = '') => `<button class="btn ${cls}" ${dis} onclick="act({type:'verify',title:${ti},artist:${ar}})">${label}</button>`;
-      const opts = (openT && openA ? b(t('bothRight'), true, true, 'ok') + b(t('onlyTitle'), true, false, 'part') + b(t('onlyArtist'), false, true, 'part') : openT ? b(t('titleRight'), true, false, 'ok') : b(t('artistRight'), false, true, 'ok')) + b(t('allWrong'), false, false, 'bad');
+      const opts = (S.settings.special ? b(t('judgeRight'), true, true, 'ok') : openT && openA ? b(t('bothRight'), true, true, 'ok') + b(t('onlyTitle'), true, false, 'part') + b(t('onlyArtist'), false, true, 'part') : openT ? b(t('titleRight'), true, false, 'ok') : b(t('artistRight'), false, true, 'ok')) + b(t('allWrong'), false, false, 'bad');
       const taken = !openT || !openA ? `<p class=hint>${t('taken', { what: !openT && !openA ? t('wBoth') : !openT ? t('wTitle') : t('wArtist'), team: t('team') + ' ' + (g.title || g.artist) })}</p>` : '';
       body = `${hdrP}<div class=judge-banner>${t('judgeNow', { team: S.buzz.team })}</div>
-        <div class=card><div class=answer>${esc(S.answer.title)}<small>${esc(S.answer.artist)}</small></div></div>${taken}
+        <div class=card><div class=answer>${esc(S.answer.title)}${S.answer.artist ? `<small>${esc(S.answer.artist)}</small>` : ''}</div></div>${taken}
         <h2 class=tapnow>${t('tapNow')}</h2><div class=stack>${opts}<button class="btn ghost" ${dis} style="font-size:.85rem" onclick="act({type:'misfire'})">${t('misfire')}</button></div>${pauseBtn}${skipBtn}`;
-    } else if (S.buzz.pid === me.id) body = `${hdrP}<h2 style="text-align:center;margin-top:4vh">${t('youBuzzed')}</h2>${bar}${S.judgeName ? `<p class=hint>${t('isJudging', { name: esc(S.judgeName) })} <span class=dots><i></i><i></i><i></i></span></p>` : ''}${pauseBtn}`;
+    } else if (S.buzz.pid === me.id) body = `${hdrP}<h2 style="text-align:center;margin-top:4vh">${t(S.settings.special ? 'youBuzzedName' : 'youBuzzed')}</h2>${bar}${S.judgeName ? `<p class=hint>${t('isJudging', { name: esc(S.judgeName) })} <span class=dots><i></i><i></i><i></i></span></p>` : ''}${pauseBtn}`;
     else body = `${hdrP}<h2 style="text-align:center;margin-top:6vh"><span class=${S.buzz.team}>${t('team')} ${S.buzz.team}</span> ${t('buzzed')}</h2>${bar}<p class=hint>${S.judgeName ? t('isJudging', { name: esc(S.judgeName) }) : t('sayOut')} · ${t('quiet')} <span class=dots><i></i><i></i><i></i></span></p>${pauseBtn}${skipBtn}`;
     key = 'verify' + vk;
   } else if (ph === 'reveal') {
@@ -249,7 +249,7 @@ function game() {
     const nextNote = upNext ? `<div class=judge-banner>${t('nextGuesser', { team: tm })}</div>` : judgeNext ? `<div class=judge-banner>${t('nextJudge')}</div>` : '';
     const rs = (seenAt['r' + S.idx] ||= Date.now()), el = Math.min((pauseSince || Date.now()) - rs, 10000);
     const cdp = nx ? `<div class=cdp><span>${t('nextSoon')}</span><div><i style="animation-duration:10000ms;animation-delay:-${el}ms"></i></div></div>` : '';
-    body = `${hdrP}${nextNote}${cdp}<div class=card><div class=answer>${esc(S.answer.title)}<small>${esc(S.answer.artist)}</small></div></div>${S.settings.list === 'random' && S.answer.cat ? `<p class=hint>${esc(catName(S.answer.cat))}</p>` : ''}${lr ? `<p class=hint><b class=${lr.team}>${t('team')} ${lr.team}</b> ${lr.pts ? `+${lr.pts}` : t('noPoints')}</p>` : ''}<p class=hint>${nx ? '' : t('lastOne')}</p>${undoBtn}${pauseBtn}`;
+    body = `${hdrP}${nextNote}${cdp}<div class=card><div class=answer>${esc(S.answer.title)}${S.answer.artist ? `<small>${esc(S.answer.artist)}</small>` : ''}</div></div>${S.settings.list === 'random' && S.answer.cat ? `<p class=hint>${esc(catName(S.answer.cat))}</p>` : ''}${lr ? `<p class=hint><b class=${lr.team}>${t('team')} ${lr.team}</b> ${lr.pts ? `+${lr.pts}` : t('noPoints')}</p>` : ''}<p class=hint>${nx ? '' : t('lastOne')}</p>${undoBtn}${pauseBtn}`;
   } else if (ph === 'end') {
     const draw = S.teams.A.score === S.teams.B.score, w = draw ? t('draw2') : t('winsT', { team: S.teams.A.score > S.teams.B.score ? 'A' : 'B' });
     const me2 = (S.stats || []).find((p) => p.id === me.id), aw = awards(S.stats || [])[me.id] || [];
