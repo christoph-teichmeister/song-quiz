@@ -507,6 +507,20 @@ test('admin: import, create a list, add a song by pasted link; the TV and phones
   await world.close();
 });
 
+test('admin: killing a room clears its card even when the TV is offline', async () => {
+  const world = await newWorld(browser, srv.url);
+  await world.ctx.addInitScript(() => { localStorage.fakeAdmin = '1'; });
+  world.store.set('roomIndex/ghost', { ts: Date.now() });
+  world.store.set('rooms/ghost/public', { session: true, code: '1234', summary: { phase: 'end', idx: 0, total: 1, scores: { A: 1, B: 0 }, players: [] } });
+  const ad = await world.open('/a-f70125a18f9a77e558c8');
+  await btn(ad, /^Rooms/).click();
+  await waitText(ad, /Game 1234/);
+  await btn(ad, 'Kill session').click(); await btn(ad, 'Yes, kill it').click();
+  await waitText(ad, /No game running/);
+  assert.equal(world.store.get('rooms/ghost/public') ?? null, null);
+  await world.close();
+});
+
 test('admin page: hidden path, signed-out visitors see only the sign-in, /admin is gone', async () => {
   const world = await newWorld(browser, srv.url);
   const ad = await world.open('/a-f70125a18f9a77e558c8');

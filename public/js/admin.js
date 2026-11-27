@@ -84,7 +84,7 @@ window.cancel = () => { confirming = null; lastHtml = ''; render(); };
 window.forget = (room) => D.remove(r(`roomIndex/${room}`));
 window.kill = async (room) => { // the TV of that room reacts to the epoch
   confirming = null;
-  try { await D.set(r(`rooms/${room}/admin/epoch`), Date.now()); toast(`Room ${room}: session killed, the TV and all phones are reset.`); } // the rules only accept this from the admin's user id
+  try { await D.set(r(`rooms/${room}/admin/epoch`), Date.now()); await Promise.all(['public', 'views', 'actions'].map((k) => D.remove(r(`rooms/${room}/${k}`)))); /* an offline TV cannot clear its own card, so the admin does it; an online TV republishes at once */ toast(`Room ${room}: session killed, the TV and all phones are reset.`); } // the rules only accept this from the admin's user id
   catch (e) { toast('Refused: this account is not the admin.'); }
 };
 const roomCard = ([room, o]) => {
