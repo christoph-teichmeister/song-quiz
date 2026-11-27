@@ -9,7 +9,7 @@ Song guessing game for the Christmas party. Web app, phones join via QR code, ho
 ```
 public/            everything Firebase Hosting serves
   index.html       TV page = game server       play.html  phone page   (scripts: js/tv.js, js/phone.js, js/admin.js)
-  admin.html sim.html brandbook.html           style.css  sw.js  manifest, icons, og.png
+  a-<random>.html (admin, secret path) sim.html brandbook.html           style.css  sw.js  manifest, icons, og.png
   js/              game.js (pure state machine), i18n.js (all texts), rules.js, pictos.js, disc.js,
                    sfx.js (sounds), qr.js, db.js / auth.js / firebase-config.js (Firebase)
   songs/           playlists (index.json + one json per list)   sounds/  brand/
@@ -65,8 +65,8 @@ Charts now, 80s, 90s, 2000s, Christmas, movie/TV themes, intro-only, speed (play
 - Songs: `public/songs/<list>.json`, listed in `public/songs/index.json`.
 - Setup/deploy: `firebase login`, project + web app + Realtime Database, config in `public/js/firebase-config.js`. Deploy with `./deploy.sh` (injects the admin user id from `~/.config/song-quiz/admin-uid` into `database.rules.json`, which is gitignored; the template is committed).
 - PWA: `/play` has a manifest and a pass-through service worker, so phones can install it ("Add to Home screen").
-- Admin: `/admin` lists all rooms and can kill a session for everyone. Sign in with the admin Google account; the rules only accept the kill (`rooms/<room>/admin/epoch`) from the user id in `~/.config/song-quiz/admin-uid`, the TV of that room resets on every change.
-- Admin playlists: `/admin` also edits songs without a redeploy. Edits live in the database (`songsIndex/<id>` = catalog entry or `{deleted:true}`, `songs/<id>` = song list; readable by all, writable only by the admin uid, see `database.rules.template.json`). The TV loads the static `songs/*.json` first, then overlays the DB (`overlaySongs` in `game.js`): DB list replaces static, new ids appear, deleted ones vanish; any DB failure keeps the static lists. Use "Import static lists into DB" once to start editing from the current content; the TV picks up changes on its next page load. Rules must be deployed (`./deploy.sh`) before this works live.
+- Admin: the page lives at a secret path (`public/a-<random>.html`, noindex, not linked; rename the file to change the URL) and shows nothing unless the signed-in account passes the `adminCheck` rule (admin user id). It lists all rooms and can kill a session for everyone. Sign in with the admin Google account; the rules only accept the kill (`rooms/<room>/admin/epoch`) from the user id in `~/.config/song-quiz/admin-uid`, the TV of that room resets on every change.
+- Admin playlists: the admin page also edits songs without a redeploy. Edits live in the database (`songsIndex/<id>` = catalog entry or `{deleted:true}`, `songs/<id>` = song list; readable by all, writable only by the admin uid, see `database.rules.template.json`). The TV loads the static `songs/*.json` first, then overlays the DB (`overlaySongs` in `game.js`): DB list replaces static, new ids appear, deleted ones vanish; any DB failure keeps the static lists. Use "Import static lists into DB" once to start editing from the current content; the TV picks up changes on its next page load. Rules must be deployed (`./deploy.sh`) before this works live.
 - `/sim` opens four fake phones for solo testing.
 
 ## Song source: YouTube

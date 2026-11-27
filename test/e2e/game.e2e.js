@@ -468,7 +468,8 @@ test('special list: judge sees only Right/Wrong, one point, TV shows just the na
 
 test('admin: import, create a list, add a song by pasted link; the TV and phones show the edited catalog', async () => {
   const world = await newWorld(browser, srv.url);
-  const ad = await world.open('/admin');
+  await world.ctx.addInitScript(() => { localStorage.fakeAdmin = '1'; });
+  const ad = await world.open('/a-f70125a18f9a77e558c8');
   ad.on('dialog', (d) => d.accept());
   await btn(ad, 'Import static lists into DB').click();
   await until(() => world.store.get('songsIndex/charts-now'), 'import');
@@ -489,5 +490,15 @@ test('admin: import, create a list, add a song by pasted link; the TV and phones
   assert.ok(await has(ph, /Aktuelle Charts|Renamed Charts/));
   assert.ok(!(await has(ph, /90er-Hits/)));
   assert.deepEqual(world.errors, []);
+  await world.close();
+});
+
+test('admin page: hidden path, signed-out visitors see only the sign-in, /admin is gone', async () => {
+  const world = await newWorld(browser, srv.url);
+  const ad = await world.open('/a-f70125a18f9a77e558c8');
+  await waitText(ad, /admin sign-in/i);
+  assert.equal(await ad.getByRole('button', { name: 'Import static lists into DB' }).count(), 0);
+  assert.equal(await ad.locator('text=Playlists').count(), 0);
+  const old = await world.ctx.request.get(srv.url + '/admin'); assert.equal(old.status(), 404);
   await world.close();
 });
