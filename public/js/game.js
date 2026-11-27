@@ -16,7 +16,7 @@ export function createSession(hostName, now, hostId) {
     phase: 'lobby',
     players: { [host.id]: host },
     teams: { A: { score: 0, front: null, ready: false, rot: 0 }, B: { score: 0, front: null, ready: false, rot: 0 } },
-    settings: { list: null, mode: 'normal', length: 10, buzzers: 'front', autoskip: 45 }, skipAt: 0, undo: null, // skipAt: when the auto-skip fires (0 = not running); undo: snapshot before the judge's last ruling
+    settings: { list: null, mode: 'normal', length: 10, buzzers: 'front', autoskip: 45 }, skipAt: 0, undo: null, cfg: null, // cfg: what the host currently picks in the lobby (mirrored read-only on the other phones); skipAt: when the auto-skip fires (0 = not running); undo: snapshot before the judge's last ruling
    
     songs: [], idx: 0, locked: [], buzz: null, startedAt: 0, playMs: 0, got: { title: null, artist: null }, until: 0, // playMs: song time before the current stretch (a wrong answer pauses the song)
     lastActivity: now, promptUntil: 0, paused: null, // paused: { at } while the host has stopped the clock
@@ -49,8 +49,14 @@ export function act(s, pid, a, now) {
       if (s.phase !== 'lobby' || !['A', 'B'].includes(a.team)) return 'bad';
       p.team = a.team;
       return null;
+    case 'cfg': { // the host's lobby picks, stored so the other phones can show them
+      if (pid !== s.hostId || s.phase !== 'lobby') return 'host only';
+      s.cfg = { list: typeof a.list === 'string' ? a.list : null, mode: ['intro', 'speed'].includes(a.mode) ? a.mode : 'normal', length: clampLen(a.length), buzzers: a.buzzers === 'all' ? 'all' : 'front', autoskip: [0, 30, 45, 60].includes(a.autoskip) ? a.autoskip : 45 };
+      return null;
+    }
     case 'start': {
       if (pid !== s.hostId || s.phase !== 'lobby') return 'host only';
+      a = { ...a, ...s.cfg, list: s.cfg?.list || a.list }; // the stored picks win
       if (!members(s, 'A').length || !members(s, 'B').length) return 'both teams need a player';
       if (!a.songs?.length) return 'no songs';
       s.settings = { list: a.list, mode: a.mode || 'normal', length: clampLen(a.length), buzzers: a.buzzers === 'all' ? 'all' : 'front', autoskip: [0, 30, 45, 60].includes(a.autoskip) ? a.autoskip : 45 }; // autoskip: seconds without a buzz, 0 = off
@@ -245,7 +251,7 @@ export function view(s, pid, now) {
   const me = s.players[pid];
   const showAnswer = s.phase === 'reveal' || s.phase === 'end' || (s.phase === 'verify' && (s.judge ? pid === s.judge : me?.team === other(s.buzz.team)));
   return {
-    code: s.code, phase: s.phase, host: pid === s.hostId, me: me && { id: me.id, team: me.team, name: me.name },
+    code: s.code, phase: s.phase, host: pid === s.hostId, hostName: s.players[s.hostId]?.name, cfg: s.cfg, me: me && { id: me.id, team: me.team, name: me.name },
     players: Object.values(s.players).map((p) => ({ id: p.id, name: p.name, team: p.team })),
     next: s.next ? { A: s.next.A, B: s.next.B, judge: s.next.judge, names: { A: s.players[s.next.A]?.name, B: s.players[s.next.B]?.name, judge: s.players[s.next.judge]?.name } } : null,
     ack: s.phase === 'howto' ? Object.keys(s.ack || {}) : null, game: s.gameNo, stats: s.phase === 'end' ? playerStats(s) : null, timeline: s.phase === 'end' ? s.timeline : null,

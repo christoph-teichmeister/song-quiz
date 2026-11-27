@@ -384,12 +384,12 @@ test('phones ping and vibrate for the judge, once per buzz', async () => {
   await ready(ph);
   const { fronts, judge } = await playing(ph);
   const other = Object.keys(ph).find((n) => n !== judge && n !== fronts.A && n !== fronts.B);
-  const before = await ph[judge].evaluate(() => [window.__osc, window.__vib]);
+  const before = await ph[judge].evaluate(() => [window.__osc, window.__vib]), quiet = await ph[other].evaluate(() => window.__osc); // team taps in the lobby already made sounds
   await ph[fronts.A].locator('.buzz').click();
   await until(() => btn(ph[judge], RIGHT.wrong).count(), 'judge screen');
   await until(async () => (await ph[judge].evaluate(() => window.__osc)) > before[0], 'judge ping');
   assert.ok((await ph[judge].evaluate(() => window.__vib)) > before[1], 'judge phone vibrated');
-  assert.equal(await ph[other].evaluate(() => window.__osc), 0, 'a bystander phone stays silent');
+  assert.equal(await ph[other].evaluate(() => window.__osc), quiet, 'a bystander phone stays silent');
   await world.close();
 });
 
@@ -406,6 +406,45 @@ test('buzzers for everyone: no front-person step, any team member buzzes, the ot
   await until(() => btn(ph[judge], RIGHT.wrong).count(), 'judge screen again');
   await btn(ph[judge], RIGHT.wrong).click();
   await waitText(ph.Cleo, /GESPERRT/);
+  assert.deepEqual(world.errors, []);
+  await world.close();
+});
+
+test('lobby: the other phones mirror the host picks read-only, with the host name', async () => {
+  const world = await newWorld(browser, srv.url);
+  const tv = await world.open('/?new&fast');
+  await tv.click('#snd');
+  const anna = await world.open('/play?p=Anna'), cleo = await world.open('/play?p=Cleo');
+  await btn(anna, 'Neues Spiel starten').click();
+  await waitText(tv, /Tritt mit dem Code/);
+  await btn(cleo, 'Spiel beitreten').click();
+  await waitText(cleo, /Der Host \(Anna\)/);
+  await anna.locator('.tile').nth(2).click();
+  await btn(anna, 'Nur Intro').click(); await btn(anna, 'OK').click();
+  await btn(anna, 'Alle im Team').click();
+  const sel = (p) => p.evaluate(() => [...document.querySelectorAll('.tile, .seg button')].map((b) => +b.classList.contains('on')).join(''));
+  await until(async () => (await sel(cleo)) === (await sel(anna)) && /1/.test(await sel(cleo)), 'cleo shows the same picks');
+  assert.equal(await cleo.locator('.tile').first().getAttribute('onclick'), null, 'read only');
+  assert.equal(await cleo.locator('.seg button').first().getAttribute('onclick'), null, 'read only');
+  await waitText(tv, /Nur Intro/);                                                   // the TV shows the picks too
+  assert.deepEqual(world.errors, []);
+  await world.close();
+});
+
+test('end screen: a guest leaves to the start page and stays there until a new game', async () => {
+  const world = await newWorld(browser, srv.url);
+  const { tv, ph } = await startGame(world, { length: 1 });
+  await ready(ph);
+  const r = await playing(ph);
+  await buzzAndJudge(ph, r.fronts, r.judge, 'A', 'both');
+  await waitText(ph.Cleo, /dein spiel/i, 12000);
+  await btn(ph.Anna, 'Nochmal spielen').waitFor();                                  // the host keeps "Play again"
+  await btn(ph.Cleo, 'Zurück zur Startseite').click();
+  await btn(ph.Cleo, 'Spiel beitreten').waitFor();
+  await ph.Cleo.reload();                                                           // the same finished game does not pull the phone back
+  await btn(ph.Cleo, 'Spiel beitreten').waitFor();
+  await btn(ph.Cleo, 'Spiel beitreten').click();                                    // joining again brings it back
+  await waitText(ph.Cleo, /dein spiel/i);
   assert.deepEqual(world.errors, []);
   await world.close();
 });

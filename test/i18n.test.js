@@ -20,7 +20,13 @@ test('every t(\'key\') used in the pages exists', () => {
 
 test('dynamic key families are complete', () => {
   const need = ['normal', 'intro', 'speed'].flatMap((k) => ['m.' + k, 'm.' + k + '.t']).concat(
-    ['teams', 'listen', 'say', 'wrong', 'win', 'intro', 'speed'].flatMap((k) => ['r.' + k, 'r.' + k + '.t']),
+    ['teams', 'listen', 'say', 'judge', 'wrong', 'win', 'intro', 'speed'].flatMap((k) => ['r.' + k, 'r.' + k + '.t']),
     ['pts', 'fast', 'sharp'].map((c) => 'aw.' + c), ['win', 'loss', 'draw']);
   assert.deepEqual(need.filter((k) => !de.has(k)), []);
+});
+
+test('the "say" rule names the same speaking time as the game constant', async () => {
+  const { RULES } = await import('../public/js/rules.js'), { T } = await import('../public/js/game.js');
+  assert.match(RULES().find((r) => r.key === 'say').text, new RegExp(`\\b${T.answer / 1000}\\b`));
+  assert.ok(RULES().some((r) => r.key === 'judge'));
 });
