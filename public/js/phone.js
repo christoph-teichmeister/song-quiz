@@ -1,6 +1,6 @@
 import { D, r, rr, ROOM, db } from './db.js';
 import { xmas } from './xmas.js';
-import { awards, T } from './game.js';
+import { awards, T, canJoin } from './game.js';
 import { RULES, MODE_RULE, rulesFor, PICTO } from './rules.js';
 import { pictos } from './pictos.js';
 import { t, getLang, setLang } from './i18n.js';
@@ -217,7 +217,7 @@ function game() {
 
   if (ph === 'lobby') {
     const ready = mem('A').length > 0 && mem('B').length > 0;
-    const stuck = tm && tm !== undefined && mem(tm).length === 1, card = (x) => `<button class="team-card ${x}${tm === x ? ' on' : ''}" ${stuck && tm !== x ? 'disabled' : `onclick="pickTeam('${x}')"`}><h3 class=${x}>${t('team')} ${x}</h3><div class=chips>${mem(x).map((p) => `<span class=chip>${esc(p.name)}</span>`).join('') || `<span class=hint>${t('nobody')}</span>`}</div><span class=join-pill>${tm === x ? t('youIn') : stuck ? t('soloTeam') : tm ? t('tapSwitch') : t('tapJoin')}</span></button>`;
+    const card = (x) => `<button class="team-card ${x}${tm === x ? ' on' : ''}" ${tm !== x && !canJoin(S.players, me.id, x) ? 'disabled' : `onclick="pickTeam('${x}')"`}><h3 class=${x}>${t('team')} ${x}</h3><div class=chips>${mem(x).map((p) => `<span class=chip>${esc(p.name)}</span>`).join('') || `<span class=hint>${t('nobody')}</span>`}</div><span class=join-pill>${tm === x ? t('youIn') : !canJoin(S.players, me.id, x) ? t('soloTeam') : tm ? t('tapSwitch') : t('tapJoin')}</span></button>`;
     body = `${hdr}<div class=teamfix><div class=label>${t('code')} ${esc(S.code)}</div><div class="step${tm ? ' done' : ''}"><b>${tm ? '✓' : 1}</b>${t('step1')}<small>${t('tapCard')}</small></div><div class=team-cards>${card('A')}${card('B')}</div>${tm ? '' : `<button class="btn ghost" onclick="randomTeam()">${t('randomTeam')}</button>`}</div>`;
     if (S.host && !S.cfg && !cfgSent) { cfgSent = true; sync(); }
     const ro = !S.host, c = ro ? S.cfg : cfg; // the other phones see the host's picks, read only

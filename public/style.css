@@ -222,7 +222,7 @@ body.ingame .tv{padding-top:max(9vh,76px)}
 
 .veil{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:24px;background:#14111c66;-webkit-backdrop-filter:blur(9px);backdrop-filter:blur(9px);transition:opacity 1.3s ease}.veil.gone{opacity:0;pointer-events:none}
 .vcard{max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:22px;box-shadow:0 12px 40px #000a;text-align:center}.vcard p{color:var(--mute);margin:.6em 0 1.2em;line-height:1.45}
-.teamfix{position:sticky;top:0;z-index:6;background:var(--bg);padding:6px 0 10px;margin:0 -2px;display:flex;flex-direction:column;gap:10px}.teamfix .team-card{min-height:0;gap:6px;padding:12px 14px}.teamfix .team-card h3{font-size:1.1rem}
+.teamfix{position:sticky;top:0;z-index:6;background:var(--bg);padding:6px 0 10px;display:flex;flex-direction:column;gap:10px}.teamfix .team-card{min-height:0;gap:6px;padding:12px 14px}.teamfix .team-card h3{font-size:1.1rem}
 .team-card:disabled{opacity:.55;cursor:not-allowed}
 button,.btn,.join-pill,.tile b{text-wrap:balance}
 #snow{position:fixed;inset:0;z-index:4;pointer-events:none}

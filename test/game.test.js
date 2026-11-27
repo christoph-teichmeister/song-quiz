@@ -36,7 +36,7 @@ test('with a judge: wrong answer locks only the buzzer, other team may buzz, jud
   let now = 0;
   const s = createSession('hanna', now);
   const h = s.hostId, b = join(s, 'ben', now).id, j1 = join(s, 'jo', now).id, j2 = join(s, 'jay', now).id;
-  for (const [id, t] of [[h, 'A'], [j1, 'A'], [b, 'B'], [j2, 'B']]) act(s, id, { type: 'team', team: t }, now);
+  for (const [id, t] of [[h, 'A'], [b, 'B'], [j1, 'A'], [j2, 'B']]) act(s, id, { type: 'team', team: t }, now);
   act(s, h, { type: 'start', list: 'x', songs, length: 1 }, now);
   act(s, h, { type: 'skiphowto' }, now);
   act(s, h, { type: 'front', id: h }, now); act(s, b, { type: 'front', id: b }, now);
@@ -76,7 +76,7 @@ test('after a reveal the next song starts with a countdown, fronts rotate', () =
   let now = 0;
   const s = createSession('hanna', now);
   const h = s.hostId, b = join(s, 'ben', now).id, h2 = join(s, 'hugo', now).id;
-  for (const [id, t] of [[h, 'A'], [h2, 'A'], [b, 'B']]) act(s, id, { type: 'team', team: t }, now);
+  for (const [id, t] of [[h, 'A'], [b, 'B'], [h2, 'A']]) act(s, id, { type: 'team', team: t }, now);
   act(s, h, { type: 'start', list: 'x', songs, length: 2 }, now);
   act(s, h, { type: 'skiphowto' }, now);
   const first = s.teams.A.front;
@@ -120,7 +120,7 @@ function four(mode = 'normal', length = 2) {
   let now = 0;
   const s = createSession('hanna', now);
   const h = s.hostId, jo = join(s, 'jo', now).id, b = join(s, 'ben', now).id, jay = join(s, 'jay', now).id;
-  for (const [id, t] of [[h, 'A'], [jo, 'A'], [b, 'B'], [jay, 'B']]) act(s, id, { type: 'team', team: t }, now);
+  for (const [id, t] of [[h, 'A'], [b, 'B'], [jo, 'A'], [jay, 'B']]) act(s, id, { type: 'team', team: t }, now);
   act(s, h, { type: 'start', list: 'x', songs, length, mode }, now);
   act(s, h, { type: 'skiphowto' }, now);
   const fa = s.teams.A.front, fb = s.teams.B.front;
@@ -184,7 +184,7 @@ test('host skip: ends a stuck song, others cannot', () => {
 test('host skip in pickfront starts the countdown', () => {
   let now = 0;
   const s = createSession('hanna', now), b = join(s, 'ben', now).id, c = join(s, 'cy', now).id;
-  act(s, s.hostId, { type: 'team', team: 'A' }, now); act(s, c, { type: 'team', team: 'A' }, now); act(s, b, { type: 'team', team: 'B' }, now);
+  act(s, s.hostId, { type: 'team', team: 'A' }, now); act(s, b, { type: 'team', team: 'B' }, now); act(s, c, { type: 'team', team: 'A' }, now);
   act(s, s.hostId, { type: 'start', list: 'x', songs, length: 1 }, now); act(s, s.hostId, { type: 'skiphowto' }, now);
   assert.equal(s.phase, 'pickfront');
   assert.equal(s.teams.B.ready, true);                                    // the one-person team is front and ready by itself
@@ -308,8 +308,8 @@ test('after the last song the final screen comes sooner', () => {
 function room(n, opts = {}, len = 2) { // n players per team (A first), started and confirmed; returns ids per team
   const now = 0, s = createSession('a1', now), ids = { A: [s.hostId], B: [] };
   act(s, s.hostId, { type: 'team', team: 'A' }, now);
-  for (let i = 1; i < n; i++) { const id = join(s, 'a' + (i + 1), now).id; ids.A.push(id); act(s, id, { type: 'team', team: 'A' }, now); }
-  for (let i = 0; i < n; i++) { const id = join(s, 'b' + (i + 1), now).id; ids.B.push(id); act(s, id, { type: 'team', team: 'B' }, now); }
+  for (let i = 0; i < n; i++) { const id = join(s, 'b' + (i + 1), now).id; ids.B.push(id); act(s, id, { type: 'team', team: 'B' }, now); if (i === 0) for (let k = 1; k < n; k++) { const id2 = join(s, 'a' + (k + 1), now).id; ids.A.push(id2); act(s, id2, { type: 'team', team: 'A' }, now); } }
+
   assert.equal(act(s, s.hostId, { type: 'start', list: 'x', songs: [...songs, { id: 'c', title: 'T3', artist: 'A3' }], length: len, ...opts }, now), null);
   act(s, s.hostId, { type: 'skiphowto' }, now);
   return { s, ids };
@@ -361,7 +361,7 @@ test("buzzers 'all': no pickfront, every team member buzzes, the judge is from t
 test("buzzers 'all' with one player in the other team: that player judges and both teams are locked after a wrong answer", () => {
   let now = 0;
   const s = createSession('a1', now), a2 = join(s, 'a2', now).id, b = join(s, 'b1', now).id;
-  for (const [id, t] of [[s.hostId, 'A'], [a2, 'A'], [b, 'B']]) act(s, id, { type: 'team', team: t }, now);
+  for (const [id, t] of [[s.hostId, 'A'], [b, 'B'], [a2, 'A']]) act(s, id, { type: 'team', team: t }, now);
   act(s, s.hostId, { type: 'start', list: 'x', songs, length: 1, buzzers: 'all' }, now); act(s, s.hostId, { type: 'skiphowto' }, now);
   now = play(s, now);
   act(s, a2, { type: 'buzz' }, now);
@@ -570,4 +570,14 @@ test('ytId takes ids and common URL shapes', () => {
   const id = 'dQw4w9WgXcQ';
   for (const s of [id, ` ${id} `, `https://www.youtube.com/watch?v=${id}&t=5`, `https://youtu.be/${id}?si=x`, `https://www.youtube.com/embed/${id}`, `https://music.youtube.com/watch?list=L&v=${id}`]) assert.equal(ytId(s), id, s);
   for (const s of ['', 'abc', 'https://example.com/x', `${id}x`]) assert.equal(ytId(s), null, s);
+});
+
+test('no 2 vs 0: nobody may pile onto a team while the other is empty; the lone player of a team cannot swap sides', () => {
+  const s = createSession('a1', 0), b = join(s, 'b1', 0).id, c = join(s, 'b2', 0).id;
+  assert.equal(act(s, s.hostId, { type: 'team', team: 'A' }, 0), null);
+  assert.equal(act(s, b, { type: 'team', team: 'A' }, 0), 'unbalanced');
+  assert.equal(act(s, b, { type: 'team', team: 'B' }, 0), null);
+  assert.equal(act(s, c, { type: 'team', team: 'A' }, 0), null, 'both teams have someone: free choice');
+  assert.equal(act(s, b, { type: 'team', team: 'A' }, 0), 'unbalanced', 'the lone player of B cannot swap sides (that would empty B)');
+  assert.equal(act(s, c, { type: 'team', team: 'B' }, 0), null);
 });
