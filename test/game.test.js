@@ -28,6 +28,7 @@ test('no spare player: opponent judges and both teams are locked after a wrong a
   assert.equal(act(s, h, { type: 'verify', title: true }, now), 'judge only');
   act(s, b, { type: 'verify', title: false, artist: false }, now);
   assert.equal(s.phase, 'reveal');                         // the verifier saw the answer, so the song is over
+  assert.equal(s.buzz, null);                              // reveal clears the buzz
   tick(s, now + T.reveal);
   assert.equal(s.phase, 'end');
 });

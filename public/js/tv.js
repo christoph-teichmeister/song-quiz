@@ -12,7 +12,7 @@ const REPO = 'https://github.com/christoph-teichmeister/song-quiz';
 
 // The TV page is the game server: it owns the state, phones only send actions and show their own view.
 const $ = (id) => document.getElementById(id);
-let session = null, S = null, lists = {}, errs = {}, last = {}, yt = null, ytReady = false, unlocked = false, lastIdx = -1, wasPaused = false;
+let session = null, S = null, lists = {}, errs = {}, last = {}, yt = null, ytReady = false, unlocked = false, lastIdx = -1;
 const now = () => Date.now();
 const tvNow = () => session?.paused?.at ?? now(); // a paused screen shows frozen countdowns
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); // player names go into innerHTML
@@ -165,8 +165,10 @@ window.keepAlive = () => { if (session) { session.lastActivity = now(); session.
 const q = (url) => `<div class=qrsvg>${qrSvg(url)}</div>`;
 const base = location.origin, rq = ROOM === 'main' ? '' : 'room=' + ROOM;
 const fr = (t) => esc(S.players.find((p) => p.id === S.teams[t].front)?.name) || '–';
-const matchup = () => `<div class=matchup><div class="mu A"><small>Team A</small><b>${fr('A')}</b><span>${t('tv.atBuzzer')}</span></div><div class=vs>vs</div><div class="mu B"><small>Team B</small><b>${fr('B')}</b><span>${t('tv.atBuzzer')}</span></div></div>`;
-const cd = () => { const left = Math.max(0, S.until - tvNow()), total = S.idx + 1 >= S.total ? T.revealLast : T.reveal; return `<div class=cd><span>${t('tv.nextIn', { n: Math.ceil(left / 1000) })}</span><div><i style="animation-duration:${total}ms;animation-delay:-${total - left}ms"></i></div></div>`; };
+const nl = (t) => Math.max(1, ((S.players.find((p) => p.id === S.teams[t].front)?.name || '').length) / 9); // font shrinks for long names
+const matchup = () => `<div class=matchup><div class="mu A"><small>Team A</small><b style="--n:${nl('A')}">${fr('A')}</b><span>${t('tv.atBuzzer')}</span></div><div class=vs>vs</div><div class="mu B"><small>Team B</small><b style="--n:${nl('B')}">${fr('B')}</b><span>${t('tv.atBuzzer')}</span></div></div>`;
+const cd = () => '<div class=cd><span id=cdn></span><div><i id=cdi></i></div></div>'; // static html; the number and bar are set in place (see tickCd) so the screen does not re-render
+const tickCd = () => { const left = Math.max(0, S.until - tvNow()), total = S.idx + 1 >= S.total ? T.revealLast : T.reveal, i = $('cdi'); $('cdn').textContent = t('tv.nextIn', { n: Math.ceil(left / 1000) }); if (!i.style.animationDuration) { i.style.animationDuration = total + 'ms'; i.style.animationDelay = '-' + (total - left) + 'ms'; } };
 const AW = { pts: '🏆', fast: '⚡', sharp: '🎯' };
 const sec = (ms) => (ms == null ? '–' : (ms / 1000).toFixed(1) + ' s');
 function chart(tl) { // score after every song, one line per team
@@ -238,6 +240,7 @@ function render() {
   else if (ph === 'reveal') h = `${S.next ? cd() : ''}<h1>${S.answer.title}</h1><h2>${S.answer.artist}</h2>${S.lastResult ? `<p>${t('team')} ${S.lastResult.team}: +${S.lastResult.pts}</p>` : `<p>${t('tv.nobodyGotIt')}</p>`}${S.next ? `<h2>${t('tv.nextUp')}: <span class=A>${esc(S.next.names.A)}</span> (A) · <span class=B>${esc(S.next.names.B)}</span> (B)${S.next.names.judge ? ` · ${t('tv.judges', { name: esc(S.next.names.judge) })}` : ''}</h2>` : ''}${sc}`;
   else if (ph === 'end') { const w = S.teams.A.score === S.teams.B.score ? t('tv.draw') : t('tv.wins', { team: S.teams.A.score > S.teams.B.score ? 'A' : 'B' }); h = `<h1>${w}</h1><div class=endscore><span class=A>Team A <b>${S.teams.A.score}</b></span> : <span class=B><b>${S.teams.B.score}</b> Team B</span></div><div class=endgrid><div class=panel><h3>${t('tv.scoreTime')}</h3>${S.timeline ? chart(S.timeline) : ''}</div><div class=panel><h3>${t('tv.players')}</h3>${S.stats ? statsTable() : ''}</div></div><p class=again>${t('tv.again')}</p>`; }
   if (lastHtml !== h) { lastHtml = h; $('main').innerHTML = h; } // only touch the DOM on change so animations do not restart every tick
+  if (ph === 'reveal' && S.next) tickCd();
   if (ph === 'end' && !confettiDone) { confettiDone = true; const draw = S.teams.A.score === S.teams.B.score; if (unlocked) try { draw ? sadTrombone() : applause(); } catch {} draw ? drawFx() : confetti(); } else if (ph !== 'end') confettiDone = false;
 }
 
@@ -276,13 +279,14 @@ function ambient() {
 
 function audio() {
   if (!ytReady) return;
-  if (S?.paused) { yt.pauseVideo(); wasPaused = true; return; }
-  if (wasPaused) { wasPaused = false; if (S?.phase === 'reveal' && S.settings.mode !== 'intro') yt.playVideo(); } // the reveal lets the song run on
+  if (S?.paused) { yt.pauseVideo(); return; }
   if (!S || S.phase === 'lobby') { if (unlocked && musicOn && !idleOn) ambient(); return; }
-  if (idleOn) { idleOn = false; yt.setVolume(100); lastIdx = -1; }
+  if (idleOn) { idleOn = false; yt.stopVideo(); yt.setVolume(100); lastIdx = -1; } // leaving the lobby ends the quiet background music
   const p = S.phase;
   if (p === 'playing') { if (S.idx !== lastIdx || !yt.getVideoData?.().video_id) { lastIdx = S.idx; yt.loadVideoById({ videoId: S.videoId, startSeconds: S.start || 0 }); } else yt.playVideo(); }
-  else if (p === 'verify' || (p === 'reveal' && S.settings.mode === 'intro')) yt.pauseVideo();
+  else if (p === 'verify') yt.pauseVideo();
+  else if (p === 'reveal') yt.playVideo(); // the song runs on until the next countdown (also after intro mode / a buzz)
+  else if (p === 'countdown') { yt.stopVideo(); lastIdx = -1; }
   else if (p === 'end' || p === 'pickfront') { yt.stopVideo(); lastIdx = -1; }
 }
 
