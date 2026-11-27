@@ -34,7 +34,16 @@ deploy.sh  firebase.json  database.rules.template.json   DESIGN.md = look and br
 6. **Verify:** the *opposing* team's phone shows Correct / Wrong. Correct = points. Wrong = buzzer team is locked for this song, playback resumes until the other team buzzes (same verification).
 7. **Next song**, repeat. Leaderboard between rounds and at the end.
 
-Lobby settings (host, stored in the session as `cfg` so the other phones and the TV show the current picks read-only): buzzers `front` (one front-person per team, default) or `all` (everyone buzzes, no front-person step, the judge comes from the other team); auto-skip after 30/45/60 s without a buzz (default 45, off possible) with a 10 s warning. The judge can undo the last ruling (phone button). The end screen has a local-only "leave" button (profile for signed-in users, start page for guests; `localStorage` `sqLeft:<room>-<code>-<game>`). The TV remembers played songs per room (`localStorage` `sqPlayed-<room>`, reset when too few are left; "Again" keeps it). Random picks a category first and leaves out the TV/film lists (`inRandom` in `game.js`: `special` or `random: false` in `index.json`). A one-person team is front by itself; if no team has a choice the front step is skipped.
+Lobby and game rules added after the first test rounds:
+
+- **Lobby settings** (host only; stored in the session as `cfg`, so other phones and the TV show the picks read-only):
+  - buzzers `front` (one front-person per team, default) or `all` (everyone buzzes, no front-person step, the judge comes from the other team);
+  - auto-skip after 30/45/60 s without a buzz (default 45, can be off), with a 10 s warning.
+- **Judge** can undo the last ruling (phone button).
+- **End screen** has a local-only "leave" button: profile for signed-in users, start page for guests (`localStorage` `sqLeft:<room>-<code>-<game>`).
+- **No repeats:** the TV remembers played songs per room (`localStorage` `sqPlayed-<room>`, reset when too few are left; "Again" keeps it).
+- **Random** picks a category first and leaves out the TV/film lists (`inRandom` in `game.js`: `special` or `random: false` in `index.json`).
+- **Front-person:** a one-person team is front by itself; if no team has a choice the front step is skipped.
 
 ## Categories (picked by host)
 
