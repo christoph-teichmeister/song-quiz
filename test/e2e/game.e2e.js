@@ -484,13 +484,16 @@ test('admin: import, create a list, add a song by pasted link; the TV and phones
   ad.on('dialog', (d) => d.accept());
   await btn(ad, 'Import static lists into DB').click();
   await until(() => world.store.get('songsIndex/charts-now'), 'import');
+  await ad.getByText('+ New list').click();
   await ad.fill('#nl-name', 'Edited Mix'); await ad.fill('#nl-de', 'Bearbeitet');
   await btn(ad, 'Create').click();
   await until(() => world.store.get('songsIndex/edited-mix'), 'list created');
-  await ad.fill('#ns-title', 'My Song'); await ad.fill('#ns-artist', 'Me'); await ad.fill('#ns-id', 'https://youtu.be/dQw4w9WgXcQ?si=x');
-  await btn(ad, 'Add song').click();
+  await ad.fill('#ns-bulk', 'Me - My Song https://youtu.be/dQw4w9WgXcQ?si=x');
+  await btn(ad, 'Add songs').click();
   await until(() => world.store.get('songs/edited-mix'), 'song added');
   assert.equal(world.store.get('songs/edited-mix')[0].id, 'dQw4w9WgXcQ');
+  if (await ad.locator('.back').isVisible()) await ad.locator('.back').click(); // phone width: list and detail are two screens
+  await ad.locator('.pi', { hasText: 'Charts now' }).click();
   await ad.locator('input[placeholder="Name"]').first().fill('Renamed Charts'); await ad.keyboard.press('Tab'); // rename one list, delete another
   await until(() => world.store.get('songsIndex/charts-now')?.name === 'Renamed Charts', 'rename');
   world.store.set('songsIndex/hits-90s', { deleted: true });
