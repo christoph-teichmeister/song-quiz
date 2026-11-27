@@ -1,4 +1,5 @@
 // Six painted pictograms for the rules (poster look: flat shapes, wobbly edges, brand palette). Each is a 200x200 SVG string.
+import { T } from './game.js';
 const P = { pink: '#ff4f8b', pink2: '#c4306a', hi: '#ffb3cb', blue: '#52d1ff', orange: '#ffb347', cream: '#f6ecd8', deep: '#2d1b4e', ink: '#14111c', grey: '#4a4260' };
 const NOTE = 'M27 18v21.5a6.2 6.2 0 1 0 3.6 5.6V28l11 2.8v9.7a6.2 6.2 0 1 0 3.6 5.6V21.2z';
 const wrap = (id, body) => `<svg viewBox="0 0 200 200" class=picto aria-hidden=true><defs><filter id="w${id}" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type=fractalNoise baseFrequency=".03" numOctaves=2 seed="${id + 3}" result=n /><feDisplacementMap in=SourceGraphic in2=n scale=7 xChannelSelector=R yChannelSelector=G /></filter></defs><g filter="url(#w${id})"><circle cx=100 cy=100 r=92 fill="${P.deep}" />${body}</g></svg>`;
