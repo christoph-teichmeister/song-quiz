@@ -76,6 +76,7 @@ async function overlayDb(r) { // the static lists are already in; any database p
 async function boot() {
   let loading = loadCatalog(), r;
   ({ D, rr, db, r } = await import('./db.js'));
+  import('./xmas.js').then((m) => m.xmas(D, r));
   loading = loading.then(() => overlayDb(r)); // admin edits from the database go on top of the static lists
   const stale = new Set(Object.keys((await D.get(rr('actions'))).val() || {})); // actions left over from before this page load
   // Firebase says false until it has connected: only a gap of 3 s counts as offline

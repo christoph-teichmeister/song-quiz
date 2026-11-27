@@ -1,4 +1,5 @@
 import { D, r, rr, ROOM, db } from './db.js';
+import { xmas } from './xmas.js';
 import { awards, T } from './game.js';
 import { RULES, MODE_RULE, rulesFor, PICTO } from './rules.js';
 import { pictos } from './pictos.js';
@@ -158,6 +159,7 @@ function sheetHtml() {
   return inner ? `<div class=modal onclick="closeSheet()"><div class=sheet onclick="event.stopPropagation()">${inner}</div></div>` : '';
 }
 
+xmas(D, r);
 const scrollFrac = () => { const m = document.documentElement.scrollHeight - innerHeight; return m > 0 ? Math.round((scrollY / m) * 1000) / 1000 : 0; };
 let scrollT = 0, followed = null;
 addEventListener('scroll', () => { // the host's scroll position goes into the mirrored picks (throttled)
