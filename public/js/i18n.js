@@ -21,7 +21,7 @@ const TXT = {
     // sheets
     'signInH': 'Anmelden', 'signInP': 'Mit einem kostenlosen Konto kannst du zu Hause eigene Spiele leiten und deine Statistik behalten.', 'google': 'Weiter mit Google', 'orEmail': 'oder mit E-Mail',
     'email': 'E-Mail', 'password': 'Passwort', 'signInBtn': 'Anmelden', 'createAcc': 'Konto erstellen', 'forgot': 'Passwort vergessen?', 'privacy': 'Wir speichern deine E-Mail, deinen Namen und deine Spielstatistik. Du kannst das Konto jederzeit löschen.',
-    'yourAccount': 'Dein Konto', 'hostHome': '🏠 Spiel zu Hause leiten', 'myStats': '📊 Meine Statistik', 'signOut': 'Abmelden', 'delAsk': 'Konto und alle gespeicherten Statistiken löschen?', 'delYes': 'Ja, alles löschen', 'cancel': 'Abbrechen', 'delBtn': 'Konto löschen', 'close': 'Schließen',
+    'yourAccount': 'Dein Konto', 'hostHome': '🏠 Spiel zu Hause leiten', 'myStats': '📊 Meine Statistik', 'signOut': 'Abmelden', 'delAsk': 'Konto und alle gespeicherten Statistiken löschen?', 'delYes': 'Ja, alles löschen', 'cancel': 'Abbrechen', 'delBtn': 'Konto löschen', 'close': 'Schließen', 'adminLink': '🛠 Admin',
     'resetSent': 'E-Mail zum Zurücksetzen verschickt. Schau in dein Postfach.', 'copied': 'Link kopiert.',
     'iosHint': 'iPhone: Teilen-Symbol tippen, dann „Zum Home-Bildschirm“. Android: Browser-Menü, dann „App installieren“.',
     'homeH': 'Dein Zuhause-Raum', 'homeP': 'Öffne diesen Link im Browser des Fernsehers oder eines Laptops. Starte dann das Spiel auf deinem Handy: Freunde scannen den QR-Code, der im Fernseher erscheint.',
@@ -86,7 +86,7 @@ const TXT = {
     'howToPlay': 'How to play', 'signIn': 'Sign in', 'running': 'A game is already running. You can join and watch, and you play from the next round.', 'account': 'Account',
     'signInH': 'Sign in', 'signInP': 'A free account lets you host your own games at home and keeps your stats.', 'google': 'Continue with Google', 'orEmail': 'or with email',
     'email': 'Email', 'password': 'Password', 'signInBtn': 'Sign in', 'createAcc': 'Create account', 'forgot': 'Forgot password?', 'privacy': 'We store your email, name and your game stats. You can delete the account any time.',
-    'yourAccount': 'Your account', 'hostHome': '🏠 Host a game at home', 'myStats': '📊 My stats', 'signOut': 'Sign out', 'delAsk': 'Delete your account and all saved stats?', 'delYes': 'Yes, delete everything', 'cancel': 'Cancel', 'delBtn': 'Delete my account', 'close': 'Close',
+    'yourAccount': 'Your account', 'hostHome': '🏠 Host a game at home', 'myStats': '📊 My stats', 'signOut': 'Sign out', 'delAsk': 'Delete your account and all saved stats?', 'delYes': 'Yes, delete everything', 'cancel': 'Cancel', 'delBtn': 'Delete my account', 'close': 'Close', 'adminLink': '🛠 Admin',
     'resetSent': 'Reset email sent. Check your inbox.', 'copied': 'Link copied.',
     'iosHint': 'On iPhone: tap Share, then “Add to Home Screen”. On Android: browser menu, then “Install app”.',
     'homeH': 'Your home room', 'homeP': 'Open this link in the browser of the TV or a laptop at home. Then create the game on your phone: friends scan the QR code that shows up on the TV.',
